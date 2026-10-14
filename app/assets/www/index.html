@@ -1,0 +1,1299 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Xenogears Link</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;background:#000;overflow:hidden}
+body{font-size:1rem;color:#efefef;font-family:monospace}
+#app{position:absolute;inset:0;display:flex;flex-direction:column;padding:2rem;gap:1rem;
+ background:radial-gradient(ellipse at 50% 30%,#1a1a3a 0%,#0b0b1c 55%,#050509 100%)}
+.win{border:10rem solid transparent;border-image:url(img/frame.png) 64 fill / 10rem stretch;image-rendering:pixelated;position:relative}
+.win>.in{margin:-2rem;position:relative}
+.g{display:inline-block;width:8rem;height:8rem;background-size:128rem 120rem;image-rendering:pixelated;vertical-align:top}
+.t{display:inline-block;white-space:nowrap;height:8rem;line-height:0;vertical-align:top}
+.row{display:flex;align-items:center;height:9rem}
+.row>span{min-width:0;overflow:hidden}
+.sp{flex:1}
+#top .in{display:flex;align-items:center;gap:6rem;height:9rem}#top .in>span:not(.sp){white-space:nowrap;flex:none}
+#enc{position:absolute;left:0;bottom:-5rem;height:2rem;width:0;background:#5c5;display:none}
+#dot{width:4rem;height:4rem;background:#733;border:1rem solid #100808}
+#dot.ok{background:#4c6}
+#main{flex:1;min-height:0;display:flex;flex-direction:column;gap:1rem}
+#main.scroll{overflow-y:auto}
+#main.scroll .card{flex:none}
+#main.scroll .card>.in{height:auto;padding:2rem 0}
+.card{flex:1;min-height:0}
+.card>.in{display:flex;gap:6rem;align-items:center;margin:-3rem -2rem;height:calc(100% + 6rem)}
+.card .col{gap:0}
+.pt{width:48rem;height:48rem;image-rendering:pixelated;flex:none;border:1rem solid #524a31;background:#100808}
+.pt.ko{filter:grayscale(1) brightness(.5)}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem;justify-content:center}
+.bar{margin:0 4rem;width:64rem;height:6rem;border:1rem solid #8c7352;background:#100808;position:relative;flex:none}
+.bar>i{position:absolute;left:0;top:0;bottom:0;display:block}
+.bar.hp>i{background:linear-gradient(#9f6,#283)}.bar.hp.low>i{background:linear-gradient(#fd6,#a60)}.bar.hp.crit>i{background:linear-gradient(#f66,#900)}
+.bar.ep>i{background:linear-gradient(#6cf,#247)}.bar.en>i{background:linear-gradient(#f77,#822)}
+.bar.s{width:26rem}.bar.f{flex:1;width:auto;min-width:10rem;margin-left:0}.bar.en{height:11rem}
+.bat{flex:1;min-height:0;display:flex;gap:1rem}.bl{width:150rem;flex:none;display:flex}.br{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem}
+#enemies{flex:1;min-width:0}#enemies>.in{display:flex;flex-direction:column;gap:1rem}
+.ec{display:flex;align-items:center;gap:2rem}.es{width:28rem;flex:none;display:flex;align-items:center;justify-content:center;height:100%}.es img{image-rendering:pixelated;display:block}.es img.sm{image-rendering:auto}
+#bparty{flex:none}#bparty>.in{display:flex;flex-direction:column;gap:2rem}.pm{display:flex;flex-direction:column}
+#tline{flex:none;z-index:0}#tline>.in{display:flex;align-items:flex-end}.tl{flex:none;align-self:center;margin-right:3rem}
+.tc{flex:none;position:relative;display:flex;align-items:flex-end;justify-content:center;gap:1rem}.tc .ts{display:flex;align-items:flex-end;flex:none}.tc img{image-rendering:pixelated;display:block;flex:none}.tc img.sm{image-rendering:auto}
+.tc .row{height:8rem;flex:none}.tc.now{background:#3a3052;box-shadow:inset 0 0 0 1rem #fd6}
+#enemies.tight>.in{gap:0}.tight .ec .row{height:8rem}.tight .bar.en{height:7rem}
+#dbl{flex:1;min-height:0}#dbl>.in{height:calc(100% + 4rem);overflow-y:auto}
+.bt{width:6rem;height:8rem;display:block;flex:none}.cb{display:flex;flex:none}
+#bot{display:flex;gap:1rem;height:24rem;flex:none}
+.btn{flex:1;display:flex;align-items:center;justify-content:center}
+.btn>.in{display:flex;align-items:center;justify-content:center;margin:-6rem -2rem}
+.btn.on{filter:brightness(1.5)}
+.btn.nar{flex:none;width:40rem}
+#app.quiet #top{visibility:hidden}
+#app.stale #main,#app.stale #bot{opacity:.4}#app.stale #enc{visibility:hidden}
+.sep{height:1rem;margin:1rem 0;background:#524a31}
+#more{position:absolute;left:50%;bottom:27rem;margin-left:-5rem;width:0;height:0;border:5rem solid transparent;border-top-color:#ffd866;border-bottom:0;display:none;z-index:2;filter:drop-shadow(0 0 1rem #000)}
+#app.movie #top,#app.movie #bot{display:none}
+.btn.big .t{transform:scale(4)}
+#set{position:absolute;inset:0;background:rgba(0,0,0,.8);display:none;padding:6rem;z-index:5}
+#set.show{display:flex}
+#set .win{flex:1;overflow:auto}
+#set .in{margin:2rem 4rem;display:flex;flex-direction:column;gap:2.5rem}
+.opt{display:flex;align-items:center;gap:6rem;min-height:14rem}
+.sethd{min-height:19rem;margin-top:5rem;border-bottom:1rem solid #524a31}.sethd .t{transform:scale(1.5);transform-origin:left center}
+.chip{border:1rem solid #8c7352;padding:3rem 4rem;background:#211810}
+.chip.on{background:#635a39;border-color:#efefef}
+input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monospace;padding:2rem;width:110rem;user-select:text;-webkit-user-select:text}
+.list{flex:1;min-height:0;overflow-y:auto}
+.list .in{margin:1rem 2rem;display:grid;grid-template-columns:1fr 1fr;column-gap:8rem;row-gap:3rem}
+.it{display:flex;justify-content:space-between}
+.lg{width:6rem;height:6rem;flex:none;margin-right:4rem;align-self:center;box-sizing:border-box}.lgs{background:#ff6ad0;border:1rem solid #fff}.lgi,.lgg{background:#e0a878;border-radius:50%;border:1rem solid #100808}.lgg{border-color:#c8c8d8}.hcols{display:flex;gap:14rem;justify-content:center}.hcol{display:flex;flex-direction:column;gap:3rem;min-width:0}
+.hpic{position:relative;width:104rem;height:104rem;align-self:center;background:#0b0b1c;border:1rem solid #524a31;overflow:hidden;flex:none}.hpic img{position:absolute;display:block}
+.hone{display:flex;gap:10rem;align-items:center;margin:3rem 0}.hpic.big{width:132rem;height:132rem}.hside{display:flex;flex-direction:column;min-width:0}
+
+.hdot{position:absolute;width:5rem;height:5rem;margin:-2.5rem;border-radius:50%;background:#5f5;border:1rem solid #100808;box-shadow:0 0 0 1rem #fff}
+.lgt{background:#ffd23c;border:1rem solid #100808;height:5rem}.lgf{background:#6cf;border-radius:50%;border:1rem solid #100808}
+.shd{grid-column:1/-1;display:flex;margin-top:2rem}
+.shop .in{column-gap:5rem;grid-template-columns:repeat(2,minmax(0,150rem));justify-content:space-between}
+.dim{opacity:.35}.dm{opacity:.6}
+.rew{flex:1;display:flex;align-items:center}.rew>.in{flex:1;display:flex;align-items:center;margin:-6rem 2rem}
+#pop{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:4;padding:10rem}
+#pop.show{display:flex}
+.ttl{width:204rem;height:144rem;opacity:.5;display:block}.btn.big .ttl{width:136rem;height:96rem}
+#boot{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8rem;
+ background:radial-gradient(ellipse at 50% 30%,#1a1a3a 0%,#0b0b1c 55%,#050509 100%)}
+#bootin{height:38rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5rem}
+#bootset{position:absolute;right:8rem;top:8rem;padding:6rem}
+#boot.start{justify-content:flex-start;align-items:stretch;padding:6rem 8rem;gap:4rem}
+.st-top{display:flex;gap:8rem;align-items:center;flex:none}.st-logo{width:80rem;height:56rem;flex:none}.st-how{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem}
+.st-win{flex:1;min-height:0}.st-win>.in{display:flex;flex-direction:column;gap:2rem;margin:-3rem -2rem;height:calc(100% + 6rem);overflow-y:auto}
+.st-opt{display:flex;align-items:center;gap:6rem;height:15rem;flex:none}.st-opt>.t{min-width:0;overflow:hidden}
+.st-sw{width:34rem;padding:3rem 0;display:flex;justify-content:center;flex:none}
+.st-bot{display:flex;align-items:center;justify-content:space-between;flex:none;height:30rem}.st-bot .btn.boot{width:96rem}
+.st-side{display:flex;align-items:center;gap:4rem;padding:6rem 0;width:122rem}.st-side:last-child{justify-content:flex-end}
+.st-box{width:10rem;height:10rem;border:1rem solid #8c7352;background:#100808;position:relative;flex:none}.st-box.on:after{content:'';position:absolute;inset:2rem;background:#ffd866}
+.btn.boot{flex:none;width:150rem;height:30rem}.btn.boot .t{transform:scale(1.5)}
+.ttlwrap{flex:1;display:flex;align-items:center;justify-content:center}
+.btn.big>.in{flex-direction:column;gap:26rem}
+#pop .in{margin:2rem 4rem;display:flex;flex-direction:column;gap:3rem}
+.mapw>.in{flex-direction:column;align-items:stretch;gap:1rem;justify-content:flex-start}
+.m3btn{position:absolute;right:3rem;top:2rem;z-index:4;background:rgba(11,11,28,.8);border:1px solid #5a4a28;padding:3rem 6rem;cursor:pointer}.m3btn .t{transform:scale(1.2);transform-origin:center}.m3btn.eye{top:21rem}
+.m3btn.on{border-color:#ffd23c}
+.mcoord{position:absolute;right:3rem;top:40rem;z-index:3;pointer-events:none;background:rgba(11,11,28,.75);padding:1rem 2rem}
+.mapbox{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.mside{position:absolute;left:0;top:0;display:flex;flex-direction:column;gap:3rem}
+.mbtn{width:30rem;padding:3rem 0 2rem;border:1rem solid #8c7352;background:rgba(33,24,16,.92);display:flex;flex-direction:column;align-items:center;gap:2rem}
+.mbtn.on{background:#635a39;border-color:#efefef}
+.mic{width:22rem;height:15rem;display:flex;align-items:center;justify-content:center;flex:none}.mic img{image-rendering:pixelated;display:block}.mic img.sm{image-rendering:auto}
+.mpanel{position:absolute;left:33rem;top:0;min-width:150rem;max-height:100%;overflow-y:auto;border:1rem solid #8c7352;background:rgba(11,11,28,.93);padding:3rem 5rem;display:flex;flex-direction:column;gap:2rem}
+.erow{display:flex;align-items:center;gap:4rem;height:16rem}
+pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
+</style></head><body>
+<div id="app">
+ <div class="win" id="top"><div class="in"><span id="dot"></span><span id="loc"></span><span class="sp"></span><span id="clock"></span><span class="sp"></span><span id="gold"></span><span id="gearbtn"></span></div><div id="enc"></div></div>
+ <div id="main"></div>
+ <div id="bot"></div>
+ <div id="more"></div>
+ <div id="boot"></div>
+ <div id="pop" onclick="closePop()"></div>
+ <div id="set"><div class="win"><div class="in" id="setin"></div></div></div>
+</div>
+<script src="tables.js"></script>
+<script src="enemies.js"></script>
+<script src="desc.js"></script>
+<script src="areas.js"></script>
+<script src="chapters.js"></script>
+<script src="gearparts.js"></script>
+<script src="plan.js"></script>
+<script src="levels.js"></script>
+<script src="deathblows.js"></script>
+<script src="stats.js"></script>
+<script src="world.js"></script>
+<script src="treasure.js"></script>
+<script src="marks.js"></script>
+<script src="shops.js"></script>
+<script src="hints.js"></script>
+<script src="exits.js"></script>
+<script src="mapfix.js"></script>
+<script src="rooms.js"></script>
+<script src="font.js"></script>
+<script src="bundled.js"></script>
+<script src="chd.js"></script>
+<script src="discbuild.js"></script>
+<script src="three.min.js"></script>
+<script src="map3d.js"></script>
+<script>
+'use strict';
+var lastErr='';window.onerror=function(m,src,line){lastErr=String(m).slice(0,60)+' @'+line;return false};
+/* ================= settings ================= */
+var LS={get:function(k,d){try{var v=localStorage.getItem('xg_'+k);return v===null?d:v}catch(e){return d}},set:function(k,v){try{localStorage.setItem('xg_'+k,v)}catch(e){}}};
+/* saved values are checked on the way in, so a bad one can never stop the link or the layout */
+function okHost(v){v=String(v).replace(/[^A-Za-z0-9.:\-]/g,'');return v||'127.0.0.1'}
+/* a usable port number, or the default 55355 */
+function okPort(v){v=Math.floor(+v);return v>0&&v<65536?v:55355}
+/* v as a number if it lies between lo and hi, otherwise the default d */
+function okNum(v,lo,hi,d){v=+v;return v>=lo&&v<=hi?v:d}
+var MODES=['m80','m00','ram'];
+/* QUIET is the one "hide during dialogue and scenes" switch. It replaced two separate switches (keys dlgauto and cut) in v1.41; a device that had either one on starts with it on. */
+var QUIET=true;   /* v1.80: always on (with it off the map showed the cutscene rooms) */
+var CFG={
+ /* the link */
+ host:okHost(LS.get('host','127.0.0.1')),port:okPort(LS.get('port','55355')),mode:LS.get('mode','auto'),poll:okNum(LS.get('poll','300'),100,2000,300),fast:LS.get('fast','1')==='1',
+ /* look */
+ scale:okNum(LS.get('scale','100'),50,200,100),dot:LS.get('dot','1')==='1',intro:LS.get('intro','1')==='1',dev:LS.get('dev','0')==='1',
+ /* hiding during dialogue (dlg) and scenes (cut); grace = how long after the last text box before the party screen returns, fixed at one second */
+ quiet:QUIET,dlg:QUIET,cut:QUIET,grace:1000,
+ /* map */
+ maprot:LS.get('maprot','1')==='1',plan:LS.get('plan','1')==='1',mapmir:false,hdot:LS.get('hdot','1')==='1',tre:LS.get('tre','1')==='1',gift:LS.get('gift','1')==='1',enl:LS.get('enl','1')==='1',hint:LS.get('hint','1')==='1',exits:LS.get('exits','1')==='1',places:LS.get('places','1')==='1',
+ /* battle */
+ x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
+ enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
+if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
+var VERSION='1.86';   /* set by build.sh */
+var HAS_NATIVE=!!window.Native;
+var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
+/* ================= room maps built from the player's own disc =================
+   The walkable areas and room pictures are not shipped: the player picks their disc 1 image once and discbuild.js makes them
+   into the app's own folder (Android: files/gen, Windows: the user data folder). HOST is the side that reads the disc and
+   keeps the files: window.Native on the device and on Windows, a stand-in from the test kit off-device.
+   manifest.json in that folder: {v, t (build time), rooms, maps, disc (file name), ext (picture file type)}. */
+var HOST=window.Native&&Native.genDir?Native:(window.TestGen||null),GEN={ready:false,man:null,base:'',building:null};
+function genLoad(){GEN.ready=false;GEN.man=null;if(!HOST)return;
+ try{var d=String(HOST.genDir()||'').replace(/\\/g,'/');GEN.base=HOST.genUrl?HOST.genUrl(''):encodeURI((d.charAt(0)==='/'?'file://':'file:///')+d+'/');
+  var m=HOST.genRead('manifest.json');if(m){GEN.man=JSON.parse(m);GEN.ready=GEN.man.maps>0}}catch(e){GEN.ready=false}}
+/* where a built file is loaded from (null until the maps have been built) */
+function asset(p){if(GEN.ready)return HOST.genUrl?HOST.genUrl(p):GEN.base+p+'?'+GEN.man.t;return window.BUNDLED?p:null}
+/* test builds ship the maps inside the app (bundled.js); files built from the player's disc take over when present */
+function mapsReady(){return GEN.ready||!!window.BUNDLED}
+function picExt(){return GEN.ready?(GEN.man.ext||'webp'):(window.BUNDLED&&BUNDLED.ext)||'webp'}
+function b64u8(s){var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u}
+function genPut(path,data){var b=typeof data==='string'?btoa(unescape(encodeURIComponent(data))):XB.b64(data),r=HOST.genWrite(path,b);if(r!=='ok')throw new Error('Could not save '+path+' ('+r+')')}
+/* picks the disc, then builds; the build runs a room at a time so the screen keeps updating, and can be stopped */
+function discPick(){if(!HOST){popup('<div class="row">'+T('Building needs the app (Android or Windows).','r')+'</div>',200);return}
+ window.onDiscPicked=function(name,size){if(name)genBuild(false)};HOST.discPick()}
+function genAsk(){popup('<div class="row">'+T('REBUILD ROOM MAPS','y')+'</div><div class="row">'+T('From: '+String(GEN.man&&GEN.man.disc||'?').slice(0,30),'g')+'</div><div class="row" style="height:14rem">'+chip('SAME DISC',false,'event.stopPropagation();genBuild(true)')+chip('OTHER FILE',false,'event.stopPropagation();discPick2()')+'</div>',200)}
+function discPick2(){window.onDiscPicked=function(n){if(n)genBuild(true)};HOST.discPick()}
+function genStop(){if(GEN.building)GEN.building.stop=true}
+async function genBuild(again){if(GEN.building)return;var job=GEN.building={stop:false,done:0,total:730,phase:'Opening the disc',err:''};genShow();
+ try{
+  var size=+HOST.discSize(),reader=function(o,n){var r=HOST.discRead(o,n);if(typeof r!=='string')return Promise.resolve(r);if(r.slice(0,4)==='ERR:')return Promise.reject(new Error(r.slice(4)));return Promise.resolve(b64u8(r))};
+  var d=await XB.open(reader,size),ids=[],f,cv=document.createElement('canvas');cv.width=cv.height=512;var cx=cv.getContext('2d'),ext='webp';
+  if(cv.toDataURL('image/webp',0.8).indexOf('data:image/webp')!==0)ext='png';   /* no WebP encoder: keep PNG */
+  if(again&&HOST.genClear)HOST.genClear();
+  for(f=0;f<730;f++)ids.push(f);if(TEST&&window.GEN_ONLY)ids=GEN_ONLY;job.total=ids.length;var rooms=0,maps=0;   /* GEN_ONLY: tests build a few rooms */
+  for(var i=0;i<ids.length;i++){if(job.stop)throw new Error('Stopped. Tap BUILD to carry on.');f=ids[i];job.done=i;job.phase='Room '+f;genShow();
+   await new Promise(function(r){setTimeout(r,0)});
+   var mp='maps/'+f+'.js',pp='plan/'+f+'.'+ext;
+   if(!again&&HOST.genHas(mp)&&(!PLAN[f]||HOST.genHas(pp))){maps++;if(PLAN[f])rooms++;continue}   /* carries on after a stop */
+   XB.EXITS=window.EXITS;XB.MAPFIX=window.MAPFIX;var h=await d.file(606+2*f),mb=h?XB.mapBytes(h,f):null;genPut(mp,XB.mapJs(f,mb));maps++;
+   if(PLAN[f]&&h){var px=await XB.roomPicture(d,f,PLAN[f],mb);
+    if(px){cx.clearRect(0,0,512,512);cx.putImageData(new ImageData(px,512,512),0,0);var u=cv.toDataURL(ext==='webp'?'image/webp':'image/png',0.75);
+     var r=HOST.genWrite(pp,u.slice(u.indexOf(',')+1));if(r!=='ok')throw new Error('Could not save '+pp);rooms++}
+    var lvs=XB.levels(h);for(var li=0;li<lvs.length;li++){var lp='plan/'+f+'_'+lvs[li]+'.'+ext,lx=await XB.levelPicture(d,f,PLAN[f],lvs[li]);   /* lower levels' own pictures */
+     if(lx){cx.clearRect(0,0,512,512);cx.putImageData(new ImageData(lx,512,512),0,0);var lu=cv.toDataURL(ext==='webp'?'image/webp':'image/png',0.75);if(HOST.genWrite(lp,lu.slice(lu.indexOf(',')+1))!=='ok')throw new Error('Could not save '+lp)}}}}
+  genPut('manifest.json',JSON.stringify({v:XB.VERSION,t:Date.now(),rooms:rooms,maps:maps,disc:String(HOST.discName&&HOST.discName()||''),ext:ext}));
+  job.done=job.total;job.phase='Done';genLoad();planCache={};planOrder=[];mapParsed={};mapReq={};window.MAPDATA={};last={}}
+ catch(e){job.err=String(e&&e.message||e)}
+ GEN.building=null;GEN.last=job;genShow();render()}
+/* the build window (a pop-up while building or after it ends) */
+function genShow(){var j=GEN.building||GEN.last;if(!j)return;var h='<div class="row">'+T('ROOM MAPS FROM YOUR DISC','y')+'</div>';
+ if(GEN.building){h+='<div class="row">'+T(j.phase,'c')+'<span class="sp"></span>'+T(j.done+'/'+j.total,'g')+'</div><div class="row">'+bar('ep',j.done,j.total,'s')+'</div>'
+  +'<div class="row">'+T('Keep the app open. About 5 to 20 min.','g')+'</div><div class="row" style="height:14rem"><span class="sp"></span>'+chip('STOP',false,'event.stopPropagation();genStop()')+'</div>'}
+ else if(j.err)wrap(j.err,40).forEach(function(l){h+='<div class="row">'+T(l,'r')+'</div>'});
+ else h+='<div class="row">'+T('Done: '+(GEN.man?GEN.man.rooms:0)+' room pictures.','n')+'</div>';
+ popup(h,220)}
+genLoad();
+/* ================= scaling (1rem = one game pixel) ================= */
+/* One game pixel is snapped down to a whole number of screen pixels (when that leaves at least two), so thin lines in the window frames
+   and the font are drawn evenly; a fractional size made parts of them break up on the handheld's wide screen. */
+function fit(){var u=Math.min(innerWidth/320,innerHeight/240)*CFG.scale/100,d=window.devicePixelRatio||1,n=Math.floor(u*d+0.001);if(n>=2)u=n/d;document.documentElement.style.fontSize=u+'px'}
+addEventListener('resize',fit);fit();
+/* ================= bitmap font from the game's menu atlas ================= */
+var GL={},FONT={};
+(function(){var s='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/.';for(var i=0;i<s.length;i++)GL[s[i]]=[i%16,i>>4];
+ GL['%']=[2,12];GL['+']=[3,12];GL['-']=[4,12];GL['!']=[5,12];GL[':']=[12,13];GL["'"]=[13,13];GL[',']=[14,13];GL['(']=[0,14];GL[')']=[1,14];GL['&']=[2,14];GL['?']=[3,14];GL['*']=[4,14];GL['"']=[5,14];GL['#']=[6,14];})();
+var COLORS={w:null,y:'#ffd866',c:'#7fd8ff',r:'#ff6a5a',g:'#8a8a9a',n:'#9cf58a',o:'#e0a878'};
+var fontReady=false;
+(function(){var im=new Image();im.onload=function(){
+ var base=document.createElement('canvas');base.width=128;base.height=120;var b=base.getContext('2d');b.drawImage(im,0,0);
+ // extra glyphs the atlas lacks, drawn in the atlas' own white-to-grey gradient
+ function px(cx,cy,x,y){var v=255-y*14;b.fillStyle='rgb('+v+','+v+','+v+')';b.fillRect(cx*8+x,cy*8+y,1,1)}
+ [[2,2],[3,2],[2,3],[3,3],[2,5],[3,5],[2,6],[3,6]].forEach(function(p){px(12,13,p[0],p[1])});
+ [[3,0],[3,1],[2,2]].forEach(function(p){px(13,13,p[0],p[1])});
+ [[2,6],[3,6],[3,7],[2,7]].forEach(function(p){px(14,13,p[0],p[1])});
+ ['...#. ..#.. .#... .#... .#... ..#.. ...#.','.#... ..#.. ...#. ...#. ...#. ..#.. .#...','.##.. #..#. #.#.. .#... #.#.# #..#. .##.#','.###. #...# ....# ...#. ..#.. ..... ..#..','..... #.#.# .###. ##### .###. #.#.# .....','.#.#. .#.#. ..... ..... ..... ..... .....','.#.#. .#.#. ##### .#.#. ##### .#.#. .#.#.']
+  .forEach(function(g,ci){g.split(' ').forEach(function(r,y){for(var x=0;x<r.length;x++)if(r[x]==='#')px(ci,14,x+1,y)})});
+ Object.keys(COLORS).forEach(function(k){var c=document.createElement('canvas');c.width=128;c.height=120;var x=c.getContext('2d');
+  x.drawImage(base,0,0);if(COLORS[k]){x.globalCompositeOperation='multiply';x.fillStyle=COLORS[k];x.fillRect(0,0,128,120);x.globalCompositeOperation='destination-in';x.drawImage(base,0,0)}
+  FONT[k]=c.toDataURL()});
+ var st=document.createElement('style');st.textContent=Object.keys(FONT).map(function(k){return '.f'+k+' .g{background-image:url('+FONT[k]+')}'}).join('');
+ document.head.appendChild(st);fontReady=true;last={};};im.src=window.FONT_PNG})();
+/* text drawn with the game's font: one span per letter, in colour col (see COLORS) */
+function T(s,col){s=String(s);var h='<span class="t f'+(col||'w')+'">';for(var i=0;i<s.length;i++){var g=GL[s[i]];
+ h+=g?'<i class="g" style="background-position:-'+g[0]*8+'rem -'+g[1]*8+'rem"></i>':'<i class="g" style="background:none"></i>'}return h+'</span>'}
+/* ================= small helpers ================= */
+function pad(v,n){v=String(v);while(v.length<n)v=' '+v;return v}
+/* pad on the right with spaces, or cut, to exactly n letters */
+function padr(v,n){v=String(v);while(v.length<n)v+=' ';return v.slice(0,n)}
+/* two digits (7 -> 07) */
+function p2(v){return (v<10?'0':'')+v}
+/* bytes as a hex string, for the dev readout */
+function hx(b){if(!b)return '';var o='';for(var i=0;i<b.length;i++)o+=(b[i]<16?'0':'')+b[i].toString(16);return o}
+/* break text into lines of at most n letters, at spaces */
+function wrap(t,n){var out=[],l='';t.split(' ').forEach(function(w){if(l&&(l+' '+w).length>n){out.push(l);l=w}else l=l?l+' '+w:w});if(l)out.push(l);return out}
+/* 16-bit little-endian number at offset o of byte array b */
+function le16(b,o){return b[o]|b[o+1]<<8}
+/* 32-bit little-endian number at offset o of byte array b (never negative) */
+function le32(b,o){return (b[o]|b[o+1]<<8|b[o+2]<<16)+b[o+3]*16777216}
+/* show the pop-up window with content h, at least w wide */
+function popup(h,w){var p=document.getElementById('pop');p.innerHTML=win(h,'','style="min-width:'+w+'rem"');p.className='show'}
+/* hide the pop-up */
+function closePop(){var p=document.getElementById('pop');p.className='';p.style.zIndex=''}
+/* is the settings panel showing? */
+function setOpen(){return document.getElementById('set').className!==''}
+/* ================= memory layer ================= */
+/* RAM offsets (address minus 0x80000000). The RAM map in the project notes says how each was found. */
+var A={
+ /* always loaded */
+ MODE:0x592C0,SIG:0x6FAF0,CLK_S:0x59418,CLK_M:0x59420,CLK_H:0x59484,GOLD:0x6EF58,PARTY:0x6F368,FIELD:0x6F94E,
+ NAMES:0x6D634,STORY:0x6EF64,MARG:0x59171,INV:0x6F36C,CHAR:0x6D8A0,GEAR:0x6DFAC,SKILL:0x6ECF0,IQTY:0x6F5C4,IID:0x6F65A,FORM:0x658DC,
+ /* room program */
+ ACTORS:0xAFB10,PIDX:0xB226C,CAMEYE:0xAF880,CAMAT:0xAF890,CAMDIR:0xAF98C,TBOX:0xC2698,EVT:0xB21D0,MENU:0xADB64,EVT2:0xB2176,SCENEFL:0xAF9D8,SVAR:0xC3A68,ENC:0xB2294,
+ /* world map program */
+ WPOS:0x9D55C,BFORM:0x6F9DC,WSTART:0x9C5AC,WLOC:0x9BD00,WCHUNK:0x9C184,WANG:0x9C584,WMODE:0x9BE10,WSAVE:0x6EE54,WENCW:0x9BE40,WENCN:0x9BCC4,WENCC:0x9D64C,WENCS:0x9C854,WENCON:0x9D554,
+ /* battle program */
+ BSLOT:0xCCCE8,BPID:0xD2D24,BLIVE:0xD2DCC,BGONE:0xD2DE4,BTURN:0xC4922,BTIME:0xD2E06};
+var REC=0xA4,BREC=0x170,AREC=0x5C,TBREC=0x498;   /* record sizes: character or gear, battle slot, actor list entry, text box */
+var pages={},seq=0,busy=false,busyAt=0,lastOk=0,linkMode=CFG.mode==='auto'?null:CFG.mode,probeIdx=0,lastReply='';
+/* mark the 256-byte pages that cover addr..addr+len for the next poll */
+function want(set,addr,len){for(var p=addr>>8;p<=(addr+len-1)>>8;p++)set[p]=1}
+/* len bytes of game memory at addr from the pages already read, or null if any of them is missing */
+function rd(addr,len){var out=new Uint8Array(len);for(var i=0;i<len;){var p=(addr+i)>>8,pg=pages[p];if(!pg)return null;var o=(addr+i)&255,n=Math.min(256-o,len-i);out.set(pg.subarray(o,o+n),i);i+=n}return out}
+/* one byte of game memory, or null */
+function u8(a){var b=rd(a,1);return b?b[0]:null}
+/* 16-bit number from game memory, or null */
+function u16(a){var b=rd(a,2);return b?le16(b,0):null}
+/* 32-bit number from game memory (never negative), or null */
+function u32(a){var b=rd(a,4);return b?le32(b,0):null}
+/* 32-bit signed number from game memory, or null */
+function s32(a){var v=u32(a);return v==null?null:v|0}
+/* a hex string from the link as bytes */
+function hexToBytes(h){var n=h.length>>1,o=new Uint8Array(n);for(var i=0;i<n;i++)o[i]=parseInt(h.substr(i*2,2),16);return o}
+/* called back from the Android side with {seq,ok:{pageHex:dataHex},sent,got,err} */
+window.onMem=function(r){if(r.seq>=1000000){if(scan)scan(r);return}busy=false;lastReply=r.got+'/'+r.sent+(r.err?' '+r.err:'');var n=0;for(var k in r.ok){pages[parseInt(k,16)]=hexToBytes(r.ok[k]);n++}
+ if(n){lastOk=Date.now();if(linkMode)goodPolls++;if(!linkMode)linkMode=MODES[probeIdx]}else if(CFG.mode==='auto'&&Date.now()-lastOk>1500){linkMode=null;probeIdx=(probeIdx+1)%3}
+ pollDone();render()};
+/* Pacing. A poll costs about one emulator frame, so the wait between polls is what limits how fresh the screen is.
+   Each finished poll books the next one after pollGap() ms: short on the MAP tab (the marker would otherwise lag behind the
+   player) and in battle, the ordinary rate elsewhere. The interval timer at the bottom of the file is only a safety net.
+   While the player or camera is moving on the MAP tab, four polls in five are "light" (plan): just the position, camera and
+   battle timer pages. Standing still, changing room or program, switching tab or closing SET goes straight back to full polls,
+   so text boxes and scenes are noticed as quickly as on the other tabs. */
+var pollAt=0,pollT=0,pollLog=[],moveAt=0,fullKey='';   /* moveAt: when the player or camera last moved; fullKey: program and room at the last full poll ('' = do a full poll next) */
+function moving(){return Date.now()-moveAt<1500}
+/* is a live map on screen (MAP tab, in a room or on the world map, nothing hiding it)? */
+function mapLive(){var s=u32(A.SIG);return booted&&tab==='map'&&(s===4||s===5)&&lastMd==='f'}
+/* milliseconds to wait before the next poll: short on a live map and in battle, the normal gap otherwise */
+function pollGap(){return !CFG.fast||setOpen()?CFG.poll:mapLive()?(moving()?50:200):inBattle()?150:CFG.poll}
+/* after a poll: note the time and book the next one if a short gap is wanted */
+function pollDone(){pollLog.push(Date.now());if(pollLog.length>20)pollLog.shift();clearTimeout(pollT);var g=pollGap();if(g<CFG.poll)pollT=setTimeout(poll,Math.max(0,g-(Date.now()-pollAt)))}
+/* polls per second over the last few polls, for the dev readout */
+function pollRate(){var n=pollLog.length;return n<2||Date.now()-pollLog[n-1]>2000?0:Math.round((n-1)*1000/Math.max(1,pollLog[n-1]-pollLog[0]))}
+/* ================= start-up screen =================
+   The app opens on the start screen (or, with that switched off, the title logo and a START button). Nothing is read from the
+   game until START is pressed, and the party screen stays covered until a few replies in a row have come back, so half-loaded
+   panels are never shown. */
+var bootGo=false,booted=false,bootAt=0,goodPolls=0;
+/* START was tapped: begin linking */
+function bootStart(){bootGo=true;bootAt=Date.now();goodPolls=0;poll();render()}
+/* write the start-up layer (only when it changed) */
+function bootDraw(h,cls){var b=document.getElementById('boot');b.className=cls;if(b._h!==h){b._h=h;b.innerHTML=h}}
+/* what the start-up layer shows: the start screen, CONNECTING, a no-reply note after five seconds, or nothing once the game answers */
+function bootStep(){if(booted)return;
+ if(bootGo&&goodPolls>=3&&rd(A.PARTY,3)&&u32(A.SIG)!=null&&(TEST||Date.now()-lastOk<2000)){booted=true;document.getElementById('boot').style.display='none';return}
+ if(!bootGo&&CFG.intro){startScreen();return}
+ var h;if(!bootGo)h=win(T('START','y'),'btn boot','onclick="bootStart()"');
+ else if(Date.now()-bootAt<5000)h='<div class="row">'+T('CONNECTING...','c')+'</div>';
+ else h='<div class="row">'+T('NO REPLY FROM THE GAME','r')+'</div><div class="row">'+T('RETROARCH: NETWORK COMMANDS ON,','g')+'</div><div class="row">'+T('PORT '+CFG.port+'. STILL TRYING...','g')+'</div>';
+ bootDraw('<span id="bootset" onclick="openSet()" style="display:flex">'+GEAR_ICON+'</span><img class="ttl" src="img/title.png"><div id="bootin">'+h+'</div>','')}
+/* The start screen (SHOW AT START, on by default): how to connect, the options most people will want to set once, and START.
+   With it switched off the app opens on the plain logo and START button; either way nothing is read until START is pressed. */
+/* every switch the app has, grouped, with a few words each (the start screen scrolls; SET has the same switches and the dev ones) */
+var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['hdot','HINT SPOTS','Green spots'],
+ ['MAP'],['plan','MAP ART','Room pictures'],['maprot','MAP TURNS','Up is camera'],['tre','TREASURE','Chests, taken'],['gift','GIFT SPOTS','Items given'],['places','PLACES','Cubes, shops'],['enl','ENEMY LIST','Room enemies'],['exits','EXITS','Doors, way in'],
+ ['BATTLE'],['enc','BATTLE COUNTDOWN','Next fight bar'],['turns','TURN ORDER','Who acts next'],['seq','COMBO KEYS','Deathblow keys'],['dball','ALL DEATHBLOWS','Locked too']];
+/* the first-launch screen: how to link, the main switches, START */
+function startScreen(){var h='<div class="st-top"><img class="st-logo" src="img/title.png"><div class="st-how">'
+  +'<div class="row">'+T('Xenogears Link','y')+'<span class="sp"></span>'+T(VERSION,'g')+'</div>'
+  +'<div class="row">'+T('USE RETROARCH NIGHTLY','c')+'</div>'
+  +'<div class="row">'+T('1 ','y')+T('Settings, Network')+'</div>'
+  +'<div class="row">'+T('2 ','y')+T('Network Commands ')+T('ON','n')+'</div>'
+  +'<div class="row">'+T('3 ','y')+T('Command Port ')+T(String(CFG.port),'n')+'</div>'
+  +'<div class="row">'+T('4 ','y')+T('Run the game, tap START')+'</div></div></div>';
+ var o='<div class="row">'+T('OPTIONS','c')+'<span class="sp"></span>'+T('TAP TO CHANGE','g')+'</div>';
+ /* the room maps come from the player's own disc: say so first, with the button to build them */
+ if(false)o+='<div class="st-opt">'+T('ROOM MAPS','c')+'<span class="sp"></span>'+(GEN.building?T('BUILDING '+GEN.building.done+'/'+GEN.building.total,'y'):GEN.ready?(GEN.man.v<XB.VERSION?chip('REBUILD (NEWER)',true,'genAsk()'):T('BUILT','n')):window.BUNDLED?T('IN APP (TEST)','n'):chip('BUILD FROM DISC',true,'discPick()'))+'</div>';
+ if(false)o+='<div class="st-opt">'+T('Pick your Xenogears disc 1','g')+'</div><div class="st-opt" style="margin-top:-8rem">'+T('(.chd, .bin or .iso) once.','g')+'</div>';
+ /* size first, so it stays in reach if a size too big for the screen was picked */
+ o+='<div class="st-opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(z){return chip(String(z),CFG.scale===z,"sv('scale',"+z+")")}).join('')+'</div>';
+ START_OPTS.forEach(function(q){if(q.length===1){o+='<div class="row" style="height:11rem">'+T(q[0],'c')+'</div>';return}var on=CFG[q[0]];
+  o+='<div class="st-opt" onclick="sv(\''+q[0]+'\',\''+(on?0:1)+'\')"><span class="chip st-sw'+(on?' on':'')+'">'+T(on?'ON':'OFF',on?'y':'g')+'</span>'+T(padr(q[1],16),on?'w':'g')+'<span class="sp"></span>'+T(q[2],'g')+'</div>'});
+ o+='<div class="row" style="height:11rem">'+T('MORE','c')+'</div><div class="st-opt">'+T('Size, link and developer','g')+'</div><div class="st-opt" style="margin-top:-8rem">'+T('readouts: SETTINGS.','g')+'</div>';
+ o+='<div class="st-opt">'+T('TAP','y')+T(' names and the map for details','g')+'</div>';
+ h+=win(o,'st-win');
+ h+='<div class="st-bot"><span class="st-side" onclick="openSet()">'+T('SETTINGS','g')+'</span>'+win(T('START','y'),'btn boot','onclick="bootStart()"')
+  +'<span class="st-side" onclick="sv(\'intro\',\''+(CFG.intro?0:1)+'\')"><span class="st-box'+(CFG.intro?' on':'')+'"></span>'+T('SHOW AT START',CFG.intro?'w':'g')+'</span></div>';
+ bootDraw(h,'start')}
+/* one round trip to RetroArch: ask for the wanted pages, then store them and redraw (onMem is the reply) */
+function poll(){if(!bootGo){render();return}if(scan||(teach&&teach.busy))return;if(busy&&!TEST&&Date.now()-busyAt<1500){render();return}
+ var set={};try{plan(set)}catch(e){lastErr='plan: '+String(e&&e.message||e).slice(0,50);fullKey='';want(set,A.MODE,4);want(set,A.SIG,4);want(set,A.PARTY,3)}
+ pollAt=Date.now();if(TEST){TestKit.poll(set);pollDone();render();return}
+ if(!HAS_NATIVE){render();return}
+ busy=true;busyAt=Date.now();var m=linkMode||MODES[probeIdx];
+ var keys=Object.keys(set);if(!linkMode)keys=[String(A.NAMES>>8)];
+ Native.poll(CFG.host,CFG.port,m,keys.map(function(p){return (+p).toString(16)}).join(','),++seq)}
+/* ================= dialogue and scenes =================
+   The screen hides (dimmed logo) while a text box is open or a scripted scene has the player locked.
+   Text boxes are read directly (boxOpen). The older "taught" method is kept as an extra under DEV OPTIONS > EXTRA SIGNALS:
+   it snapshots the room program's working memory while walking and while a text box is up, twice each, keeps the bytes
+   that are 0 when walking and non-zero in dialogue both times, and counts dialogue as "most of those bytes are non-zero". */
+var DLG=null;try{DLG=JSON.parse(LS.get('dlg','null'))}catch(e){}
+var SCAN_RANGES=[[0x59000,0x5A000],[0xAD000,0xC5000]],scan=null,teach=null;
+/* the page list for a full snapshot (EXTRA SIGNALS teaching) */
+function scanPages(){var l=[];SCAN_RANGES.forEach(function(r){for(var p=r[0]>>8;p<r[1]>>8;p++)l.push(p)});return l}
+/* read every page of scanPages once, retrying the ones that failed */
+function snapshot(done){var list=scanPages(),got={},tries=0;
+ function step(){var miss=list.filter(function(p){return !got[p]});if(!miss.length||tries>40){scan=null;done(got,miss.length);return}tries++;
+  var batch=miss.slice(0,40);
+  if(TEST){batch.forEach(function(p){got[p]=TestKit.page(p)});setTimeout(step,5);return}
+  scan=function(r){for(var k in r.ok)got[parseInt(k,16)]=hexToBytes(r.ok[k]);step()};
+  Native.poll(CFG.host,CFG.port,linkMode||'m80',batch.map(function(p){return p.toString(16)}).join(','),1000000+tries)}
+ step()}
+/* three snapshots a moment apart; a byte that moves between them is marked unstable (-1) */
+function capture(done){var snaps=[];(function next(){snapshot(function(g,miss){snaps.push(g);if(snaps.length<3){setTimeout(next,350);return}
+  var out={};scanPages().forEach(function(p){var a=snaps[0][p],b=snaps[1][p],c=snaps[2][p];if(!a||!b||!c)return;var o=new Int16Array(256);for(var i=0;i<256;i++)o[i]=(a[i]===b[i]&&b[i]===c[i])?a[i]:-1;out[p]=o});done(out)})})()}
+var TEACH_STEPS=[['Walk around freely','with no text on screen.'],['Talk to someone. While','the text box is open:'],['Close it and walk','around again.'],['Talk to someone else.','With the text box open:']];
+/* EXTRA SIGNALS > TEACH: start the four-step lesson (walking, then a text box open, twice over) */
+function teachStart(){if(u32(A.SIG)!==4&&!TEST){teach={msg:'Do this on a field map.'};drawSet();return}teach={step:0,caps:[]};drawSet()}
+/* take the snapshot for the current lesson step */
+function teachTap(){if(!teach||teach.busy)return;teach.busy=true;drawSet();capture(function(c){teach.caps.push(c);teach.busy=false;teach.step++;if(teach.step>=4)teachFinish();drawSet()})}
+/* keep the bytes that were set in both "dialogue open" snapshots and clear in both "closed" ones */
+function teachFinish(){var c=teach.caps,same=[],diff=[];
+ Object.keys(c[0]).forEach(function(p){var w1=c[0][p],d1=c[1][p],w2=c[2][p],d2=c[3][p];if(!d1||!w2||!d2)return;
+  for(var i=0;i<256;i++)if(w1[i]===0&&w2[i]===0&&d1[i]>0&&d2[i]>0)(d1[i]===d2[i]?same:diff).push(p*256+i)});
+ var pick=same.length>=4?same:same.concat(diff);if(pick.length>32){var st=pick.length/32,o=[];for(var k=0;k<32;k++)o.push(pick[Math.floor(k*st)]);pick=o}
+ if(pick.length){DLG={a:pick};LS.set('dlg',JSON.stringify(DLG));teach={msg:'Learned. '+pick.length+' signals saved.'}}else teach={msg:'Nothing found. Try again.'}}
+/* forget the taught dialogue bytes */
+function teachClear(){DLG=null;LS.set('dlg','null');teach=null;drawSet()}
+/* the field program keeps four text boxes; a box is on screen when its order is not 0xFFFF and its visibility word is 0 */
+function boxOpen(){if(u32(A.SIG)!==4)return false;for(var i=0;i<4;i++){var b=A.TBOX+i*TBREC,o=u16(b+0x410),v=u16(b+0x40E);if(o!=null&&o!==0xFFFF&&v===0)return true}return false}
+/* stay hidden for a short while after the last text box closes, so the gaps between boxes in one conversation do not flash the party screen */
+var dlgSeen=0,lastMd='';
+/* scripted scenes. Room scripts bracket an event with two commands (0xFE54 / 0xFE53) that lock and free the player:
+   0x800B21D0 = 1 while the menu is locked (the triangle check at 0x80078A5C refuses to open it), 0x800B2176 = -1,
+   and scene flag 0x8000 at 0x800AF9D8 stops L1/R1 turning the camera. The app treats "menu locked" as "in a scene".
+   Rooms also lock for a moment while they load, so the flag has to hold for 0.6 s before the screen is hidden. */
+var evtSince=0;
+/* is the scripted-scene lock set right now? */
+function rawEvent(){return u32(A.SIG)===4&&u8(A.EVT)===1}
+/* in a scripted scene (lock held for 0.6 s, and hiding is switched on)? */
+function inEvent(){if(!CFG.cut||!rawEvent()){evtSince=0;return false}var now=Date.now();if(!evtSince)evtSince=now;return now-evtSince>=600}
+/* should the screen go quiet: scene, text box open, or within the return delay after one */
+function inDialogue(){if(u32(A.SIG)!==4)return false;if(inEvent())return true;if(!CFG.dlg)return false;var now=Date.now();if(rawDialogue()){dlgSeen=now;return true}return now-dlgSeen<CFG.grace}
+/* is a text box open right now (the box records, or most of the taught bytes)? */
+function rawDialogue(){if(boxOpen())return true;if(!DLG||!DLG.a.length||u32(A.SIG)!==4)return false;var n=0,t=0;for(var i=0;i<DLG.a.length;i++){var v=u8(DLG.a[i]);if(v==null)continue;t++;if(v)n++}return t>0&&n*10>=t*6}
+/* ================= game state ================= */
+var tab=LS.get('tab','status'),tick=0,namesAt=0;if(['status','equip','items','map'].indexOf(tab)<0)tab='status';
+/* is the battle program loaded? */
+function inBattle(){return u32(A.SIG)===6}
+/* a game pointer as a RAM offset, or null when it is not a pointer into RAM */
+function ptr(v){return v!=null&&(v>>>24)===0x80&&(v&0xFFFFFF)<0x200000?v&0x1FFFFF:null}
+/* address of the player character's movement block in a room, or null */
+function playerData(){if(u32(A.SIG)!==4)return null;var l=ptr(u32(A.ACTORS)),i=u32(A.PIDX);if(l==null||i==null||i>255)return null;return ptr(u32(l+i*AREC+0x4C))}
+/* mark what the player's position and facing need for the next poll */
+function wantPlayer(set){want(set,A.ACTORS,4);want(set,A.PIDX,4);want(set,A.CAMDIR,2);var l=ptr(u32(A.ACTORS)),i=u32(A.PIDX);if(l==null||i==null||i>255)return;want(set,l+i*AREC+0x4C,4);var d=playerData();if(d!=null){want(set,d+0x10,2);want(set,d+0x20,12);want(set,d+0x104,8)}}
+/* position is 16.16 fixed point; whole units are the top half */
+/* the walkmesh layer the player stands on (actor data +0x10; 0 = the main floor, 1-3 = a bridge, a second level...), or null */
+function playerLayer(){var d=playerData();if(d==null)return null;var v=u16(d+0x10);return v!=null&&v<4?v:null}
+/* layers above 0 seen under the player in each room (bit mask per room, kept): the map only draws an extra layer once the party has
+   stood on it, because many rooms also carry layers the player never uses (rooftops, rough bounds) */
+var layerSeen={};try{layerSeen=JSON.parse(LS.get('layers','{}'))||{}}catch(e){layerSeen={}}
+function layerMark(f,l){if(!l||f==null)return;var m=layerSeen[f]|0;if(m&(1<<l))return;layerSeen[f]=m|(1<<l);try{LS.set('layers',JSON.stringify(layerSeen))}catch(e){}}
+function playerPos(){var d=playerData();if(d==null)return null;var x=s32(d+0x20),y=s32(d+0x24),z=s32(d+0x28),r=u16(d+0x106);if(x==null||y==null||z==null)return null;return{x:x>>16,y:y>>16,z:z>>16,face:r==null?null:r&0xFFF}}
+/* movie program loaded: overlay word 7, or program number 6 while the overlay word is not one of the others */
+/* the Battling mini-game (arena) program: loaded-program number 4 (Noah's game mode table: field 1, battle 2, world 3, battling 4,
+   menu 5, movie 6). Not yet checked on the device. (v1.80: the big dimmed FF screen for movies is gone; it showed in this mini-game.) */
+function inBattling(){return u32(A.MODE)===4&&u32(A.SIG)!==4&&u32(A.SIG)!==6}
+function inMovie(){var s=u32(A.SIG),m=u32(A.MODE);return s===7||(m===6&&s!==4&&s!==5&&s!==6)}
+/* choose what to read this poll. A light poll (map moving) reads only position and camera; a full poll reads everything the current screen shows */
+function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
+ if(CFG.fast&&mapLive()&&moving()&&tick%5&&key===fullKey&&!setOpen()){   /* light poll: only what moves on the map */
+  want(set,A.SIG,4);want(set,A.FIELD,2);
+  if(u32(A.SIG)===5){want(set,A.WPOS,12);want(set,A.WSTART,12);if(CFG.enc){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
+  else{var pd=playerData();if(pd==null)wantPlayer(set);else{want(set,pd+0x10,2);want(set,pd+0x20,12);want(set,pd+0x104,8)}   /* the pointers to the player's block only change with the room; full polls refresh them */
+   want(set,A.CAMEYE,32);if(CFG.enc)want(set,A.ENC,0x4C)}
+  return}
+ fullKey=key;
+ want(set,A.MODE,4);want(set,A.CLK_S,0x70);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
+ if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
+ if(inBattle()){want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
+ else{var p=rd(A.PARTY,3)||[];for(var i=0;i<3;i++){var id=p[i];if(id==null||id>10)continue;want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)}
+  if(tab==='items'){want(set,A.IQTY,150);want(set,A.IID,150)}
+  if(u32(A.SIG)===5){want(set,A.WPOS,12);want(set,A.WSTART,12);if(setOpen()){want(set,A.WANG,4);want(set,A.WMODE,4);want(set,A.WSAVE,6)}
+   if(tab==='map'&&CFG.places){want(set,A.WLOC,4);var wl=ptr(u32(A.WLOC));if(wl!=null){want(set,wl,12);for(var wk=0;wk<3;wk+=2){var wt=ptr(u32(wl+wk*4));if(wt!=null)want(set,wt,41*16)}}}
+   if(tab==='map'){var wp=worldPos();if(wp){var wc=A.WCHUNK+wChunk(wp)*4;want(set,wc,4);var wq=ptr(u32(wc));if(wq!=null)want(set,wq,1296)}}}
+  var room=u32(A.SIG)===4;   /* everything from here to the end of plan() lives in the room program's memory and is only read in a room */
+  if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
+  else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
+  if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
+  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
+   for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);
+   if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
+/* one letter of a name in the game's own letter codes (two encodings: one byte, and 16-bit 'wide') */
+function gch(c,wide){return c>=0x20&&c<=0x39?String.fromCharCode(65+c-0x20):c>=0x3D&&c<=0x56?String.fromCharCode(97+c-0x3D):wide&&c===0x1A?'-':wide&&c>=0x10&&c<=0x19?String(c-0x10):!wide&&c>=0x16&&c<=0x1F?String(c-0x16):!wide&&c===0x13?'-':!wide&&c===0x10?' ':'?'}
+/* names are stored one byte per letter in a running game (two bytes in the disc's new-game image); accept either, else fall back to the built-in name */
+function nameAt(i){var b=rd(A.NAMES+i*20,20);if(!b)return null;var ok=/^[A-Za-z][A-Za-z0-9\- ]{1,9}$/,s='',k,c;
+ for(k=0;k<10;k++){c=b[k*2]|b[k*2+1]<<8;if(c===0x0F||c===0)break;s+=gch(c,true)}if(ok.test(s))return s;
+ s='';for(k=0;k<10;k++){c=b[k];if(c===0||c===0x0F||c===0xFF)break;s+=gch(c,false)}return ok.test(s)?s.replace(/ +$/,''):null}
+/* a character's name: the one typed in the game, else the default */
+function cname(id){return nameAt(id)||TABLES.characters[id]||'???'}
+/* a gear's name: the one typed in the game, else the default */
+function gname(g){return nameAt(11+g)||TABLES.gears[g]||'???'}
+/* the fields of a character record the cards show */
+function readChar(base){var b=rd(base,REC);if(!b)return null;
+ return{hp:le16(b,0x4C),mhp:le16(b,0x4E),ep:le16(b,0x50),mep:le16(b,0x52),lv:b[0x62],exp:le32(b,0x3C),next:le32(b,0x44),   /* next = experience still to earn for the next level (not a running total) */
+  at:b[0x58],df:b[0x59],ag:b[0x5A],et:b[0x5B],ed:b[0x5C],hit:b[0x5E],ev:b[0x5F],eq:[b[0x74],b[0x75],b[0x76]],gear:b[0xA0]}}
+/* gear record: fuel is +0x38/+0x3A, +0x68 is weight. Frame, engine and armor index their own name tables, not gear_parts; +0x0C..+0x0F are the fitted gear weapons. */
+function readGear(base){var b=rd(base,REC);if(!b)return null;
+ return{hp:le32(b,0x60),mhp:le32(b,0x64),fuel:le16(b,0x38),mfuel:le16(b,0x3A),frame:b[2],engine:b[3],armor:b[8],acc:[b[9],b[10],b[11]],wp:[b[12],b[13],b[14],b[15]]}}
+/* ================= field cards (STATUS, EQUIP, ITEMS) ================= */
+/* size: 's' short, 'f' fills the row, none = standard */
+function bar(cls,v,m,size){var p=m>0?Math.max(0,Math.min(100,v*100/m)):0;var c=cls;if(cls==='hp'){if(p<=25)c+=' crit';else if(p<=50)c+=' low'}return '<span class="bar '+c+(size?' '+size:'')+'"><i style="width:'+p+'%"></i></span>'}
+/* colour of an HP number: red at a quarter or less, yellow at half or less */
+function hpCol(v,m){return v===0?'r':m&&v*4<=m?'r':m&&v*2<=m?'y':'w'}
+/* one of the game's bordered windows around inner */
+function win(inner,cls,attr){return '<div class="win '+(cls||'')+'" '+(attr||'')+'><div class="in">'+inner+'</div></div>'}
+/* a character's 48 x 48 menu portrait */
+function portrait(id,cls){return '<img class="pt '+(cls||'')+'" src="img/p48/'+(id<=10?id:0)+'.png">'}
+var last={};
+/* write html into element id, only when it differs from what is there */
+function put(id,html){if(last[id]===html)return;last[id]=html;document.getElementById(id).innerHTML=html}
+/* STATUS tab: one party member (HP, EP, level, experience, stats) */
+function statusCard(id){var c=readChar(A.CHAR+id*REC);if(!c)return win(T('...','g'),'card');
+ var l1='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>';
+ var l2='<div class="row">'+T('HP','c')+bar('hp',c.hp,c.mhp)+T(pad(c.hp,4),hpCol(c.hp,c.mhp))+T('/','g')+T(pad(c.mhp,4))+'</div>';
+ var l3='<div class="row">'+T('EP','c')+bar('ep',c.ep,c.mep)+T(pad(c.ep,4))+T('/','g')+T(pad(c.mep,4))+'</div>';
+ var l4='<div class="row">'+T('EXP','c')+T(pad(c.exp,7))+'<span class="sp"></span>'+T('NEXT','c')+T(pad(c.next,6))+'</div>';
+ var l5='<div class="row">'+T('AT','o')+T(pad(c.at,3))+T(' DF','o')+T(pad(c.df,3))+T(' AG','o')+T(pad(c.ag,3))+T(' ET','o')+T(pad(c.et,3))+T(' ED','o')+T(pad(c.ed,3))+'</div>';
+ return win(portrait(id,c.hp===0?'ko':'')+'<div class="col">'+l1+l2+l3+l4+l5+'</div>','card','onclick="showDB('+id+')"')}
+/* EQUIP tab: one party member (equipment, then the gear and its parts); every name can be tapped */
+function equipCard(id){var c=readChar(A.CHAR+id*REC);if(!c)return win(T('...','g'),'card');var g=c.gear<20?readGear(A.GEAR+c.gear*REC):null;
+ var eq=c.eq.map(function(e){return TABLES.equipment[e]||'-'});
+ var h='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('HIT','o')+T(pad(c.hit,3))+T(' EVD','o')+T(pad(c.ev,3))+'</div>';
+ function tap(k){return '<span onclick="showDesc(\'equipment\','+c.eq[k]+')">'+T(padr(eq[k],13))+'</span>'}
+ h+='<div class="row">'+tap(0)+tap(1)+'</div><div class="row">'+tap(2)+'</div>';
+ h+='<div class="sep"></div>';
+ if(g&&g.mhp){h+='<div class="row">'+T(padr(gname(c.gear),10),'n')+'<span class="sp"></span>'+T('FUEL','c')+T(pad(g.fuel,5),g.mfuel&&g.fuel*4<=g.mfuel?'r':'w')+T('/','g')+T(pad(g.mfuel,5))+'</div>';
+  h+='<div class="row">'+T('HP','c')+bar('hp',g.hp,g.mhp)+T(pad(g.hp,6),hpCol(g.hp,g.mhp))+T('/','g')+T(pad(g.mhp,6))+'</div>';
+  function gt(k,id){return '<span onclick="showDesc(\''+k+'\','+id+')">'+T(padr(gearName(k,id)||'-',13),k==='gear_parts'?'w':'o')+'</span>'}
+  h+='<div class="row">'+gt('gear_frames',g.frame)+gt('gear_engines',g.engine)+'</div>';
+  h+='<div class="row">'+gt('gear_armor',g.armor)+gt('gear_parts',g.acc[0])+'</div>';
+  h+='<div class="row">'+gt('gear_parts',g.acc[1])+gt('gear_parts',g.acc[2])+'</div>'}
+ else h+='<div class="row">'+T('NO GEAR','g')+'</div>';
+ return win(portrait(id)+'<div class="col">'+h+'</div>','card')}
+/* ITEMS tab: the item bag, two columns, tap for a description */
+function itemsView(){var q=rd(A.IQTY,150),ids=rd(A.IID,150);if(!q||!ids)return win(T('...','g'),'list');var h='',n=0;
+ for(var i=0;i<150;i++){if(!q[i])continue;var nm=TABLES.items[ids[i]];if(!nm)continue;n++;h+='<div class="it" onclick="showDesc(\'items\','+ids[i]+','+q[i]+')">'+T(padr(nm,13))+T(pad(q[i],2),'y')+'</div>'}
+ if(!n)h=T('NO ITEMS','g');return win(h,'list')}
+/* ================= shop screen =================
+   While a shop is open the room program holds its screen number at MENU (4 item shop, 5 gear shop; -1 when no menu is up) and the
+   shop number at MARG. SHOPS lists what each shop sells; prices come from STATS. A price the party cannot pay is red. */
+var SHOPCAT={4:[['weapons','WEAPONS'],['equipment','EQUIPMENT'],['items','ITEMS']],5:[['gear_frames','FRAMES'],['gear_armor','ARMOR'],['gear_engines','ENGINES'],['gear_weapons','GEAR WEAPONS'],['gear_parts','PARTS']]};
+var SHOPPRICE={items:0,weapons:1,equipment:1,gear_frames:2,gear_armor:0,gear_engines:1,gear_parts:0,gear_weapons:0};
+/* the shop open in the game right now ({k: 4 item / 5 gear, n: shop number, st: its stock}), or null */
+function shopOpen(){if(u32(A.SIG)!==4)return null;var m=u32(A.MENU),n=u8(A.MARG);if(m==null||n==null||(m!==4&&m!==5)||!window.SHOPS)return null;var st=SHOPS[m===4?'i':'g'][n];return st?{k:m,n:n,st:st}:null}
+/* what the party already has: the five bags (quantity list, ID list, slots; all inside INV..INV+0x578) plus what the three party members and their gears are using */
+var BAGS={weapons:[0x6F36C,0x6F3D0,100],equipment:[0x6F434,0x6F4FC,200],items:[A.IQTY,A.IID,150],gear_weapons:[0x6F6F0,0x6F754,100],gear_parts:[0x6F7B8,0x6F84E,150]};
+/* what the party already has, per kind: counts from the bags, plus "use" = worn or fitted by the party of three */
+function shopHave(){var o={},k,i;for(k in BAGS){var b=BAGS[k],q=rd(b[0],b[2]),ids=rd(b[1],b[2]),m=o[k]={};if(q&&ids)for(i=0;i<b[2];i++)if(q[i])m[ids[i]]=(m[ids[i]]||0)+q[i]}
+ var use=o.use={weapons:{},equipment:{},gear_frames:{},gear_armor:{},gear_engines:{},gear_parts:{},gear_weapons:{}},p=rd(A.PARTY,3)||[];
+ for(i=0;i<3;i++){if(p[i]==null||p[i]>10)continue;var c=readChar(A.CHAR+p[i]*REC),w=u8(A.CHAR+p[i]*REC+0x6A);if(!c)continue;if(w)use.weapons[w]=1;c.eq.forEach(function(e){if(e)use.equipment[e]=1});
+  var g=c.gear<20?readGear(A.GEAR+c.gear*REC):null;if(g&&g.mhp){use.gear_frames[g.frame]=1;use.gear_armor[g.armor]=1;use.gear_engines[g.engine]=1;g.acc.forEach(function(e){if(e)use.gear_parts[e]=1});g.wp.forEach(function(e){if(e)use.gear_weapons[e]=1})}}
+ return o}
+/* the shop screen: stock by category with prices (red = cannot pay, green name = already have one) */
+function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='';
+ SHOPCAT[sh.k].forEach(function(c,ci){var l=sh.st[ci]||[],t=window.STATS&&STATS[c[0]],rows='',bag=have[c[0]]||{},use=have.use[c[0]]||{};
+  l.forEach(function(id){var nm=gearName(c[0],id);if(!nm)return;var r=t&&t[id],pr=r?r[SHOPPRICE[c[0]]]:null,o=bag[id]||0;
+   rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+')">'+T(nm.trim(),o||use[id]?'n':'w')+T(String(pr==null?'?':pr),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
+  if(rows)h+='<div class="shd">'+T(c[1],'c')+'</div>'+rows});
+ return win(h||T('NOTHING LISTED','g'),'list shop')}
+/* the main area outside battle: the card or list for the chosen tab */
+/* The party the game's own menu shows: the three party bytes, less anyone whose bit is clear in (members u16 at PARTY-4 AND
+   shown-mask u16 at PARTY-2). Scenes put a member in the party before they join on screen (Elly at the start of Blackmoon Forest);
+   script commands FE 3A / FE 3B set and clear the mask, and the menu and the battle loader both test it (Noah: initMenuGlobals,
+   loadPartyMembers). */
+function shownParty(p){var av=u16(A.PARTY-4),fm=u16(A.PARTY-2),m=av!=null&&fm!=null?av&fm:0xFFFF,o=[];for(var i=0;i<3;i++){var c=p[i];if(c==null||c>10)continue;if((m>>(c&0x1F))&1||!(m&0x7FF))o.push(c)}return o}
+function fieldView(){var p=rd(A.PARTY,3);if(!p)return win(T(TEST?'...':HAS_NATIVE?'WAITING FOR GAME':'NO LINK ON THIS DEVICE','g'),'card');var ids=shownParty(p);
+ if(tab==='items')return itemsView();if(tab==='map')return mapView();if(!ids.length)return win(T('NO PARTY YET','g'),'card');
+ return ids.map(tab==='equip'?equipCard:statusCard).join('')}
+/* ================= battle screen =================
+   Enemy names. Confirmed on the handheld (v1.7): a fight's enemies fill the enemy slots in formation order, not in the order
+   of the monster bank they come from, and each slot is an unchanged copy of its bank record. So a slot is identified by what
+   it carries: max HP, the reward block (experience, gold, drops) and its stats; the bank is the one that explains every
+   enemy in the fight. The record also gives the enemy's starting HP, which for 30 records is below the stored maximum
+   (a Hobgob starts at 15 with a maximum of 30) - the HP bar uses the starting figure as full. */
+var bankCache={};   /* enemy names worked out for the fight in progress; emptied when a fight starts */
+function okName(n){return n&&!/^Monster \d$/.test(n)?n:''}
+/* how well enemy record k of bank e explains battle slot s (0 = not at all) */
+function recMatch(e,k,s){var hi=e.h[k];if(!hi[0]&&!hi[1])return 0;
+ var hp=s.m===hi[0]&&s.g===hi[1],rw=s.x>0&&s.x===e.x[k]&&s.gd===e.g[k];if(!hp&&!rw)return 0;
+ return (hp?2:0)+(rw?3:0)+(rw&&s.d&&s.d===e.d[k]?1:0)+(s.st&&s.st===e.s[k]?1:0)}
+/* the record of bank e that best explains slot s (i = the slot's own place, as a tie-break) */
+function bestRec(e,i,s,named){var bv=0,bk=-1;for(var k=0;k<8;k++){if(named&&!okName(e.n[k]))continue;var v=recMatch(e,k,s)*2+(k===i?1:0);if(v>1&&v>bv){bv=v;bk=k}}return bk<0?null:{k:bk,v:bv}}
+/* The line-up of the fight in progress. When a battle starts the battle program (0x80071130) copies the room's chosen line-up record
+   (0x20 bytes) to 0x8006F9DC: +0 monster bank, +8 the bank record of each of the eight enemy slots (0xFF = none, low 7 bits = record),
+   +16 a flag per slot. That gives every enemy's exact record, so its exact name. A slot flagged 0x80 whose record has no name is not
+   a real enemy: the Aveh soldier fights (rooms 57, 58) carry one such unnamed record, which sits in the slot list with full HP for
+   the whole fight and is still there when the fight is won; it is marked hide. The copy is only trusted when every enemy it lists
+   has the max HP its record says, and no other slot is marked as in the fight. Returns the eight names or null. */
+function lineup(sl){var b=rd(A.BFORM,0x20);if(!b||!window.ENEMIES)return null;var k=b[0],e=k===52||k===68?null:ENEMIES[k-(k>52?1:0)-(k>68?1:0)];if(!e)return null;var out=[],n=0;
+ for(var i=0;i<8;i++){var v=b[8+i],s=sl[i],has=s&&(s.m||s.g);if(v===255){if(has&&s.on)return null;out.push({n:'',st:0,p:0});continue}
+  var r=v&127,h=r<8&&e.h[r];if(!h||!has||!((h[0]&&s.m===h[0])||(h[1]&&s.g===h[1])))return null;
+  var nm=okName(e.n[r]);n++;out.push({n:nm,st:s.g>0?e.l[r][1]:e.l[r][0],p:e.p&&e.p[r]||0,hide:!nm&&(b[16+i]&0x80)!==0,sure:true})}
+ return n?out:null}
+/* names for the enemy slots: from the fight's line-up record when it can be read (lineup); otherwise find the monster bank that explains
+   every enemy, then name each slot from it. Kept per fight in bankCache. */
+function enemyNames(sl){var fb=rd(A.BFORM,0x20),key=sl.map(function(s){return s?[s.m,s.g,s.x,s.gd,s.d,s.st,s.on].join('/'):''}).join(',')+'|'+(fb?hx(fb):'');if(key in bankCache)return bankCache[key];
+ var lu=lineup(sl);if(lu)return bankCache[key]=lu;
+ var best=null,bs=0;
+ ENEMIES.forEach(function(e){var sc=0;for(var i=0;i<8;i++){var s=sl[i];if(!s||!s.on||!(s.m||s.g))continue;var r=bestRec(e,i,s,false);sc+=r?r.v:-8}if(sc>bs){bs=sc;best=e}});
+ var out=[];for(var i=0;i<8;i++){var s=sl[i],n='',st=0,pic=0;if(s&&(s.m||s.g)){var r=best&&bestRec(best,i,s,true),any=best&&bestRec(best,i,s,false);
+   if(r){n=best.n[r.k];pic=best.p&&best.p[r.k]}else if(any)pic=best.p&&best.p[any.k];if(any)st=s.g>0?best.l[any.k][1]:best.l[any.k][0];
+   if(!n){var seen={},top=0,sst=0,sp=0;ENEMIES.forEach(function(e){for(var k=0;k<8;k++){var v=recMatch(e,k,s),nm=okName(e.n[k]);if(!v||!nm)continue;if(v>top){top=v;seen={};sst=s.g>0?e.l[k][1]:e.l[k][0];sp=e.p&&e.p[k]}if(v===top)seen[nm]=1}});
+    var ks=Object.keys(seen);if(ks.length===1){n=ks[0];if(!st)st=sst;if(!pic)pic=sp}}}
+  out.push({n:n,st:st,p:pic})}
+ return bankCache[key]=out}
+var battleTot=null,hpSeen={},enemyId={};   /* battleTot: [experience, gold] of the fight for the Rewards box; hpSeen: the most HP seen on each enemy this fight; enemyId: slot -> the enemy's number this fight (1, 2, 3... down the list; see battleView) */
+/* fight log: every change the game makes to a fighter's HP, KO word (+0x7C) or removal byte, kept after the fight for SET */
+var blog=[],blast={},bstart=0;
+/* add a line to the fight log when a slot's HP or state changed (dev) */
+function blogNote(s,name,hp,mhp,st,out){var k=hp+'/'+st+'/'+out,q=blast[s];if(q&&q.k===k)return;var t=((Date.now()-bstart)/1000)|0;
+ var tail=' st'+(st||0).toString(16)+(out==null?'':' rm'+out.toString(16));
+ blog.push(q?p2((t/60)|0)+':'+p2(t%60)+' '+s+' '+name+' '+q.hp+'>'+hp+tail:'start '+s+' '+name+' '+hp+'/'+mhp+tail);if(blog.length>60)blog.shift();blast[s]={k:k,hp:hp}}
+var DROPTBL=[null,'equipment','items','gear_weapons','gear_parts'];
+/* what an enemy slot gives: experience, gold and its two drops. The reward block is at battle slot +0x148 (exp u32 +0x14C, drop chances
+   +0x150/+0x151, drop IDs +0x152/+0x153, which bag each drop goes to +0x154/+0x155, gold u16 +0x156) */
+function reward(s){var b=A.BSLOT+s*BREC,x=u32(b+0x14C),g=u16(b+0x156);if(x==null||g==null)return null;var d=[];
+ for(var k=0;k<2;k++){var ch=u8(b+0x150+k),id=u8(b+0x152+k),li=u8(b+0x154+k),t=DROPTBL[li];if(!t||!id)continue;var n=(TABLES[t]||[])[id];if(n&&n!=='/')d.push({n:n,p:ch,t:t,id:id})}
+ return{exp:x,gold:g,drops:d}}
+/* Elements. An attack carries one of these bits (attack record +0x22); a fighter's weak byte (slot +0x38: low six bits, 0x40 = badly weak)
+   and its defended elements (bits 0x0F00 of the two element words: slot +0x8C/+0x8E, or the gear copy +0x128/+0x12A for a gear-sized
+   fighter) use the same bits. From the battle program's check at 0x80096500: weak = x1.5 (x1.8 badly weak); defended = -0.3 against ethers,
+   -0.6 with flag 4, absorbed with flag 8; and defending an element costs +0.3 against its opposite (water/fire, earth/wind). */
+var ELEM=[[1,'Water',2],[2,'Fire',1],[4,'Earth',8],[8,'Wind',4],[16,'Dark',0],[32,'Light',0]];   /* bit, name, bit of the opposite */
+/* what each element does to battle slot s, read live: [{n: name, m: multiplier in tenths, abs: absorbed}] for the ones that are not plain x1.0 */
+function elemList(s){var b=A.BSLOT+s*BREC,wk=u8(b+0x38),fl=u8(b+0x15A);if(wk==null||fl==null)return null;
+ var o=fl&0x80?0x128:0x8C,d=(u16(b+o)||0)|(u16(b+o+2)||0),def=(d>>8)&15,out=[];
+ ELEM.forEach(function(e){var m=wk&e[0]?(wk&0x40?18:15):10,abs=false;
+  if(def&e[0]){m-=d&4?6:3;abs=!!(d&8)}if(e[2]&&def&e[2])m+=3;if(m<1)m=1;
+  if(m!==10||abs)out.push({n:e[1],m:m,abs:abs})});
+ return out}
+/* Status effects. The battle program turns (word, bit) into one of its own messages (0x8009B684 on foot, 0x8009E868 in a gear); the names
+   here are those messages. On foot the words are slot +0x7C (physical), +0x80 (mental), +0x84|+0x86 (support), +0x88|+0x8A (power) and
+   +0x8C|+0x8E (elements); a gear-sized fighter uses its gear copy instead: +0x120 (ailments) and +0x124 (support).
+   Entry: [mask, short tag, name, 1 = bad for whoever has it]. */
+var ST_FOOT=[[0x7C,0,[[0x2000,'STOP','Stop',1],[0x1000,'SLOW','Slow',1],[0x0800,'PSN','Poison',1],[0x0400,'ACC-','ACC DOWN',1],[0x0200,'ATK-','Atk DOWN',1],[0x0100,'DEF-','Def DOWN',1]]],   /* Def DOWN goes by its place in the game's list; the message routine has no case for it */
+ [0x80,0,[[0x2000,'CONF','Confusion',1],[0x1000,'SLP','Sleep',1],[0x0800,'MUTE',"Can't use Ether",1],[0x0400,'ETH-','Eth effect DOWN',1],[0x0020,'LURE','Taunt',1]]],
+ [0x84,0x86,[[0x8000,'SPD+','Speed UP',0],[0x4000,'DEF+','Def UP',0],[0x2000,'ATK+','Atk UP',0],[0x1000,'ACC+','ACC UP',0],[0x0800,'EV+','EV UP',0]]],
+ [0x88,0x8A,[[0x8000,'ETH+','Eth effect UP',0],[0x4000,'EDF+','Eth Def UP',0],[0x1000,'CNTR','Counter UP',0],[0x000A,'ATK+','Atk UP/Def DOWN',0],[0x0005,'DEF+','Def UP/Atk DOWN',0]]],
+ [0x8C,0x8E,[[0x8000,'WIND','Wind attacks',0],[0x4000,'ERTH','Earth attacks',0],[0x2000,'FIRE','Fire attacks',0],[0x1000,'WATR','Water attacks',0]]]];
+var ST_GEAR=[[0x120,0,[[0x0400,'STOP','Stop',1],[0x0200,'EP-','EP DOWN',1],[0x0100,'MUTE','Ether engine stopped',1],[0x0080,'LEAK','Fuel leak',1],[0x0040,'DEF-','Def DOWN',1],[0x0020,'SLOW','Slow',1],[0x0010,'ACC-','ACC/EV DOWN',1],[0x0004,'PWR-','Power loss',1]]],
+ [0x124,0,[[0x1000,'PWR+','Power UP',0],[0x0800,'ACC+','ACC UP',0],[0x0400,'EV+','EV UP',0],[0x0040,'ETH+','Eth effect UP',0],[0x0020,'EDF+','Eth Def UP',0],[0x000A,'ATK+','Atk UP/Def DOWN',0],[0x0005,'DEF+','Def UP/Atk DOWN',0]]]];
+/* the status effects on battle slot s right now, ailments first: [{t: tag, n: name, bad}] */
+function statusList(s){var b=A.BSLOT+s*BREC,fl=u8(b+0x15A);if(fl==null)return [];var out=[];
+ (fl&0x80?ST_GEAR:ST_FOOT).forEach(function(w){var v=(u16(b+w[0])||0)|(w[1]?u16(b+w[1])||0:0);w[2].forEach(function(e){if(v&e[0])out.push({t:e[1],n:e[2],bad:!!e[3]})})});
+ return out.sort(function(x,y){return (y.bad?1:0)-(x.bad?1:0)})}
+/* Ailments a fighter cannot be given: the "blocked" word beside each ailment word holds the same bits (slot +0x7E for +0x7C, +0x82 for +0x80;
+   +0x122 for a gear's +0x120). The guard accessories set these on the party; enemies carry them in their records. Returns names, or ['All ailments']. */
+function immuneList(s){var b=A.BSLOT+s*BREC,fl=u8(b+0x15A);if(fl==null)return [];var out=[],all=true;
+ (fl&0x80?[[0x122,ST_GEAR[0][2]]]:[[0x7E,ST_FOOT[0][2]],[0x82,ST_FOOT[1][2]]]).forEach(function(w){var v=u16(b+w[0])||0;w[1].forEach(function(e){if(v&e[0])out.push(e[2]);else all=false})});
+ return all&&out.length?['All ailments']:out}
+/* the one tag that fits after an HP bar on the battle screen (at most four letters and a +): the first status, with + when there are more (red = ailment, green = help) */
+function statusTag(s){var l=statusList(s);if(!l.length)return '';return '<span style="width:2rem;flex:none"></span>'+T(l[0].t+(l.length>1?'+':''),l[0].bad?'r':'n')+'<span style="width:2rem;flex:none"></span>'}
+/* pop-up for an enemy: rewards, drops, the status effects on it, what it is immune to, then how each element fares against it */
+function showEnemy(s,name){var q=reward(s);if(!q)return;var h='<div class="row">'+T(name||'Enemy','r')+'</div>';
+ h+='<div class="row">'+T('EXP','c')+T(pad(q.exp,7))+'<span class="sp"></span>'+T(pad(q.gold,6))+T(' G','y')+'</div>';
+ if(q.drops.length)q.drops.forEach(function(d){h+='<div class="row">'+T(padr(d.n,13))+'<span class="sp"></span>'+T(pad(d.p,3)+'%','n')+'</div>'});else h+='<div class="row">'+T('No drops.','g')+'</div>';
+ var sl=statusList(s);if(sl.length){h+='<div class="row">'+T('STATUS','c')+'</div>';sl.forEach(function(e){h+='<div class="row">'+T(e.n,e.bad?'r':'n')+'</div>'})}
+ var im=immuneList(s);if(im.length){h+='<div class="row">'+T('IMMUNE TO','c')+'</div>';wrap(im.join(', '),26).forEach(function(l){h+='<div class="row">'+T(l,'o')+'</div>'})}
+ var el=elemList(s);if(el&&el.length){h+='<div class="row">'+T('ELEMENTS','c')+'</div>';
+  el.forEach(function(e){h+='<div class="row">'+T(padr(e.n,6))+'<span class="sp"></span>'+(e.abs?T('ABSORBS','r'):T('x'+(e.m/10).toFixed(1),e.m>10?'n':'r'))+'</div>'})}
+ popup(h,180)}
+/* an enemy's picture (ENEMIES p = [file, width, height], one game pixel = 1rem) shrunk to fit a box; gear renders (g...) are smoothed */
+function sprImg(pc,w,h){var k=Math.min(1,w/pc[1],h/pc[2]);return '<img'+(pc[0].charAt(0)==='g'?' class="sm"':'')+' src="spr/'+pc[0]+'.png" style="width:'+Math.max(1,Math.round(pc[1]*k))+'rem;height:'+Math.max(1,Math.round(pc[2]*k))+'rem">'}
+/* Turn order. Every fighter has a countdown to its next turn (u16 at 0x800D2E06 + slot x 2; the ready byte at 0x800D2DE4 + slot is
+   1 once it reaches zero and 0xFF when the fighter is out). Ranking the fighters still in the fight by that countdown gives who
+   acts next: 1 = acting now or next. Speed-up and slow statuses change how fast a countdown runs and are not allowed for, so a
+   fighter under one of them may act a place earlier or later than shown. Returns slot -> rank, or null when it cannot be read. */
+function turnRanks(slots){if(!CFG.turns)return null;var t=rd(A.BTIME,22),rdy=rd(A.BGONE,11),act=u8(A.BTURN);if(!t||!rdy)return null;var l=[],any=false;
+ slots.forEach(function(s){if(rdy[s]===0xFF)return;var v=le16(t,s*2);if(v||rdy[s]===1)any=true;l.push({s:s,v:s===act&&rdy[s]===1?-1:rdy[s]===1?0:v})});
+ if(!any||l.length<2)return null;l.sort(function(a,b){return a.v-b.v||a.s-b.s});var o={};l.forEach(function(e,i){o[e.s]=i+1});return o}
+/* The turn timeline, a strip along the bottom of the battle screen (above the rewards line): every fighter still in the fight,
+   left to right in the order they act next (turnRanks), drawn with its battle sprite. Enemies use their bank sprite (ENEMIES p);
+   the party use the idle frame of their own battle sprite, img/pb/<id>.png (disc files 2988-2998, sizes in PB). The first cell is
+   the fighter acting now or next; the order is read from the position alone. Enemies carry a number (enemyId), the same one
+   shown in front of that enemy's HP bar, which tells apart enemies that look alike; the party carry none. Tap a cell: enemy details, or that member's deathblows. tb = sprite height (see battleView).
+   The cells narrow to fit; when they get too narrow the sprites keep a width of 16 and overlap, earlier ones in front. */
+var PB=[[31,47],[23,51],[25,54],[23,55],[23,49],[40,64],[23,39],[26,33],[22,41],[30,55],[25,54]];
+/* the screen's size in game pixels (rem): [width, height] */
+function remSize(){var u=parseFloat(document.documentElement.style.fontSize)||1;return[innerWidth/u,innerHeight/u]}
+function timeline(rk,names,enames,tb){if(!rk)return '';var l=Object.keys(rk).map(Number).sort(function(a,b){return rk[a]-rk[b]}),n=l.length;
+ var W=remSize()[0]-20,lab=W-32>=n*26,cw=Math.max(12,Math.min(44,Math.floor((lab?W-32:W)/n))),h=lab?T('NEXT','c').replace('class="t ','class="t tl '):'';
+ l.forEach(function(s,i){var im='',js,num=s<3?'':String(enemyId[s]||''),sw=Math.max(16,cw-(num?8*num.length+1:0)-3);
+  if(s<3){var id=u8(A.BPID+s);if(id==null||id>10)return;var k=Math.min(1,sw/PB[id][0],tb/PB[id][1]);
+   im='<img src="img/pb/'+id+'.png" style="width:'+Math.max(1,Math.round(PB[id][0]*k))+'rem;height:'+Math.max(1,Math.round(PB[id][1]*k))+'rem">';js='dbSel='+s+';last={};render()'}
+  else{var pc=names[s-3].p;if(pc)im=sprImg(pc,sw,tb);js='showEnemy('+s+',\''+enames[s]+'\')'}
+  h+='<div class="tc'+(i?'':' now')+'" style="width:'+cw+'rem;height:'+tb+'rem;z-index:'+(n-i)+'" onclick="'+js+'">'+(num?'<div class="row">'+T(num,'c')+'</div>':'')+'<span class="ts">'+im+'</span></div>'});
+ return win(h,'','id="tline"')}
+/* the enemy's number in front of its HP bar: the same number stands beside its sprite in the timeline (shown only with the timeline) */
+function idTag(r,s){return r&&enemyId[s]?T(String(enemyId[s]),'c')+'<span style="width:3rem;flex:none"></span>':''}
+/* the battle screen: enemies with HP bars, the party of three, the acting member's deathblow list, and the turn timeline along the bottom */
+/* Guests who stand in an enemy slot but fight on the party's side (Margie in the castle fights): left off the enemy list. */
+var ALLY={Margie:1};
+/* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
+   (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
+function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['g55_0',40,30.5]}}
+function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),anyLive=false,s;var ptyIds=[];for(s=0;s<3;s++){var pq=u8(A.BPID+s);if(pq!=null&&pq<=10)ptyIds.push(pq)}
+ for(s=3;s<11;s++)if(live&&live[s])anyLive=true;
+ for(s=3;s<11;s++){var b=A.BSLOT+s*BREC,hp=u16(b+0x4C),mhp=u16(b+0x4E),ghp=u32(b+REC+0x60),gm=u32(b+REC+0x64);if(hp==null){fp.push(null);continue}
+  fp.push({m:mhp,g:gm,x:u32(b+0x14C)||0,gd:u16(b+0x156)||0,d:hx(rd(b+0x150,6)),st:hx(rd(b+0x58,8)),on:!anyLive||!!live[s]});if(gm>0){hp=ghp;mhp=gm}all.push({s:s,hp:hp,mhp:mhp,gear:gm>0,st:u16(b+0x7C),rm:u8(A.BGONE+s)})}
+ var names=enemyNames(fp);
+ /* only slots the game marks as in the fight; if that marker reads empty for every slot, fall back to anything with HP */
+ all.forEach(function(e){if(!e.mhp)return;if(anyLive&&!live[e.s])return;var nm=names[e.s-3];if(nm.hide||ALLY[nm.n])return;fixFoe(nm,e,ptyIds);e.name=nm.n||('Enemy '+(e.s-2));
+  /* full HP = the enemy's starting HP: from its bank record when known, and never less than the most HP seen on it this fight */
+  var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
+ var tx=0,tg=0;ens.forEach(function(e){var q=reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
+ /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
+ var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
+ if(ens.some(function(e){return !enemyId[e.s]})){enemyId={};ens.forEach(function(e,i){enemyId[e.s]=i+1})}   /* a slot without a number = a new line-up (slots left over from the last fight can show for a moment while a battle loads): number the list afresh, 1 at the top */
+ var enm={};ens.forEach(function(e){enm[e.s]=e.name.replace(/[^A-Za-z0-9 \-]/g,'');if(!e.ko)inFight.push(e.s)});var rk=turnRanks(inFight);
+ /* room for the enemy cards = screen height less the top bar, bottom bar and window frames (71), less the timeline when shown.
+    The timeline's sprites are 22 high on a 240-high screen and up to 30 where there is more height. With eight enemies on a
+    240-high screen the cards drop to 16 and their rows close up (tight). */
+ var n=ens.length,RH=remSize()[1],tb=Math.max(22,Math.min(30,Math.floor(RH-218))),room=RH-71-(rk?tb+17:0),ch=Math.min(38,Math.floor((room-(n-1))/(n||1))),tight=false;
+ if(ch<18){ch=Math.max(16,Math.min(18,Math.floor(room/n)));tight=true}
+ ens.forEach(function(e){var pc=names[e.s-3].p,im='',etag=e.ko?'':statusTag(e.s);   /* with a tag the HP number is not padded, so the bar keeps some width */
+  if(pc)im=sprImg(pc,28,ch-1);
+  en+='<div class="ec'+(e.ko?' dim':'')+'" style="height:'+ch+'rem" onclick="showEnemy('+e.s+',\''+enm[e.s]+'\')"><span class="es">'+im+'</span><div class="col">'
+   +'<div class="row">'+T(e.name,'r')+'</div><div class="row">'+idTag(rk,e.s)+bar('en',e.hp,e.mhp,'f')+etag+T(etag?String(e.hp):pad(e.hp,5),hpCol(e.hp,e.mhp))+'</div></div></div>'});
+ battleTot=ens.length?[tx,tg]:null;
+ var left=win(en||T('NO ENEMY DATA','g'),tight?'tight':'','id="enemies"'),pr='',ids=[],act=actingSlot(),selGear=-1;
+ if(act>=0&&act!==lastAct)dbSel=act;lastAct=act;
+ for(s=0;s<3;s++){var pid=u8(A.BPID+s);if(pid!=null&&pid<=10&&rd(A.BSLOT+s*BREC,REC))ids[s]=pid}
+ if(ids[dbSel]==null)for(s=2;s>=0;s--)if(ids[s]!=null)dbSel=s;
+ for(s=0;s<3;s++){var id=u8(A.BPID+s);if(id==null||id>10)continue;b=A.BSLOT+s*BREC;var c=readChar(b),g=readGear(b+REC),ing=(u8(b+0x15A)&0x80)!==0;if(!c)continue;blogNote(s,cname(id),ing&&g?g.hp:c.hp,ing&&g?g.mhp:c.mhp,u16(b+0x7C),u8(A.BGONE+s));
+  var ko=ing?g&&g.hp===0:c.hp===0,sel=s===dbSel;if(sel)selGear=ing?c.gear:-1;
+  var r='<div class="pm'+(ko?' dim':'')+'" onclick="dbSel='+s+';last={};render()">';
+  var stg=ko?'':statusTag(s);
+  if(ing&&g){r+='<div class="row">'+T(padr(cname(id),6),sel?'w':'y')+'<span class="sp"></span>'+T('HP','c')+T(pad(g.hp,6),hpCol(g.hp,g.mhp))+'</div>';
+   r+='<div class="row">'+bar('hp',g.hp,g.mhp,'f')+stg+T('FU','c')+T(pad(g.fuel,6))+'</div>'}
+  else{r+='<div class="row">'+T(padr(cname(id),6),sel?'w':'y')+'<span class="sp"></span>'+T('HP','c')+T(pad(c.hp,4),hpCol(c.hp,c.mhp))+T('/','g')+T(pad(c.mhp,4))+'</div>';
+   r+='<div class="row">'+bar('hp',c.hp,c.mhp,'f')+stg+T('EP','c')+T(pad(c.ep,3))+T('/','g')+T(pad(c.mep,3))+'</div>'}
+  pr+=r+'</div>'}
+ var right=win(pr||T('NO PARTY DATA','g'),'','id="bparty"')+win(ids[dbSel]==null?'':selGear>=0?gdbList(selGear,ids[dbSel]):dbList(ids[dbSel]),'','id="dbl"');
+ return '<div class="bat"><div class="bl">'+left+'</div><div class="br">'+right+'</div></div>'+timeline(rk,names,enm,tb)}
+/* deathblow list on the battle screen. Every character uses the same button strings, in the order the deathblows are stored:
+   T = triangle (weak, 1 AP), S = square (strong, 2 AP), X = cross (fierce, 3 AP); a string's AP cost is the sum.
+   Learned ones show their cost. With SET > DEATHBLOWS > SHOW ALL the ones being learned are listed too, dimmed, with how far along
+   they are, and the locked ones with the level they need. Tap one for what it takes to learn (showMove).
+   The button strings can be switched off (SET > IN BATTLE > COMBO KEYS). */
+var COMBO=['TX','TTX','SX','TTTX','TSX','STX','XX','TTTTX','TTSX','TSTX','STTX','SSX','TXX','XTX'],dbSel=0,lastAct=-1;
+var BTN={T:'<svg class="bt" viewBox="0 0 6 8"><path d="M3 1.6L5.4 6.2H.6Z" fill="none" stroke="#5d9" stroke-width=".9"/></svg>',
+ S:'<svg class="bt" viewBox="0 0 6 8"><rect x=".9" y="1.9" width="4.2" height="4.2" fill="none" stroke="#e8a" stroke-width=".9"/></svg>',
+ X:'<svg class="bt" viewBox="0 0 6 8"><path d="M1 2L5 6M5 2L1 6" fill="none" stroke="#7af" stroke-width=".9"/></svg>'};
+/* a deathblow's button sequence as pictures, and the AP it costs */
+function combo(i){var c=COMBO[i]||'',o='',ap=0;for(var k=0;k<c.length;k++){o+=BTN[c.charAt(k)];ap+=c.charAt(k)==='T'?1:c.charAt(k)==='S'?2:3}return{h:'<span class="cb">'+o+'</span>',ap:ap}}
+/* slot of the fighter whose turn it is: 0x800C4922. The turn routine (0x80071BF8) takes the picked fighter (slot + 1 in the main
+   battle block +0x2D3), subtracts one and stores the 0-based slot here; 0-2 = party, 3-10 = enemies. (v1.11-1.16 read +0x2D3 as
+   slot + 1 during the turn, which is why the list stuck on the first member.) */
+function actingSlot(){var v=u8(A.BTURN);return v!=null&&v<=2?v:-1}
+/* in a gear the on-foot deathblows cannot be used; the list shows the gear's own instead. A gear deathblow is two
+   buttons: first the attack level to spend (triangle level 1, square level 2, cross level 3), then which of that level's three
+   moves (triangle, square, cross). Not read off the disc; the order was the other way round until v1.53, when Jack's game showed
+   Reppu (level 1, second move) as triangle, square.
+   Unlocked moves: u16 at the pilot's skill record +0x08, top bit first, entry = name-table index (3-11 the nine moves, 12-13 infinity);
+   the battle program tests 0x1C00 / 0x0380 / 0x0070 for "has a level 1 / 2 / 3 move" (0x800983D8). */
+function gdbGot(id,i){var mk=u16(A.SKILL+id*0x20+8);return mk!=null&&((mk>>(12-i))&1)===1}
+function gdbKeys(i){var B='TSX';return '<span class="cb">'+BTN[B.charAt((i/3)|0)]+BTN[B.charAt(i%3)]+'</span>'}
+function gdbList(gi,id){var t=window.GDBLOW&&GDBLOW[gi],h='<div class="row">'+T(gname(gi),'n')+'<span class="sp"></span>'+T('ATK LV','c')+'</div>',n=0;
+ for(var i=0;t&&i<t.length;i++){var g=gdbGot(id,i);if((!g&&!CFG.dball)||!t[i])continue;n++;   /* the moves this pilot has unlocked; with SHOW ALL the locked ones too, dimmed */
+  h+='<div class="row'+(g?'':' dim')+'" onclick="showGMove('+gi+','+id+','+i+')">'+T(t[i],g?'w':'g')+'<span class="sp"></span>'+(i<9?(CFG.seq?gdbKeys(i):'')+T(pad(((i/3)|0)+1,3),'c'):T('INF','y'))+'</div>'}
+ return n?h:h+'<div class="row">'+T('No gear deathblows.','g')+'</div>'}
+/* Pop-up for one gear deathblow. How they unlock, worked out from two save files (every pilot in both agrees): the first and second
+   move of attack level L open when the pilot learns on-foot deathblow number 2L-1 and 2L (so Fei's Raijin opens Raigeki, Senretsu
+   opens Reppu, Hagan opens Hazan...). The third move of each level and the two infinity moves follow some other rule that is not
+   known; nor is the rule for pilots with no deathblows on foot (Maria, Chu-Chu). */
+function showGMove(gi,id,i){var t=window.GDBLOW&&GDBLOW[gi];if(!t||!t[i])return;var g=gdbGot(id,i),lv=((i/3)|0)+1,sl=i%3,db=window.DBLOW&&DBLOW[id];
+ var h='<div class="row">'+T(t[i],'y')+'<span class="sp"></span>'+(i<9?gdbKeys(i)+T(' LV '+lv,'c'):T('INFINITY','y'))+'</div>';
+ h+='<div class="row">'+T(gname(gi),'w')+'<span class="sp"></span>'+(g?T('UNLOCKED','n'):T('LOCKED','r'))+'</div><div class="sep"></div>';
+ if(i<9)h+='<div class="row">'+T('Needs attack level '+lv+' in the fight.')+'</div>';
+ var src=i<9&&sl<2&&db?db.n[(lv-1)*2+sl]:null,rows=src?dbRows(id):null,dr=null;(rows||[]).forEach(function(r){if(r.n===src)dr=r});
+ h+='<div class="row">'+T('TO UNLOCK','c')+'</div>';
+ if(dr)h+='<div class="row">'+T(cname(id)+' learns '+src)+'<span class="sp"></span>'+T(dr.got?'DONE':dr.lock?'L'+dr.lv:Math.min(99,Math.floor(dr.have*100/dr.need))+'%',dr.got?'n':'y')+'</div>';
+ else h+='<div class="row">'+T(i<9?'Not known for this move.':'Not known for infinity moves.','g')+'</div>';
+ popup(h,200)}
+/* one entry per deathblow the character can ever have: i = position in the stored order, got = learned, lock = the character's
+   level is still below the level it needs (lv), need / have = attack points needed and earned so far (earned is capped per
+   attack type), q / pts = the same per attack type. What the lists show of this is set by SET > DEATHBLOWS: LEARNED = learned ones
+   only, SHOW ALL = also the ones being learned and the locked ones (dimmed). */
+function dbRows(id){var t=window.DBLOW&&DBLOW[id];if(!t)return null;var b=A.CHAR+id*REC,pts=[],out=[],i,mask=u16(A.SKILL+id*0x20+4)||0,lv=u8(b+0x62)||0;
+ for(i=0;i<7;i++)pts.push(u16(b+0x90+i*2)||0);
+ for(i=0;i<t.r.length;i++){var q=t.r[i],n=t.n[i];if(!q||!n||n==='null'||n.charAt(0)==='{')continue;var need=0,have=0;for(var k=0;k<7;k++){need+=q[k];have+=Math.min(q[k],pts[k])}if(!need)continue;
+  var got=(mask>>(15-i))&1;
+  out.push({i:i,n:n,got:got,need:need,have:have,lv:t.l?t.l[i]:0,lock:!got&&!!t.l&&t.l[i]>lv,q:q,pts:pts,clv:lv})}
+ return out}
+/* the deathblow list for a character on foot (name, button sequence when switched on, progress) */
+function dbList(id){var rows=dbRows(id),h='';if(rows)rows=rows.filter(function(d){return d.got||CFG.dball});if(!rows||!rows.length)return T('No deathblows.','g');
+ rows.forEach(function(d){var pc=Math.min(99,Math.floor(d.have*100/d.need)),cb=combo(d.i);
+  h+='<div class="row'+(d.got?'':d.lock?' dim':' dm')+'" onclick="showMove('+id+','+d.i+')">'+T(d.n,d.got?'w':'g')+'<span class="sp"></span>'+(CFG.seq?cb.h:'')+(d.got?T(pad(cb.ap,3),'c'):d.lock?T('L'+pad(d.lv,2),'g'):T(pad(pc,2)+'%','g'))+'</div>'});
+ return h}
+/* Pop-up for one deathblow on foot (tap it in the battle list): its buttons and AP, whether it is learned, and what learning it
+   takes - the character level and the attack points per attack type, each with how many are earned so far. The attack types are
+   the seven basic attacks in the game's order: weak (triangle) as the 1st to 4th hit of a turn, strong (square) as the 1st or 2nd,
+   fierce (cross). */
+var ATYPE=[['T','1ST'],['T','2ND'],['T','3RD'],['T','4TH'],['S','1ST'],['S','2ND'],['X','']];
+function showMove(id,i){var rows=dbRows(id),d=null;(rows||[]).forEach(function(r){if(r.i===i)d=r});if(!d)return;var cb=combo(i),pc=Math.min(99,Math.floor(d.have*100/d.need));
+ var h='<div class="row">'+T(d.n,'y')+'<span class="sp"></span>'+cb.h+T(' AP '+cb.ap,'c')+'</div>';
+ h+='<div class="row">'+T(cname(id),'w')+'<span class="sp"></span>'+(d.got?T('LEARNED','n'):d.lock?T('LOCKED','r'):T('LEARNING '+pc+'%','y'))+'</div><div class="sep"></div>';
+ h+='<div class="row">'+T('TO LEARN','c')+'</div>';
+ if(d.lv&&d.lv<255)h+='<div class="row">'+T('LEVEL '+d.lv)+'<span class="sp"></span>'+T('NOW '+d.clv,d.got||d.clv>=d.lv?'n':'r')+'</div>';
+ for(var k=0;k<7;k++){if(!d.q[k])continue;var hv=d.got?d.q[k]:Math.min(d.q[k],d.pts[k]);
+  h+='<div class="row"><span class="cb">'+BTN[ATYPE[k][0]]+'</span>'+T(' '+(ATYPE[k][1]||'HIT'))+'<span class="sp"></span>'+bar('ep',hv,d.q[k],'s')+T(pad(hv,3),hv>=d.q[k]?'n':'w')+T('/','g')+T(pad(d.q[k],3))+'</div>'}
+ h+='<div class="row">'+T('Points come from using each attack.','g')+'</div>';
+ popup(h,200)}
+/* ================= area names and mini map =================
+   Two layers: an overhead render of the room's own 3D geometry (plan/<field>.webp, 512 x 512, textured since v1.19, placed by PLAN[field] = [centre x, centre z, width in world units]; since v1.50 trimmed to the walkable area plus a margin),
+   and over it the walkable area from the game's walkmesh (maps/<field>.js), both loaded when the room is entered.
+   File: u16 vertex count, u16 triangle count, vertices (s16 x, s16 z), triangles (3 x u16 index, u8 flags).
+   flags: bits 0-1 tone (0 plain floor, 1 other surface, 2 blocked), bits 2-4 mark edges that lie on the outline of the walkable area.
+   With MAP VIEW = CAMERA the plan is turned so that up on the map is the way the game camera looks. Tap the map to switch between whole room and close-up. */
+/* the story chapter for the top bar: script variable 0 (saved copy, readable in every program) is the story step, and CHAPTERS lists
+   the step each chapter title starts at - the same title the game puts on a save */
+function chapter(){var v=u16(A.STORY),c=window.CHAPTERS,n=null;if(v==null||!c||v>353)return null;for(var i=0;i<c.length&&c[i][0]<=v;i++)n=c[i][1];return n}
+/* the area a room number belongs to ({n: name, s: short name}), or null */
+function areaOf(f){if(f==null)return null;for(var i=0;i<AREAS.length;i++){var r=AREAS[i];if(f>=r[0]&&f<=r[1])return{n:r[2],s:r[3]||r[2]}}return null}
+window.MAPDATA={};var mapReq={},mapParsed={},planCache={},planOrder=[],mapZoom=LS.get('mapzoom','0')==='1',mapLast=null,heading=null;
+/* the room's overhead picture, loading it the first time (null until ready, or when MAP ART is off) */
+function planLoad(f,lv){if(!CFG.plan||!window.PLAN||!PLAN[f]||!mapsReady())return null;var key=lv==null?String(f):f+'_'+lv,im=planCache[key];
+ if(!im){im=new Image();im.onload=function(){last={};render()};im.onerror=function(){im._bad=1;last={};render()};im.src=asset('plan/'+key+'.'+picExt());planCache[key]=im;planOrder.push(key);
+  while(planOrder.length>8){var pf=planOrder.shift();planCache[pf].src='';delete planCache[pf]}}
+ if(im._bad&&lv!=null)return planLoad(f,null);   /* maps built before v1.77 have no level pictures */
+ return (im.complete&&im.naturalWidth)?im:null}
+/* rooms on more than one level (LEVELS, levels.js): the lower level has its own picture with the floors above it taken away. The map
+   shows it while the party stands on that walk layer; the LV button beside the map picks one by hand (tap again to go back to AUTO). */
+var lvlPick={};
+function mapLevel(f){var L=window.LEVELS&&LEVELS[f];if(!L)return null;var p=lvlPick[f];if(p!=null)return p<0?null:p;var pl=playerLayer();return L.indexOf(pl)>=0?pl:null}
+function lvlTap(f){var L=window.LEVELS&&LEVELS[f];if(!L)return;var seq=[null,-1].concat(L),i=0;for(var k=0;k<seq.length;k++)if(seq[k]===(lvlPick[f]==null?null:lvlPick[f]))i=k;
+ var nx=seq[(i+1)%seq.length];if(nx==null)delete lvlPick[f];else lvlPick[f]=nx;last={};render();drawMap()}
+function lvlName(f,lv){var L=LEVELS[f];return lv==null?'TOP':L.length>1?'LOW'+(L.indexOf(lv)+1):'LOW'}
+
+/* the room's walk-mesh outline, loaded from maps/<room>.js the first time (undefined while loading, null if there is none) */
+function mapLoad(f){if(!(f>=0&&f<730)||!mapsReady())return null;if(f in mapParsed)return mapParsed[f];if(MAPDATA[f]===undefined){if(!mapReq[f]){mapReq[f]=1;var sc=document.createElement('script');sc.src=asset('maps/'+f+'.js');
+   sc.onload=function(){sc.remove();last={};render()};sc.onerror=function(){sc.remove();MAPDATA[f]=null;render()};document.head.appendChild(sc)}return undefined}
+ if(!MAPDATA[f])return mapParsed[f]=null;
+ var bin=atob(MAPDATA[f]),n=bin.length,by=new Uint8Array(n);for(var i=0;i<n;i++)by[i]=bin.charCodeAt(i);var dv=new DataView(by.buffer),nv=dv.getUint16(0,true),nt=dv.getUint16(2,true),o=4;
+ var vx=new Int16Array(nv),vz=new Int16Array(nv),tr=new Uint16Array(nt*3),fl=new Uint8Array(nt);
+ for(i=0;i<nv;i++,o+=4){vx[i]=dv.getInt16(o,true);vz[i]=dv.getInt16(o+2,true)}
+ for(i=0;i<nt;i++,o+=7){tr[i*3]=dv.getUint16(o,true);tr[i*3+1]=dv.getUint16(o+2,true);tr[i*3+2]=dv.getUint16(o+4,true);fl[i]=by[o+6]}
+ MAPDATA[f]=1;   /* parsed: the packed text is no longer needed */
+ return mapParsed[f]={nv:nv,nt:nt,vx:vx,vz:vz,tr:tr,fl:fl,sx:new Float32Array(nv),sy:new Float32Array(nv)}}
+/* heading = the way the player last moved */
+function track(){var sig=u32(A.SIG);if(sig!==4){mapLast=null;if(sig===5)lastField=-1;return}   /* a fight or menu keeps the room's way in; the world map ends it */
+ var f=u16(A.FIELD),p=playerPos(),pd=playerData();if(f==null||!p)return;f&=0x7FF;
+ /* a room change counts only once the new number has been read 3 times running, and a room the party left for under 3 s
+    without moving (a number read in passing around a fight, or a fade) gives the old room its way in back */
+ if(f===lastField)pendF=-1;
+ if(f!==lastField){if(f!==pendF){pendF=f;pendN=1;return}if(++pendN<3)return;
+  var now=Date.now(),blip=entry&&entry.d==null&&now-entry.t<3000&&prevEntry&&prevEntry.f===f;
+  lastField=f;heading=null;mapLast=null;
+  if(blip){entry=prevEntry;prevEntry=null}
+  else{prevEntry=entry;entry={f:f,x:null,z:null,d:null,t:now,pd:null,ok:0,bx:null,bz:null}}
+  if(!visited[f]){visited[f]=1;try{LS.set('visited',Object.keys(visited).join(','))}catch(e){}}}
+ /* the way in. After a room change the pointers to the player's block take a few reads to settle and the game may still be
+    placing the party (the party can still be walking in the old room as the number changes), so a spot is only trusted once
+    the same player block has been read three times running and either the game has placed the party (a jump of 120 units or
+    more) or 1 s has passed; then the first spot is kept and the arrow points the way the party first walks from it (4 to 120 units). A jump
+    over 120 units before that (the game placing the party) moves the kept spot. */
+ if(entry&&entry.f===f&&!entry.d){
+  if(pd!==entry.pd){entry.pd=pd;entry.ok=0;entry.bx=null}else entry.ok++;
+  var jump=mapLast&&mapLast.f===f&&((p.x-mapLast.x)*(p.x-mapLast.x)+(p.z-mapLast.z)*(p.z-mapLast.z))>=120*120;if(jump)entry.j=1;
+  if(entry.ok>=2&&(entry.j||Date.now()-entry.t>=1000)){
+   if(entry.bx==null){entry.bx=p.x;entry.bz=p.z}
+   else{var ex=p.x-entry.bx,ez=p.z-entry.bz,ed=ex*ex+ez*ez;
+    if(ed>=120*120){entry.bx=p.x;entry.bz=p.z}
+    else if(ed>=16){entry.x=entry.bx;entry.z=entry.bz;entry.d=[ex,ez]}}}}
+ if(mapLast&&mapLast.f===f){var dx=p.x-mapLast.x,dz=p.z-mapLast.z,d=dx*dx+dz*dz;if(d>0&&d<400*400)heading=[dx,dz]}
+ layerMark(f,playerLayer());
+ mapLast={f:f,x:p.x,z:p.z}}
+/* Exits and the way in. EXITS (exits.js, from the room scripts) gives each exit's place and destination room. entry = the spot the
+   party first walked from in this room and the direction it went (the red arrow, as on a Zelda map); nothing until it moves. visited = rooms
+   the app has seen the party in (kept in localStorage); a room is also counted as known when it lies in an area the story has
+   already reached (HINTS steps up to the current one), so early areas are not all "???" on a fresh install. An exit's label (on
+   tap) is the destination's name from ROOMS (rooms.js) when one has been written, else "<area short name> <room number>" for a
+   known room, "World Map" for -1, or "???" for a place not yet reached. */
+var entry=null,prevEntry=null,pendF=-1,pendN=0,lastField=-1,visited={},exitTap=null;try{(LS.get('visited','')||'').split(',').forEach(function(v){if(v)visited[+v]=1})}catch(e){}
+function roomKnown(f){if(visited[f])return true;var ar=areaOf(f);if(!ar||!window.HINTS)return false;var st=u16(A.STORY);if(st==null)return false;
+ for(var k in HINTS){if(+k>st)continue;var L=HINTS[k];for(var i=0;i<L.length;i++){var a2=areaOf(L[i][0]);if(a2&&a2.n===ar.n)return true}}return false}
+function exitLabel(d){if(d===-1)return{t:'World Map',k:1};if(window.ROOMS&&ROOMS[d])return{t:ROOMS[d],k:1};if(!roomKnown(d))return{t:'???',k:0};var ar=areaOf(d);return{t:(ar?ar.s:'Room')+' '+d,k:1}}
+function roomExits(f){if(!CFG.exits||!window.EXITS||!EXITS[f])return[];var out=[];   /* exits at one spot (within 40 units) share one door and a joined label */
+ EXITS[f].forEach(function(e){if(e[0]==null)return;for(var i=0;i<out.length;i++)if(Math.abs(out[i][0]-e[0])<40&&Math.abs(out[i][1]-e[1])<40){if(out[i][2].indexOf(e[2])<0)out[i][2].push(e[2]);return}out.push([e[0],e[1],[e[2]]])});return out}
+function exitText(ds){var ts=[],k=0;ds.forEach(function(d){var l=exitLabel(d);if(ts.indexOf(l.t)<0)ts.push(l.t);k=k||l.k});return{t:ts.join(' / '),k:k}}
+/* which way the camera looks in the room, as a unit vector (fixed "north" when the map does not turn) */
+function camForward(){if(!CFG.maprot)return[0,1];var ex=s32(A.CAMEYE),ez=s32(A.CAMEYE+8),ax=s32(A.CAMAT),az=s32(A.CAMAT+8);if(ex==null||ez==null||ax==null||az==null)return[0,1];
+ var dx=ax-ex,dz=az-ez,l=Math.sqrt(dx*dx+dz*dz);return l>0?[dx/l,dz/l]:[0,1]}
+/* Position samples arrive in steps; glide() slides the drawn position from the last one shown to the newest over about one
+   sample interval, so the marker (and the zoomed map under it) moves evenly. A big jump or a new room snaps instead. */
+var SM={},rafOn=false,camWas=[0,1];
+/* where a glide has got to at time now */
+function glideAt(s,now){var t=s.dur?Math.min(1,(now-s.t0)/s.dur):1;return{x:s.from.x+(s.to.x-s.from.x)*t,z:s.from.z+(s.to.z-s.from.z)*t,moving:t<1}}
+/* smooth the marker between polls: aim at the new position over about one poll gap, jump when the move is too big */
+function glide(k,p,room,jump){var now=Date.now(),s=SM[k];if(!p){SM[k]=null;return null}
+ if(!s||s.room!==room||Math.abs(p.x-s.to.x)+Math.abs(p.z-s.to.z)>jump){SM[k]={room:room,from:p,to:p,t0:now,dur:0,last:now};moveAt=now;return{x:p.x,z:p.z,moving:false}}
+ if(p.x!==s.to.x||p.z!==s.to.z){var cur=glideAt(s,now);s.dur=Math.max(40,Math.min(120,now-s.last));s.from=cur;s.to=p;s.t0=now;s.last=now;moveAt=now}
+ var r=glideAt(s,now);if(r.moving&&!rafOn){rafOn=true;requestAnimationFrame(function(){rafOn=false;drawMap()})}return r}
+/* skip the redraw when nothing that goes into the picture has changed since the last one on this canvas */
+function sameDraw(cv,sig){if(cv._sig===sig)return true;cv._sig=sig;return false}
+/* the player on either map: a white dot with a ring round it so it reads on busy floors, and a red arrow for the way last moved
+   (dir = screen-space direction, any length, or null) */
+function marker(g,X,Y,dir,dpr){var R=3*dpr,l=dir?Math.sqrt(dir[0]*dir[0]+dir[1]*dir[1]):0;
+ if(l>0){var hu=dir[0]/l,hv=dir[1]/l;g.beginPath();g.moveTo(X+hu*R*3.2,Y+hv*R*3.2);g.lineTo(X-hv*R*1.3,Y+hu*R*1.3);g.lineTo(X+hv*R*1.3,Y-hu*R*1.3);g.closePath();g.fillStyle='#ff6a5a';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr;g.stroke()}
+ g.beginPath();g.arc(X,Y,R*2.2,0,6.2832);g.strokeStyle='rgba(16,8,8,.7)';g.lineWidth=dpr*2.5;g.stroke();g.strokeStyle='rgba(255,255,255,.75)';g.lineWidth=dpr;g.stroke();
+ g.beginPath();g.arc(X,Y,R,0,6.2832);g.fillStyle='#ffffff';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr;g.stroke()}
+/* ---- world map ----
+   The picture is a top-down render of the game's own terrain grid (world/a.png; world/b.png for the changed late-game world):
+   256 x 256 tiles of 128 world units, 4 pixels each, x to the right and z down, so a position maps straight onto it:
+   pixel = (X >> 12) / 32. The terrain is kept in 2048-unit chunks; the chunk under the player (pointer table at 0x8009C184)
+   is compared with checksums of both worlds (WSIG) and the picture follows whichever one matches. Not yet checked on the handheld. */
+var wSel='a',wImg={},wHead=null,wPrev=null;
+/* the party on the world map in map units, or null. WPOS is the copy every travel mode's movement routine refreshes each frame from the
+   moving actor (0x8009D55C: x, height, z; 20.12 fixed point). WSTART (0x8009C5AC) is only where the party is put when the world map
+   starts - v1.35 to v1.45 read that one, so the marker never moved (seen on the handheld). It is the fallback until WPOS has a value. */
+function worldPos(){var a=[A.WPOS,A.WSTART];for(var i=0;i<2;i++){var x=s32(a[i]),z=s32(a[i]+8);if(x==null||z==null)continue;x>>=12;z>>=12;if(x<0||z<0||x>32767||z>32767||(!x&&!z))continue;return{x:x,z:z}}return null}
+/* which of the 16 x 16 terrain chunks a world position is in */
+function wChunk(p){return(p.z>>11)*16+(p.x>>11)}
+/* work out which world map picture is in use from a fingerprint of the terrain chunk under the party */
+function worldDetect(p){if(!window.WSIG)return;var ci=wChunk(p),q=ptr(u32(A.WCHUNK+ci*4));if(q==null)return;var b=rd(q,1296);if(!b)return;var c=0;for(var i=0;i<1296;i++)c=(Math.imul(c,31)+b[i])&0xFFFFFF;
+ var ia=WSIG.a[ci].indexOf(c)>=0,ib=WSIG.b[ci].indexOf(c)>=0;if(ia&&!ib)wSel='a';else if(ib&&!ia)wSel='b'}
+/* a world map picture, loading it the first time (null until ready) */
+function worldImg(k){var im=wImg[k];if(!im){im=wImg[k]=new Image();im.onload=function(){im.ok=1;drawMap()};im.src='world/'+k+'.png'}return im.ok?im:null}
+/* Places that can be entered from the world map. The world map program keeps them in a table loaded with the current world
+   (pointer chain 0x8009BD00 -> list of tables -> table): 16-byte records of s16 x, z, width, depth (same units as the marker
+   position), room, entry point, place number, type, ended by room -1. Read live, so only places that exist at this point of
+   the story are shown. Names go by place number: the same number a room passes to the world map command (script command 56)
+   when it lets the party out, which is how each number was tied to a place. */
+var WPLACE={1:'Lahan',2:'Mountain Path',3:"Citan's House",4:'Blackmoon Forest',5:'Blackmoon Forest',6:'Dazil',7:'Dazil',8:'Aveh Desert',9:'Stalactite Cave',10:'Nisan',11:'Bledavik',12:'Nortune',13:'Goliath Factory',
+ 15:'Orphanage',16:'Ethos HQ',17:'Ethos Dig Site',18:'Babel Tower',19:'Lighthouse',20:"Taura's House",23:'Snow Hideout',26:'Gate Generator',27:'Gate Generator',31:'Merkava',32:'Anima Relic 1',33:'Anima Relic 2',36:'Duneman Isle',38:'Fort Jasper'};
+/* The list at WLOC has one table per way of travelling: 0 on foot, 1 the larger vehicle (the same places), 2 the ship (adds the places only a ship reaches), 3 linked exits.
+   Tables 0 and 2 are merged. Record type 4 is a wide trigger strip, not a place, and is left out. */
+function worldPlaces(){if(!CFG.places)return null;var l=ptr(u32(A.WLOC));if(l==null)return null;var o=[],seen={};
+ for(var k=0;k<3;k+=2){var t=ptr(u32(l+k*4));if(t==null){if(!k)return null;continue}
+  for(var i=0;i<40;i++){var b=rd(t+i*16,16);if(!b)break;var x=le16(b,0),z=le16(b,2),w=le16(b,4),h=le16(b,6),room=le16(b,8),id=le16(b,12),ty=le16(b,14);
+   if(room===0xFFFF)break;if(x>32767||z>32767||!w||!h||w>6000||h>6000||room>=730||ty>8){if(!k)return null;break}   /* not a table: show nothing rather than rubbish */
+   if(ty===4||seen[id+'/'+x+'/'+z])continue;seen[id+'/'+x+'/'+z]=1;o.push({x:x+w/2,z:z+h/2,id:id,n:WPLACE[id]||''})}}
+ return o.length?o:null}
+var DIRS=['E','SE','S','SW','W','NW','N','NE'];
+/* the side list: named places, nearest first, with the compass direction from the party (north = up on the map) */
+function worldList(){var pl=worldPlaces(),p=worldPos();if(!pl)return null;var seen={},o=[];
+ pl.forEach(function(q){if(!q.n)return;var dx=q.x-(p?p.x:0),dz=q.z-(p?p.z:0),d=Math.sqrt(dx*dx+dz*dz);if(seen[q.n]!=null){if(d<o[seen[q.n]].d){o[seen[q.n]].d=d;o[seen[q.n]].dx=dx;o[seen[q.n]].dz=dz}return}seen[q.n]=o.length;o.push({n:q.n,d:d,dx:dx,dz:dz})});
+ o.sort(function(a,b){return a.d-b.d});o.forEach(function(e){e.dir=!p?'':e.d<160?'HERE':DIRS[Math.round(Math.atan2(e.dz,e.dx)/(Math.PI/4)+8)%8]});return o.length?o:null}
+/* draw the world map, the place markers and the party marker (heading taken from the last movement) */
+function drawWorld(cv,g,W,H,dpr){var p=worldPos();if(p){worldDetect(p);if(wPrev&&(Math.abs(p.x-wPrev.x)>24||Math.abs(p.z-wPrev.z)>24)){var dx=p.x-wPrev.x,dz=p.z-wPrev.z,l=Math.sqrt(dx*dx+dz*dz);if(l<4000)wHead=[dx/l,dz/l];wPrev=p}else if(!wPrev)wPrev=p}
+ var im=worldImg(wSel);if(!im){g.clearRect(0,0,W,H);cv._sig=null;mapMsg('LOADING');return}mapMsg(p?'':'NO POSITION YET');
+ p=glide('w',p,0,3000);
+ var pls=worldPlaces();
+ if(sameDraw(cv,['w',W,H,wSel,mapZoom,p&&p.x,p&&p.z,wHead,pls?pls.map(function(q){return q.x+':'+q.z}).join('/'):''].join()))return;g.clearRect(0,0,W,H);
+ var fitS=Math.min(W,H)/1024,sc=fitS,cx=512,cy=512;
+ if(mapZoom&&p){sc=fitS*4;cx=Math.max(W/2/sc,Math.min(1024-W/2/sc,p.x/32));cy=Math.max(H/2/sc,Math.min(1024-H/2/sc,p.z/32))}
+ g.imageSmoothingEnabled=sc<1.5;g.drawImage(im,W/2-cx*sc,H/2-cy*sc,1024*sc,1024*sc);
+ if(pls)pls.forEach(function(q){var ex=W/2+(q.x/32-cx)*sc,ey=H/2+(q.z/32-cy)*sc,r=3.4*dpr;
+   g.beginPath();g.moveTo(ex,ey-r);g.lineTo(ex+r,ey);g.lineTo(ex,ey+r);g.lineTo(ex-r,ey);g.closePath();g.fillStyle='#7fd8ff';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr;g.stroke()});
+ if(!p)return;var X=W/2+(p.x/32-cx)*sc,Y=H/2+(p.z/32-cy)*sc;
+ marker(g,X,Y,wHead,dpr)}
+var MAPCV='<div style="flex:1;min-height:0;position:relative"><div id="map3dbox" style="position:absolute;left:0;top:0;width:100%;height:100%;display:none"></div><canvas id="mapcv" onclick="mapTap(event)" style="position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none"></canvas></div><div id="mapmsg"></div>';
+/* 3D toggle (map3d.js): the room drawn in 3D from the player's own disc, the same icons on top. Needs the disc image picked once. */
+var map3on=CFG.x3d&&LS.get('map3d','0')==='1',map3eye=CFG.x3d&&CFG.xeye&&LS.get('map3eye','0')==='1';
+function toggleEye(ev){if(ev)ev.stopPropagation();map3eye=!map3eye;LS.set('map3eye',map3eye?'1':'0');if(window.M3)M3.recentre();last={};render();drawMap()}
+function toggle3d(ev){if(ev)ev.stopPropagation();if(map3on){map3on=false;LS.set('map3d','0');last={};render();drawMap();return}
+ if(!window.M3||!window.THREE){popup('<div class="row">'+T('3D view is not available here.','r')+'</div>',200);return}
+ if(!M3.can()){if(!HOST||!HOST.discPick){popup('<div class="row">'+T('3D view needs the app (Android or Windows).','r')+'</div>',200);return}
+  popup('<div class="row">'+T('3D VIEW','y')+'</div><div class="row">'+T('It reads each room from your disc 1 image.','w')+'</div><div class="row" style="height:14rem">'+chip('PICK DISC IMAGE',true,'event.stopPropagation();pick3d()')+'</div>',200);return}
+ map3on=true;LS.set('map3d','1');last={};render();drawMap()}
+function pick3d(){window.onDiscPicked=function(n){if(n){closePop();map3on=true;LS.set('map3d','1');M3.reset();last={};render();drawMap()}};HOST.discPick()}
+/* MAP tab: the frame around the map, the side buttons and whichever side list is open (world map first, then rooms) */
+function mapView(){if(u32(A.SIG)===5){var wl=worldList(),wb='',wp='';
+  if(wl){wb='<div class="mside"><div class="mbtn'+(mapSide==='x'?' on':'')+'" onclick="sideTap(\'x\')"><span class="mic">'+PLACE_ICON+'</span>'+T(String(wl.length),'w')+'</div></div>';
+   if(mapSide==='x'){wp='<div class="row">'+T('PLACES','y')+'</div>';wl.forEach(function(e){wp+='<div class="row">'+T(e.n,'c')+'<span class="sp"></span>'+T('  '+e.dir,e.dir==='HERE'?'n':'g')+'</div>'});wp='<div class="mpanel" onclick="sideTap(mapSide)">'+wp+'</div>'}}
+  return win('<div class="row">'+T('World Map','y')+'<span class="sp"></span>'+T(mapZoom?'TAP FOR WHOLE MAP':'TAP TO ZOOM','g')+'</div><div class="mapbox">'+MAPCV+wb+wp+'</div>','card mapw')}
+ var f=u16(A.FIELD);f=f==null?null:f&0x7FF;var a=areaOf(f);
+ /* side buttons on the left edge of the map: treasure (the game's star, count taken / total) and enemies (the first enemy's own
+    battle sprite, number of kinds). Tapping one opens its list over the map; tapping it or the list again closes it. */
+ var tl=treList(f),en=CFG.enl&&encInfo()?roomEnemies():null,btn='',pan='';   /* enemies are listed only where random battles can happen */
+ if(tl){var got=0;tl.forEach(function(t){if(t.got)got++});btn+='<div class="mbtn'+(mapSide==='t'?' on':'')+'" onclick="sideTap(\'t\')"><span class="mic"><img class="sm" src="img/star.png" style="width:15rem;height:15rem"></span>'+T(got+'/'+tl.length,got===tl.length?'g':'w')+'</div>'}
+ if(en&&en.length){var pic=null;en.forEach(function(e){if(!pic&&e.p)pic=e.p});
+  btn+='<div class="mbtn'+(mapSide==='e'?' on':'')+'" onclick="sideTap(\'e\')"><span class="mic">'+(pic?sprImg(pic,22,15):ENEMY_ICON)+'</span>'+T(String(en.length),'w')+'</div>'}
+ var mk=CFG.places&&window.MARKS&&MARKS[f]||null;
+ if(f!=null&&window.LEVELS&&LEVELS[f]&&CFG.plan&&mapsReady()&&!map3on){var lvc=mapLevel(f);btn+='<div class="mbtn'+(lvlPick[f]!=null?' on':'')+'" onclick="lvlTap('+f+')"><span class="mic">'+T('LV','c')+'</span>'+T(lvlName(f,lvc),lvlPick[f]!=null?'y':'w')+'</div>'}   /* lit = picked by hand */
+ if(mk){btn+='<div class="mbtn'+(mapSide==='x'?' on':'')+'" onclick="sideTap(\'x\')"><span class="mic">'+MARK_ICON+'</span>'+T(String(mk.length),'w')+'</div>'}
+ if(mapSide==='x'&&mk){pan='<div class="row">'+T('PLACES','y')+'</div>';var mc={s:0,i:0,g:0};mk.forEach(function(e){mc[e[2]]++});[['s','Memory Cube'],['i','Item Shop'],['g','Gear Shop']].forEach(function(q){if(mc[q[0]])pan+='<div class="row"><span class="lg lg'+q[0]+'"></span>'+T(q[1],q[0]==='s'?'r':'o')+'<span class="sp"></span>'+T(mc[q[0]]>1?'    x'+mc[q[0]]:'  HERE','n')+'</div>'})}
+ if(mapSide==='t'&&tl){pan='<div class="row"><span class="lg lgt"></span>'+T('TREASURE','y')+'</div>';if(tl.some(function(t){return t.gift&&t.x!=null}))pan+='<div class="row"><span class="lg lgf"></span>'+T('GIFT SPOT','c')+'</div>';tl.forEach(function(t){var n=t.n.length>20?t.n.slice(0,19)+'.':t.n;pan+='<div class="row">'+T(n,t.got?'g':'w')+'<span class="sp"></span>'+T(t.got==null?'   ?':t.got?' GOT':t.gift?'GIFT':'HERE',t.got?'n':t.got==null?'g':t.gift?'c':'y')+'</div>'})}
+ if(mapSide==='e'&&en&&en.length){pan='<div class="row">'+T('ENEMIES','y')+'</div>';en.forEach(function(e){pan+='<div class="erow"><span class="mic">'+(e.p?sprImg(e.p,22,15):'')+'</span>'+T(e.n,'r')+'</div>'})}
+ var rn=f!=null&&window.ROOMS&&ROOMS[f],hd=a?a.n:'',pp=CFG.dev&&f!=null?playerPos():null;   /* DEV: x, z under the room number, for placing hint spots */
+ if(rn){var mx=Math.max(14,Math.floor((remSize()[0]-46)/7)-('ROOM '+f).length-2);hd=(a?a.s+': ':'')+rn;if(hd.length>mx)hd=rn;if(hd.length>mx)hd=hd.slice(0,mx-2)+'..'}   /* room name when one is known, shortened to fit beside the number */
+ return win('<div class="row">'+T(hd,'y')+'<span class="sp"></span>'+T(f==null?'':'ROOM '+f,'g')+'</div><div class="mapbox">'+MAPCV+(f!=null&&mapsReady()&&CFG.x3d?'<div class="m3btn'+(map3on?' on':'')+'" onclick="toggle3d(event)">'+T('3D',map3on?'y':'w')+'</div>'+(map3on&&CFG.xeye?'<div class="m3btn eye'+(map3eye?' on':'')+'" onclick="toggleEye(event)">'+T('EYE',map3eye?'y':'w')+'</div>':''):'')+(pp?'<div class="mcoord">'+T(pp.x+', '+pp.z,'g')+'</div>':'')+(btn?'<div class="mside">'+btn+'</div>':'')+(pan?'<div class="mpanel" onclick="sideTap(mapSide)">'+pan+'</div>':'')+'</div>','card mapw')}
+var mapSide='';   /* which side list is open: '', 't' (treasure), 'e' (enemies) or 'x' (places: memory cubes and shops in a room, the places list on the world map) */
+/* side-button icons: PLACE_ICON for the world map's places list, MARK_ICON for a room's memory cubes and shops.
+   (Room exits were shown here up to v1.38; the data is still made by fld/mkexits.py but no longer ships in the app.) */
+var PLACE_ICON='<svg viewBox="0 0 12 10" style="width:18rem;height:15rem"><path d="M2.5 9V1.5h5V9" fill="#16304a" stroke="#7fd8ff" stroke-width=".9"/><path d="M5 5.2h5.5M8.6 3.3l2 1.9-2 1.9" fill="none" stroke="#efefef" stroke-width="1"/></svg>';
+/* the settings gear in the top bar, the same drawing as the other companion apps */
+var GEAR_ICON='<svg viewBox="0 0 24 24" style="width:9rem;height:9rem;display:block" fill="none" stroke="#8c8c9c" stroke-width="2.2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>';
+var MARK_ICON='<svg viewBox="0 0 12 10" style="width:18rem;height:15rem"><rect x="2.5" y="1.5" width="7" height="7" fill="#ff6ad0" stroke="#efefef" stroke-width="1"/></svg>';
+var ENEMY_ICON='<svg viewBox="0 0 12 10" style="width:18rem;height:15rem"><path d="M2 5a4 4 0 1 1 8 0v2H8.6v1.6H7.4V7H4.6v1.6H3.4V7H2Z" fill="#ff6a5a" stroke="#100808" stroke-width=".8"/><rect x="3.6" y="3.6" width="1.8" height="1.8" fill="#100808"/><rect x="6.6" y="3.6" width="1.8" height="1.8" fill="#100808"/></svg>';   /* only when no enemy here has a picture */
+function sideTap(k){mapSide=mapSide===k?'':k;last={};render()}
+/* tap on the map: zoom in / out */
+function mapTap(ev){var cv=document.getElementById('mapcv');if(cv&&cv._ex&&ev){var r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1,x=(ev.clientX-r.left)*dpr,y=(ev.clientY-r.top)*dpr,best=-1,bd=1e9;
+  cv._ex.forEach(function(e,i){var d=Math.hypot(e[0]-x,e[1]-y);if(d<bd){bd=d;best=i}});
+  if(best>=0&&bd<=12*dpr){exitTap=exitTap===best?null:best;cv._sig=null;drawMap();return}if(exitTap!=null){exitTap=null;cv._sig=null;drawMap();return}}
+ if(drag3.moved){drag3.moved=false;return}   /* the end of a swipe on the 3D view */
+ if(map3on&&window.M3&&M3.ready){M3.recentre();var c=document.getElementById('mapcv');if(c)c._sig=null;drawMap();return}   /* 3D: tap = camera back behind the party */
+ mapZoom=!mapZoom;LS.set('mapzoom',mapZoom?'1':'0');last={};render();drawMap()}
+/* 3D view: one finger (or the mouse) turns and tilts the camera round the anchor, two fingers pinch, the wheel zooms */
+var drag3={pts:{},moved:false,d0:0};
+function on3d(e){return map3on&&window.M3&&M3.ready&&e.target&&e.target.id==='mapcv'}
+document.addEventListener('pointerdown',function(e){if(!on3d(e))return;drag3.pts[e.pointerId]=[e.clientX,e.clientY];drag3.moved=false;var k=Object.keys(drag3.pts);if(k.length===2){var a=drag3.pts[k[0]],b=drag3.pts[k[1]];drag3.d0=Math.hypot(a[0]-b[0],a[1]-b[1])}});
+document.addEventListener('pointermove',function(e){var q=drag3.pts[e.pointerId];if(!q||!map3on||!window.M3)return;var dx=e.clientX-q[0],dy=e.clientY-q[1],k=Object.keys(drag3.pts);
+ if(!drag3.moved&&Math.abs(dx)+Math.abs(dy)<6)return;drag3.moved=true;drag3.pts[e.pointerId]=[e.clientX,e.clientY];
+ if(k.length===2){var a=drag3.pts[k[0]],b=drag3.pts[k[1]],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(drag3.d0>0&&d>0)M3.zoom(drag3.d0/d);drag3.d0=d}else M3.orbit(dx,dy);
+ var c=document.getElementById('mapcv');if(c)c._sig=null;drawMap()});
+function up3(e){delete drag3.pts[e.pointerId]}
+document.addEventListener('pointerup',up3);document.addEventListener('pointercancel',up3);
+document.addEventListener('wheel',function(e){if(!on3d(e))return;e.preventDefault();M3.zoom(e.deltaY>0?1.12:1/1.12);var c=document.getElementById('mapcv');if(c)c._sig=null;drawMap()},{passive:false});
+/* the grey message over the map (LOADING, NO MAP FOR THIS ROOM...) */
+function mapMsg(t){var e=document.getElementById('mapmsg');if(e)e.innerHTML=t?'<div class="row">'+T(t,'g')+'</div>':''}
+/* draw the room map: picture, walkable outline, cube / shop / chest markers, the party marker */
+function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr=window.devicePixelRatio||1,W=Math.max(1,Math.round(cv.clientWidth*dpr)),H=Math.max(1,Math.round(cv.clientHeight*dpr));
+ if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;cv._sig=null}var g=cv.getContext('2d');
+ if(u32(A.SIG)===5){drawWorld(cv,g,W,H,dpr);return}wPrev=null;wHead=null;
+ function blank(t){g.clearRect(0,0,W,H);cv._sig=null;mapMsg(t)}
+ var f=u16(A.FIELD);if(f==null||u32(A.SIG)!==4){blank('');return}f&=0x7FF;var m=mapLoad(f);
+ if(m===undefined){blank('LOADING');return}if(!m){blank(mapsReady()?'NO MAP FOR THIS ROOM':'BUILD ROOM MAPS: SETTINGS');return}mapMsg('');
+ var p=glide('f',playerPos(),f,600),fw=camForward(),fx=fw[0],fz=fw[1],mir=CFG.mapmir?-1:1,i,lvNow=mapLevel(f),pim=planLoad(f,lvNow),pm=window.PLAN&&PLAN[f],trl=treList(f),hn=hintNext();
+ if(fx!==camWas[0]||fz!==camWas[1]){camWas=fw;moveAt=Date.now()}
+ var c3b=document.getElementById('map3dbox'),c3=c3b&&window.M3?M3.canvas(c3b):null,use3=map3on&&window.M3&&M3.can()&&!!c3,pr=use3?playerPos():null;if(use3)M3.load(f,c3);
+ var on3=use3&&M3.ready&&M3.room===f;if(c3b)c3b.style.display=on3?'block':'none';if(use3&&!on3&&M3.err)mapMsg('3D: '+M3.err);
+ if(sameDraw(cv,[W,H,f,p&&p.x,p&&p.z,fx,fz,mir,mapZoom,pim?1:0,lvNow,on3,on3?M3.key+'/'+map3eye+'/'+(pr&&pr.y):0,CFG.places?1:0,heading,trl?trl.map(function(t){return t.got?1:0}).join(''):'',hn?hn.step:'',exitTap,entry?entry.f+'/'+entry.x+'/'+entry.z+'/'+(entry.d?1:0):'',CFG.exits?1:0,layerSeen[f]|0].join()))return;g.clearRect(0,0,W,H);
+ function pu(x,z){return(x*fz-z*fx)*mir}function pv(x,z){return-(x*fx+z*fz)}
+ /* the view is fitted to the walkable triangles only: blocked ones (tone 2) are often huge filler far outside the room,
+    and the room pictures are trimmed to the same area (fld/trim_plan.py). m.wk marks the vertices that count. */
+ var lvis=1|(layerSeen[f]|0);if(m.lv!==lvis){m.lv=lvis;m.wk=null}
+ function shown(i){return lvis>>((m.fl[i]>>5)&3)&1}
+ if(!m.wk){m.wk=new Uint8Array(m.nv);var any=0;for(i=0;i<m.nt;i++)if((m.fl[i]&3)!==2&&shown(i)){m.wk[m.tr[i*3]]=m.wk[m.tr[i*3+1]]=m.wk[m.tr[i*3+2]]=1;any=1}if(!any)m.wk.fill(1)}
+ var x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(i=0;i<m.nv;i++){var u=pu(m.vx[i],m.vz[i]),v=pv(m.vx[i],m.vz[i]);m.sx[i]=u;m.sy[i]=v;if(!m.wk[i])continue;if(u<x0)x0=u;if(u>x1)x1=u;if(v<y0)y0=v;if(v>y1)y1=v}
+ if(x0>x1)return;var pad=14*dpr,sc=Math.min((W-2*pad)/Math.max(x1-x0,1),(H-2*pad)/Math.max(y1-y0,1)),cx=(x0+x1)/2,cy=(y0+y1)/2;
+ if(mapZoom&&p){sc*=3;cx=pu(p.x,p.z);cy=pv(p.x,p.z)}
+ for(i=0;i<m.nv;i++){m.sx[i]=W/2+(m.sx[i]-cx)*sc;m.sy[i]=H/2+(m.sy[i]-cy)*sc}
+ /* icon places: flat map, or with 3D on the room drawn in 3D and each spot put on the floor under it nearest the party's height */
+ var py3=pr?pr.y:0,PJ={};
+ if(on3){if(M3.fitKey!==f+'/'+lvis){M3.fitKey=f+'/'+lvis;var fxs=[],fzs=[];for(i=0;i<m.nv;i++)if(m.wk[i]){fxs.push(m.vx[i]);fzs.push(m.vz[i])}M3.fit(fxs,fzs)}
+  M3.follow(f);M3.firstPerson(map3eye);M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
+  /* the map's own outline, each edge on its triangle's walk layer; edges on a floor above the cut are left out */
+  var OY={};g.beginPath();if(!M3.isFP())for(i=0;i<m.nt;i++){var e3=(m.fl[i]>>2)&7;if(!e3||!shown(i))continue;var ly=(m.fl[i]>>5)&3;
+   for(var k3=0;k3<3;k3++)if(e3>>k3&1){var q3=m.tr[i*3+k3],r3=m.tr[i*3+(k3+1)%3],A3=OY[q3+'/'+ly]||(OY[q3+'/'+ly]=oyP(m.vx[q3],m.vz[q3],ly)),B3=OY[r3+'/'+ly]||(OY[r3+'/'+ly]=oyP(m.vx[r3],m.vz[r3],ly));
+    if(A3&&B3){g.moveTo(A3[0],A3[1]);g.lineTo(B3[0],B3[1])}}}
+  g.strokeStyle='rgba(239,224,176,.75)';g.lineWidth=Math.max(1,dpr);g.stroke()}
+ function oyP(x,z,l){var y=M3.yLayer(x,z,l,py3);if(M3.above(y,py3))return null;var q=M3.project(x,y,z,W,H);return q[2]?q:null}   /* null: above the cut or behind the camera */
+ function PP(x,z){if(!on3)return [W/2+(pu(x,z)-cx)*sc,H/2+(pv(x,z)-cy)*sc];var k=x+','+z;if(PJ[k])return PJ[k];var y=M3.yAt(x,z,py3);var q=M3.above(y,py3)?null:M3.project(x,y,z,W,H);return PJ[k]=q&&q[2]?q:[-1e5,-1e5]}   /* spots on a floor above the cut are left out */
+ function SX(x,z){return PP(x,z)[0]}function SY(x,z){return PP(x,z)[1]}
+ function DIR(x,z,dx,dz){if(!on3)return [pu(dx,dz),pv(dx,dz)];var l=Math.hypot(dx,dz)||1,y=M3.yAt(x,z,py3),a=M3.project(x,y,z,W,H),b=M3.project(x+dx/l*60,y,z+dz/l*60,W,H);return [b[0]-a[0],b[1]-a[1]]}
+ /* the image is drawn with world x to the right and world z downwards, so it goes through exactly the same
+    projection as the outline: screen = ((x*fz - z*fx)*mir, -(x*fx + z*fz)). That is a mirror as well as a turn, so it is set as a matrix. */
+ if(!on3&&pim&&pm){var ux=pu(pm[0],pm[1]),uy=pv(pm[0],pm[1]);
+  g.save();g.setTransform(fz*mir*sc,-fx*sc,-fx*mir*sc,-fz*sc,W/2+(ux-cx)*sc,H/2+(uy-cy)*sc);
+  g.drawImage(pim,-pm[2]/2,-pm[2]/2,pm[2],pm[2]);g.restore()}
+ var tones=['#8c7352','#635a39','#312918'];
+ for(var tn=2;tn>=0;tn--){if(pim||on3)break;   /* over the render, only the outline is drawn */
+  g.beginPath();for(i=0;i<m.nt;i++){if((m.fl[i]&3)!==tn||!shown(i))continue;var a=m.tr[i*3],b=m.tr[i*3+1],c=m.tr[i*3+2];g.moveTo(m.sx[a],m.sy[a]);g.lineTo(m.sx[b],m.sy[b]);g.lineTo(m.sx[c],m.sy[c]);g.closePath()}
+  g.fillStyle=tones[tn];g.fill();g.strokeStyle=tones[tn];g.lineWidth=1;g.stroke()}
+ if(!on3){g.beginPath();for(i=0;i<m.nt;i++){var e=(m.fl[i]>>2)&7;if(!e||!shown(i))continue;for(var k=0;k<3;k++)if(e>>k&1){var q=m.tr[i*3+k],r=m.tr[i*3+(k+1)%3];g.moveTo(m.sx[q],m.sy[q]);g.lineTo(m.sx[r],m.sy[r])}}
+ g.strokeStyle='#efe0b0';g.lineWidth=Math.max(1,dpr);g.stroke()}
+ /* memory cubes (pink square with a white rim, so it cannot be taken for a chest) and shops (orange disc: item shop; with a grey rim: gear shop), from MARKS */
+ if(!on3&&CFG.places&&window.MARKS&&MARKS[f])MARKS[f].forEach(function(e){var ex=SX(e[0],e[1]),ey=SY(e[0],e[1]),q=3.2*dpr;
+   if(e[2]==='s'){g.fillStyle='#100808';g.fillRect(ex-q-dpr,ey-q-dpr,2*q+2*dpr,2*q+2*dpr);g.fillStyle='#ffffff';g.fillRect(ex-q,ey-q,2*q,2*q);g.fillStyle='#ff6ad0';g.fillRect(ex-q+dpr,ey-q+dpr,2*q-2*dpr,2*q-2*dpr)}
+   else{g.beginPath();g.arc(ex,ey,q,0,6.2832);g.fillStyle='#e0a878';g.fill();g.strokeStyle=e[2]==='g'?'#c8c8d8':'#100808';g.lineWidth=dpr*1.5;g.stroke()}});
+ if(!on3&&trl)trl.forEach(function(t){if(t.x==null)return;var tx=SX(t.x,t.z),ty=SY(t.x,t.z),q=3.2*dpr;
+   g.lineWidth=dpr;
+   /* a gift (handed over by a person or an event at this spot) is a blue dot, a ring once taken; chests are the yellow boxes */
+   if(t.gift){g.beginPath();g.arc(tx,ty,q*.8,0,6.2832);if(t.got){g.strokeStyle='#9a9a9a';g.stroke()}else{g.fillStyle='#6cf';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr*1.5;g.stroke()}return}
+   if(t.got){g.strokeStyle='rgba(16,8,8,.8)';g.strokeRect(tx-q,ty-q*.8,q*2,q*1.6);g.strokeStyle='#9a9a9a';g.strokeRect(tx-q+dpr,ty-q*.8+dpr,q*2-2*dpr,q*1.6-2*dpr)}
+   else{g.fillStyle='#100808';g.fillRect(tx-q-dpr,ty-q*.8-dpr,q*2+2*dpr,q*1.6+2*dpr);g.fillStyle='#ffd23c';g.fillRect(tx-q,ty-q*.8,q*2,q*1.6);g.fillStyle='#8a5a10';g.fillRect(tx-q,ty-dpr*.5,q*2,dpr)}});
+ /* exits as small doors (cv._ex keeps their screen places for taps), the tapped one labelled; the way in as a red arrow */
+ var exl=on3?[]:roomExits(f);cv._ex=[];   /* with 3D on the map shows no icons (v1.80), only the party */
+ exl.forEach(function(e,i){var ex=SX(e[0],e[1]),ey=SY(e[0],e[1]),q=3.4*dpr;cv._ex.push([ex,ey]);
+   g.fillStyle='#100808';g.fillRect(ex-q-dpr,ey-q*1.3-dpr,2*q+2*dpr,2.6*q+2*dpr);g.fillStyle='#e8d8a8';g.fillRect(ex-q,ey-q*1.3,2*q,2.6*q);g.fillStyle='#8c7352';g.fillRect(ex-q+dpr,ey-q*1.3+dpr,2*q-2*dpr,2.6*q-2*dpr);g.fillStyle='#ffd23c';g.fillRect(ex+q*.2,ey-dpr*.5,dpr*1.2,dpr*1.2)});
+ if(exitTap!=null&&exl[exitTap]){var te=exl[exitTap],tx2=cv._ex[exitTap][0],ty2=cv._ex[exitTap][1],lb=exitText(te[2]);g.font=(7*dpr)+'px monospace';g.textAlign='center';var tw=g.measureText(lb.t).width+6*dpr,lx=Math.max(tw/2,Math.min(W-tw/2,tx2)),ly=ty2-4.5*dpr;if(ly-11*dpr<0)ly=ty2+16*dpr;
+   g.fillStyle='rgba(16,8,8,.9)';g.fillRect(lx-tw/2,ly-11*dpr,tw,9*dpr);g.fillStyle=lb.k?'#efefef':'#9a9a9a';g.fillText(lb.t,lx,ly-4*dpr)}
+ if(!on3&&CFG.exits&&entry&&entry.f===f&&entry.d){var ax=SX(entry.x,entry.z),ay=SY(entry.x,entry.z),ed=DIR(entry.x,entry.z,entry.d[0],entry.d[1]),dx=ed[0],dy=ed[1],l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;var L=7*dpr,Wd=4.5*dpr;
+   g.beginPath();g.moveTo(ax+dx*L,ay+dy*L);g.lineTo(ax-dy*Wd,ay+dx*Wd);g.lineTo(ax-dx*L*.3,ay-dy*L*.3);g.lineTo(ax+dy*Wd,ay-dx*Wd);g.closePath();g.fillStyle='#e33';g.fill();g.strokeStyle='#fff';g.lineWidth=dpr;g.stroke()}
+ /* the story hint's spot, when this is the room the next step is set in: a green ring */
+ if(!on3&&hn)hn.rows.forEach(function(r){if(r[0]!==f||r.length<4)return;var qx=SX(r[2],r[3]),qy=SY(r[2],r[3]);g.beginPath();g.arc(qx,qy,5*dpr,0,6.2832);g.strokeStyle='#ffffff';g.lineWidth=3*dpr;g.stroke();g.strokeStyle='#5f5';g.lineWidth=1.5*dpr;g.stroke();g.beginPath();g.arc(qx,qy,1.6*dpr,0,6.2832);g.fillStyle='#5f5';g.fill()});
+ if(p&&!(on3&&M3.isFP())){var mp=on3?M3.project(p.x,py3,p.z,W,H):PP(p.x,p.z);marker(g,mp[0],mp[1],heading?DIR(p.x,p.z,heading[0],heading[1]):null,dpr)}}
+/* ================= random battles =================
+   Both the room program and the world map decide random battles the same way (room: 0x80079288 / 0x8008E718, world: 0x8007528C).
+   There is a window of W frames of movement and N battles per window. When the window counter runs out, each of the N timers is set
+   to a random frame inside the new window. Every frame the player is moving, each timer drops by one; a timer reaching 0 starts a
+   battle. So the frames of movement left before the next battle can be read exactly: it is the smallest live timer.
+   Room: counter 0x800B2294, W 0x800B2298 (0 = no random battles here), N 0x800B229C, timers u16 x 32 at 0x800B22A0 (0xFFFF = spent).
+   World: W 0x8009BE40, N 0x8009BCC4, counter 0x8009D64C, timers u16 x 16 at 0x8009C854, allowed flag 0x8009D554.
+   Not yet checked on the handheld. */
+function encInfo(){var w,n,c,base,max,i,v,best=null,sig=u32(A.SIG);
+ if(sig===5){if(!s32(A.WENCON))return null;w=s32(A.WENCW);n=s32(A.WENCN);c=s32(A.WENCC);base=A.WENCS;max=16}
+ else if(sig===4){c=s32(A.ENC);w=s32(A.ENC+4);n=s32(A.ENC+8);base=A.ENC+12;max=32}else return null;
+ if(w==null||n==null||c==null||!(w>0&&w<=0x4000)||!(n>0&&n<=max)||c<0||c>w)return null;
+ for(i=0;i<n;i++){v=u16(base+i*2);if(v==null)return null;if(v>0&&v<=w+1&&(best==null||v<best))best=v}
+ return{w:w,n:n,c:c,next:best}}
+/* the room's battle line-ups: 16 records of 0x20 bytes at 0x800658DC (room file block 7), then 16 weights at 0x80065ADC; a weight of
+   0 means the line-up is only used by scripted fights. Record: +0 monster bank (disc file 2618 + 2 x bank), +8 eight enemies
+   (0xFF = none, low 7 bits = record in the bank, 0x80 = gear-sized). */
+function roomEnemies(){var b=rd(A.FORM,0x210);if(!b||!window.ENEMIES)return null;var out=[],seen={};
+ for(var i=0;i<16;i++){if(!b[0x200+i])continue;var k=b[i*32],e=k===52||k===68?null:ENEMIES[k-(k>52?1:0)-(k>68?1:0)];if(!e)continue;
+  for(var j=0;j<8;j++){var v=b[i*32+8+j];if(v===255)continue;var nm=okName(e.n[v&127]);if(!nm||seen[nm])continue;seen[nm]=1;out.push({n:nm,p:e.p&&e.p[v&127]||null})}}
+ return out}
+/* the battle countdown bar under the top bar (green to red) */
+function encDraw(){var el=document.getElementById('enc'),e=CFG.enc&&!inBattle()?encInfo():null;if(el){if(!e)el.style.display='none';else{var f=e.next!=null?e.next/(e.w+1):1;
+   el.style.display='block';el.style.width=Math.max(1,Math.round(f*100))+'%';el.style.background=e.next==null?'#456':e.next<=45?'#e44':e.next<=120?'#dc4':'#5c5'}}}
+/* ================= treasure =================
+   TREASURE (treasure.js) lists each room's chests and one-time pickups, read off the room scripts on the disc. Each has a flag: one bit
+   of a 16-bit script variable (live bank at 0x800C3A68). The room's set-up script tests that bit to decide whether the chest is still
+   there, and the pickup script sets it, so the bit says whether it has been taken. A gift (seventh entry 1, or no position) is handed
+   over by a person or an event rather than found in a chest; where the script gives its place it is drawn as a blue dot. Not yet checked on the handheld. */
+var TKIND=['items','weapons','equipment','gear_weapons','gear_parts'];
+/* the room's treasure with a got / not got mark each, or null */
+function treList(f){if(!CFG.tre||f==null||!window.TREASURE)return null;var l=TREASURE[f];if(!l)return null;if(!CFG.gift)l=l.filter(function(t){return t.length>5&&t[6]!==1});if(!l.length)return null;
+ return l.map(function(t){var v=u16(A.SVAR+t[0]),nm=t[2].map(function(c){return gearName(TKIND[c>>8],c&255)||['Item','Weapon','Equip','Gear weapon','Gear part'][c>>8]+' '+(c&255)});if(t[3])nm.push(t[3]+' G');
+  return{n:nm.join(' + '),got:v==null?null:(v>>t[1]&1)===1,x:t.length>5?t[4]:null,z:t.length>5?t[5]:null,gift:t.length<6||t[6]===1}})}
+/* ================= description pop-up ================= */
+function gearName(k,id){var t=(window.GEARTBL&&GEARTBL[k])||TABLES[k];var v=t&&t[id];return v&&v!=='/'?v:null}
+/* description text for id of kind k ("" when there is none) */
+function gearDesc(k,id){var t=(window.GEARDESC&&GEARDESC[k])||(window.DESC&&DESC[k]);var v=t&&t[id];return v&&v!=='/'?v:''}
+/* numbers for the pop-up, from STATS (disc tables): label/value pairs, plus who can equip when it is not everyone */
+function whoCan(mask){if(!mask||(mask&0x7FF)===0x7FF)return null;var m=mask|((mask>>9)&1)<<2|((mask>>10)&1)<<6,o=[];for(var i=0;i<9;i++)if(m>>i&1)o.push(TABLES.characters[i]);return o.join(', ')}
+/* the numbers shown in a description pop-up for this kind of thing, and who can use it */
+function statPairs(kind,id){var t=window.STATS&&STATS[kind],r=t&&t[id],o=[],who=null;if(!r)return{p:o,who:null};
+ function a(l,v){if(v)o.push([l,v])}
+ if(kind==='items')a('PRICE',r[0]);
+ else if(kind==='equipment'){o.push([['ACCESSORY','BODY','HEAD'][r[3]]||'GEAR','']);if(r[3])a('DEF',r[2]);a('PRICE',r[1]);who=whoCan(r[0])}
+ else if(kind==='weapons'){a('ATK',r[2]);a('PRICE',r[1]);who=whoCan(r[0])}
+ else if(kind==='gear_frames'){a('HP',r[0]);a('WEIGHT',r[1]);a('PRICE',r[2])}
+ else if(kind==='gear_armor'){a('ARMOR',r[2]);a('WEIGHT',r[1]);a('PRICE',r[0])}
+ else if(kind==='gear_engines'){a('FUEL',r[0]);a('PRICE',r[1])}
+ else if(kind==='gear_parts'){a('DEF',r[2]);a('ETH DEF',r[3]);a('WEIGHT',r[1]);a('PRICE',r[0])}
+ else if(kind==='gear_weapons'){a('ATK',r[1]);a('PRICE',r[0])}
+ return{p:o,who:who}}
+/* The four elemental rings set the same "defended" bits as Billy's elemental shields, whose own text says they block the opposite element
+   (Fire Shield: "Blocks Water Attack"). So the pop-up adds what the battle code does with each ring next to the game's own description. */
+var RINGNOTE={128:'Code: blocks Earth, +30% from Wind',129:'Code: blocks Wind, +30% from Earth',130:'Code: blocks Water, +30% from Fire',131:'Code: blocks Fire, +30% from Water'};
+/* description pop-up for an item, piece of equipment or gear part (qty = how many are in the bag) */
+function showDesc(kind,id,qty){var nm=gearName(kind,id);if(!nm)return;var d=gearDesc(kind,id);
+ var h='<div class="row">'+T(nm,'y')+(qty?'<span class="sp"></span>'+T('x'+qty,'c'):'')+'</div>';
+ var st=statPairs(kind,id);
+ (d?wrap(d,30):(st.p.length?[]:['No description.'])).forEach(function(l){h+='<div class="row">'+T(l,d?'w':'g')+'</div>'});
+ for(var i=0;i<st.p.length;i+=2){h+='<div class="row">';for(var k=i;k<i+2&&k<st.p.length;k++)h+=T(st.p[k][0],'c')+(st.p[k][1]===''?'':T(' '+st.p[k][1]))+(k===i&&k+1<st.p.length?'<span class="sp"></span>':'');h+='</div>'}
+ if(kind==='equipment'&&RINGNOTE[id])h+='<div class="row">'+T(RINGNOTE[id],'o')+'</div>';
+ if(st.who)wrap(st.who,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});
+ popup(h,200)}
+/* ================= deathblow progress pop-up =================
+   Learned deathblows: u16 at SKILL + id*0x20 + 4, top bit = first deathblow. AP per turn: byte +0x1B.
+   Attack points: 7 x u16 at character record +0x90, in the order T1 T2 T3 T4 S1 S2 X. DBLOW holds what each deathblow needs.
+   The percentage is the share of the needed points already earned. A deathblow also needs a character level (DBLOW l); until that level is reached the deathblow is left off this list unless SET > DEATHBLOWS is SHOW ALL. */
+function showDB(id){var rows=dbRows(id),r=rd(A.SKILL+id*0x20,0x20);if(!rows||!r)return;rows=rows.filter(function(d){return d.got||!d.lock||CFG.dball});
+ var h='<div class="row">'+T(cname(id),'y')+'<span class="sp"></span>'+T('AP '+r[0x1B],'c')+'</div>';
+ rows.forEach(function(d){var pc=d.got?100:Math.floor(d.have*100/d.need);
+  h+='<div class="row'+(d.lock?' dim':'')+'">'+T(padr(d.n,13),d.got?'w':'g')+bar(d.got?'hp':'ep',pc,100,'s')+T(d.got?' OK ':d.lock?' L'+pad(d.lv,2):pad(pc,3)+'%',d.got?'n':'w')+'</div>'});
+ if(!rows.length)h+='<div class="row">'+T('No deathblows.','g')+'</div>';
+ popup(h,200)}
+/* ================= story hint =================
+   Tap the chapter name in the top bar. The story step (script variable 0) is only ever moved on by script command 87 n, and HINTS
+   (hints.js) lists, for each step, the room whose script sets it. The next step above the current one is therefore where the story
+   goes on. First tap: the area only. SHOW THE ROOM: the room's picture, with a green spot when the step is set from a person or a
+   trigger that has a place (15 of 145 steps); otherwise a scene starts somewhere in that room. In that room the spot is also
+   ringed on the live map. HNOTE adds a one-line note per step: white when it comes from the trigger's own dialogue on the disc,
+   grey (a leading ?) when written from memory of the game and not checked. It names the destination, not the way there, and nothing between two steps. Not yet checked on the handheld. */
+function hintNext(){var s=u16(A.STORY);if(!CFG.hint||s==null||!window.HINTS)return null;if(!hintNext.k)hintNext.k=Object.keys(HINTS).map(Number).sort(function(a,b){return a-b});
+ for(var i=0;i<hintNext.k.length;i++)if(hintNext.k[i]>s)return{step:hintNext.k[i],rows:HINTS[hintNext.k[i]]};return null}
+/* Story hint pop-up. lv 0: where the story goes on, as area names (one line says whether the party is already in one of them).
+   lv 1: one page per part of the hint. The note is split at each full stop; the rooms listed for the step (HPATH, or the rooms the
+   scripts point to) are spread over the pages in order, one picture a page, with BACK / NEXT to move between them. The green
+   spots can be switched off (SETTINGS > HINTS > SPOTS). */
+var hintPage=0;
+function hintParts(t){if(!t)return [];var o=[],cur='';t.split(/(\.\s+)/).forEach(function(x){cur+=x;if(/\.\s+$/.test(x)){o.push(cur.trim());cur=''}});if(cur.trim())o.push(cur.trim());return o}
+function showHint(lv,pg){var hn=hintNext(),f=u32(A.SIG)===4?u16(A.FIELD):null;f=f==null?null:f&0x7FF;var h='<div class="row">'+T('STORY HINT','y')+'</div><div class="sep"></div>';
+ if(!hn){popup(h+'<div class="row">'+T('Nothing more to point to.','g')+'</div>',200);return}
+ var cur=areaOf(f),seen={},path=window.HPATH&&HPATH[hn.step],pre=window.HPRE&&HPRE[hn.step]||[];
+ /* the rooms for the step, in visiting order: [room, [[x, z]...], how the step happens (2 talk, 3 go, else scene)] */
+ var rooms=path?path.map(function(q){return [q[0],q[1],3]}):pre.map(function(q){return [q[0],q[1],3]}).concat(hn.rows.slice(0,Math.max(1,3-pre.length)).map(function(r){return [r[0],r.length>3?[[r[2],r[3]]]:[],r[1]]}));
+ var nt=window.HNOTE&&HNOTE[hn.step],unv=nt&&nt.charAt(0)==='?';if(unv)nt=nt.slice(1);   /* a note from memory, not from the game's own text, is grey */
+ if(!lv){var areas=[];rooms.forEach(function(r){var k=(areaOf(r[0])||{n:'Room '+r[0]}).n;if(!seen[k]){seen[k]=1;areas.push(k)}});
+  h+='<div class="row">'+T('THE STORY GOES ON IN','c')+'</div>';areas.forEach(function(k){h+='<div class="row">'+T(k,'w')+'</div>'});
+  var inRoom=rooms.some(function(r){return r[0]===f}),inArea=cur&&areas.indexOf(cur.n)>=0;
+  h+='<div class="row">'+(inRoom?T('You are in one of the rooms.','n'):inArea?T('You are in this area.','n'):T('Not where you are now.','o'))+'</div>';
+  h+='<div class="row" style="height:14rem"><span class="sp"></span>'+chip('SHOW THE ROOM',false,'event.stopPropagation();showHint(1,0)')+'<span class="sp"></span></div>';
+  popup(h,200);return}
+ var parts=hintParts(nt),n=Math.max(parts.length,rooms.length,1);pg=Math.max(0,Math.min(n-1,pg|0));hintPage=pg;
+ var r=rooms[Math.min(pg,rooms.length-1)],ar=r&&areaOf(r[0]),here=r&&f===r[0];
+ h+='<div class="row">'+T('THE STORY GOES ON IN','c')+'<span class="sp"></span>'+(n>1?T('  '+(pg+1)+'/'+n,'g'):'')+'</div>';
+ if(r){var pm=window.PLAN&&PLAN[r[0]],hb=window.HROOM&&HROOM[r[0]]||[0,0,1],dot='';
+  if(pm&&CFG.hdot)r[1].forEach(function(q){dot+='<span class="hdot" style="left:'+((((q[0]-pm[0])/pm[2]+.5)-hb[0])/hb[2]*100)+'%;top:'+((((q[1]-pm[1])/pm[2]+.5)-hb[1])/hb[2]*100)+'%"></span>'});
+  h+='<div class="hone">';
+  if(pm&&mapsReady())h+='<div class="hpic big"><img src="'+asset('plan/'+r[0]+'.'+picExt())+'" onerror="this.style.display=\'none\'" style="width:'+(100/hb[2])+'%;left:'+(-hb[0]/hb[2]*100)+'%;top:'+(-hb[1]/hb[2]*100)+'%">'+dot+'</div>';
+  var rn=window.ROOMS&&ROOMS[r[0]];
+  h+='<div class="hside"><div class="row">'+T(ar?ar.n:'Room '+r[0],'w')+'</div>'+(rn?'<div class="row">'+T(rn.length>24?rn.slice(0,23)+'.':rn,'c')+'</div>':'')+'<div class="row">'+T('ROOM '+r[0],'g')+'</div>'
+   +'<div class="row">'+(here?T('YOU ARE HERE','n'):cur&&ar&&cur.n===ar.n?T('In this area','n'):'')+'</div>'
+   +'<div class="row">'+T(CFG.hdot&&r[1].length?(r[2]===2?'Talk at the green spot.':'Go to the green spot.'):rooms.length>1?(pg>=rooms.length-1?'Then here.':pg?'And here.':'Go here.'):(r[2]===2||r[2]===3?'Go to this room.':'A scene starts here.'),'c')+'</div></div></div>'}
+ var txt=parts.length?parts[Math.min(pg,parts.length-1)]:'';
+ if(txt)wrap(txt,Math.max(26,Math.min(52,Math.floor((remSize()[0]-64)/8)))).forEach(function(l){h+='<div class="row">'+T(l,unv?'g':'w')+'</div>'});   /* the app's own pixel font (v1.84; 1.80-1.83 used a plain font) */
+ if(n>1)h+='<div class="row" style="height:16rem">'+(pg>0?chip('< BACK',false,'event.stopPropagation();showHint(1,'+(pg-1)+')'):'')+'<span class="sp"></span>'+(pg<n-1?chip('NEXT >',true,'event.stopPropagation();showHint(1,'+(pg+1)+')'):'')+'</div>';
+ popup(h,230)}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+/* pop-up with the fight log (dev) */
+function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LOG','y')+'</div><pre>'+(blog.length?'slot name hp  st=KO word  rm=removal byte\n'+blog.slice(-22).join('\n'):'Nothing recorded yet.')+'</pre>',230)}
+/* ================= the screen =================
+   One pass decides the mode (movie, dialogue or scene, battle, field) and writes the three parts of the page. */
+var ffOn=false;
+/* draw the whole screen from what was last read */
+function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,mv=false,sh=linked&&!bt&&!mv?shopOpen():null,dl=!bt&&!mv&&!sh&&inDialogue();
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=mv?'m':sh?'s':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now()}}
+ var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
+ if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
+ var loc=!linked?'NO LINK':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
+ put('loc',linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint(0)" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'));   /* tap the chapter name for a story hint */
+ var hh=u8(A.CLK_H),mm=u8(A.CLK_M),ss=u8(A.CLK_S);put('clock',hh==null?'':T(p2(hh)+':'+p2(mm)+(loc.length>8?'':':'+p2(ss))));
+ var g=u32(A.GOLD);put('gold',g==null?'':T(String(g))+T(' G','y'));
+ put('gearbtn','<span onclick="openSet()" style="padding:3rem 0 3rem 6rem;display:flex">'+GEAR_ICON+'</span>');
+ if(mv){document.getElementById('main').className='';put('main',win('<img class="ttl" src="img/title.png">'+T('FF',ffOn?'n':'w'),'btn big'+(ffOn?' on':''),'onclick="ff()"'));put('bot','');encDraw();moreHint();return}
+ document.getElementById('main').className=(!dl&&!bt&&!sh&&tab==='equip')?'scroll':'';
+ var shs=sh&&document.querySelector('.shop'),shy=shs?shs.scrollTop:0;   /* the shop list and the deathblow list keep their scroll place across a redraw */
+ var dbs=document.querySelector('#dbl>.in'),dby=dbs?dbs.scrollTop:0,dbw=dbSel;
+ put('main',sh?shopView(sh):dl?'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>':bt?battleView():fieldView());
+ if(bt&&dby&&dbw===dbSel){dbs=document.querySelector('#dbl>.in');if(dbs)dbs.scrollTop=dby}if(shy){shs=document.querySelector('.shop');if(shs)shs.scrollTop=shy}
+ if(!dl&&!bt&&!sh&&tab==='map')drawMap();encDraw();moreHint();
+ /* bottom bar: nothing in dialogue, the shop's name in a shop, the rewards in a fight, otherwise the four tabs; FF is always there */
+ var b='';if(dl)b+='<span class="sp"></span>';
+ else if(sh)b+=win(T(sh.k===4?'ITEM SHOP':'GEAR SHOP','y')+'<span class="sp"></span>'+T('GREEN','n')+T(': YOU HAVE ONE','g'),'rew');
+ else if(bt)b+=battleTot?win(T('Rewards:','y')+'<span class="sp"></span>'+T('EXP','c')+T(pad(battleTot[0],7))+T(pad(battleTot[1],8))+T(' G','y'),'rew',CFG.dev?'onclick="showLog()"':''):'<span class="sp"></span>';
+ else [['status','STATUS'],['equip','EQUIP'],['items','ITEMS'],['map','MAP']].forEach(function(t){b+=win(T(t[1],tab===t[0]?'y':'g'),'btn'+(tab===t[0]?' on':''),'onclick="setTab(\''+t[0]+'\')"')});
+ b+=win(T('FF',ffOn?'n':'w'),'btn nar'+(ffOn?' on':''),'onclick="ff()"');put('bot',b)}
+/* small arrow above the bottom bar while the EQUIP list has more below */
+function moreHint(){var m=document.getElementById('main'),e=document.getElementById('more');e.style.display=m.className==='scroll'&&m.scrollTop+m.clientHeight<m.scrollHeight-4&&!document.getElementById('app').className?'block':'none'}
+document.getElementById('main').addEventListener('scroll',moreHint);
+/* switch tab */
+function setTab(t){tab=t;LS.set('tab',t);fullKey='';poll();render()}
+/* toggle RetroArch's fast forward */
+function ff(){ffOn=!ffOn;if(HAS_NATIVE)Native.send(CFG.host,CFG.port,'FAST_FORWARD');render()}
+/* ================= settings panel ================= */
+var lastSet='';
+/* a small tappable label; on = lit */
+function chip(label,on,js){return '<span class="chip'+(on?' on':'')+'" onclick="'+js+'">'+T(label,on?'y':'w')+'</span>'}
+/* a settings row with ON and OFF chips for one switch */
+function onoff(label,key,on){return '<div class="opt">'+T(label,'c')+chip('ON',on,"sv('"+key+"','1')")+chip('OFF',!on,"sv('"+key+"','0')")+'</div>'}
+/* open the settings panel */
+function openSet(){lastSet='';document.getElementById('set').className='show';drawSet()}
+/* let the app take keyboard focus (only while typing the host or port) */
+function kb(on){if(HAS_NATIVE&&Native.focusable)Native.focusable(!!on)}
+/* close the settings panel and redraw */
+function closeSet(){if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();kb(0);document.getElementById('set').className='';last={};fullKey='';fit();render()}
+/* the DEV readout: raw values behind everything the app shows, one line each, for checking against the game */
+function dash(v){return v==null?'-':v}
+/* the lines of raw values at the bottom of the dev options */
+function readout(){var f=u16(A.FIELD),world=u32(A.SIG)===5,o=[];f=f==null?null:f&0x7FF;
+ o.push('native '+HAS_NATIVE,'link '+(linkMode||'probing '+MODES[probeIdx]),'replies '+(lastReply||'-')+'  '+pollRate()+' polls a second','program '+u32(A.MODE)+'  overlay '+u32(A.SIG));
+ o.push('party '+Array.prototype.join.call(rd(A.PARTY,3)||[],','),'in fight '+Array.prototype.join.call(rd(A.BLIVE,11)||[],','),'turn slot '+dash(u8(A.BTURN)));
+ var tl=f==null?null:window.TREASURE&&TREASURE[f];
+ o.push('treasure '+(tl?tl.map(function(t){var v=u16(A.SVAR+t[0]);return t[0]+'.'+t[1]+'='+(v==null?'-':v>>t[1]&1)}).join(' '):'none here'));
+ o.push('battle timer '+(world?[s32(A.WENCC),s32(A.WENCW),s32(A.WENCN),u16(A.WENCS),u16(A.WENCS+2),s32(A.WENCON)]:[s32(A.ENC),s32(A.ENC+4),s32(A.ENC+8),u16(A.ENC+12),u16(A.ENC+14)]).map(dash).join(' '));
+ o.push('field '+dash(f)+'  story step '+dash(u16(A.STORY))+' '+(chapter()||'-'));
+ var q=playerPos();o.push('pos '+(q?q.x+','+q.y+','+q.z+' face '+q.face:'-')+'  cam '+dash(u16(A.CAMDIR)));
+ if(!world)o.push('world -');else{var x=s32(A.WPOS),y=s32(A.WPOS+4),z=s32(A.WPOS+8),sx=s32(A.WSTART),sz=s32(A.WSTART+8);
+  o.push('world pos '+(x==null?'-':(x>>12)+','+(y>>12)+','+(z>>12))+' start '+(sx==null||sz==null?'-':(sx>>12)+','+(sz>>12))+' ang '+dash(u32(A.WANG))+' mode '+dash(u32(A.WMODE))+' saved '+dash(u16(A.WSAVE))+','+dash(u16(A.WSAVE+2)))}
+ var ev=u8(A.EVT),ctl=u16(A.EVT2),sf=u32(A.SCENEFL);
+ o.push('walk layer '+dash(playerLayer())+'  seen here '+((layerSeen[u16(A.FIELD)&0x7FF]|0)>>1).toString(2));o.push('scene lock menu '+dash(ev)+' ctl '+(ctl==null?'-':ctl.toString(16))+' flags '+(sf==null?'-':(sf>>>0).toString(16))+'  in scene '+rawEvent());
+ o.push('text boxes '+[0,1,2,3].map(function(i){var a=u16(A.TBOX+i*TBREC+0x410),v=u16(A.TBOX+i*TBREC+0x40E);return a==null?'-':a.toString(16)+'/'+v.toString(16)}).join(' ')+'  open '+boxOpen());
+ if(lastErr)o.push('error '+lastErr);
+ o.push('dialogue '+(DLG?DLG.a.length+' signals, now '+inDialogue():'no extra signals'));
+ if(blog.length)o=o.concat(['fight log (slot name hp st rm):'],blog.slice(-18));
+ if(DLG)o.push('signals (address=value now):',DLG.a.map(function(a){var v=u8(a);return a.toString(16)+'='+(v==null?'--':(v<16?'0':'')+v.toString(16))}).join(' '));
+ return o}
+/* fill the settings panel */
+function setHd(t){return '<div class="opt sethd">'+T(t,'y')+'</div>'}
+function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"></span>'+chip('CLOSE',false,'closeSet()')+'</div>';
+ h+=setHd('GENERAL');
+ h+='<div class="opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(s){return chip(String(s),CFG.scale===s,"sv('scale',"+s+")")}).join('')+'</div>';
+ h+=onoff('START SCREEN','intro',CFG.intro);
+ h+=setHd('BATTLE');
+ h+=onoff('BATTLE COUNTDOWN','enc',CFG.enc);
+ h+='<div class="opt">'+T('IN BATTLE','c')+chip('TURN ORDER',CFG.turns,"sv('turns','"+(CFG.turns?0:1)+"')")+chip('COMBO KEYS',CFG.seq,"sv('seq','"+(CFG.seq?0:1)+"')")+'</div>';
+ h+='<div class="opt">'+T('DEATHBLOWS','c')+chip('LEARNED',!CFG.dball,"sv('dball','0')")+chip('SHOW ALL',CFG.dball,"sv('dball','1')")+'</div>';
+ h+=setHd('MAP');
+ h+='<div class="opt">'+T('VIEW','c')+chip('CAMERA',CFG.maprot,"sv('maprot','1')")+chip('FIXED',!CFG.maprot,"sv('maprot','0')")+chip('ART',CFG.plan,"sv('plan','"+(CFG.plan?0:1)+"')")+'</div>';
+ h+='<div class="opt">'+T('MARKS','c')+chip('TREASURE',CFG.tre,"sv('tre','"+(CFG.tre?0:1)+"')")+chip('GIFTS',CFG.gift,"sv('gift','"+(CFG.gift?0:1)+"')")+chip('PLACES',CFG.places,"sv('places','"+(CFG.places?0:1)+"')")+'</div>';
+ h+='<div class="opt">'+T('LISTS','c')+chip('ENEMIES',CFG.enl,"sv('enl','"+(CFG.enl?0:1)+"')")+chip('EXITS',CFG.exits,"sv('exits','"+(CFG.exits?0:1)+"')")+'</div>';
+ h+=setHd('HINTS');
+ h+=onoff('STORY HINT','hint',CFG.hint);
+ h+='<div class="opt">'+T('HINT MAPS','c')+chip('GREEN SPOTS',CFG.hdot,"sv('hdot','1')")+chip('PICTURE ONLY',!CFG.hdot,"sv('hdot','0')")+'</div>';
+ h+=setHd('EXPERIMENTAL');
+ h+='<div class="opt">'+T('3D MAP','c')+chip('ON',CFG.x3d,CFG.x3d?'':"expAsk('x3d')")+chip('OFF',!CFG.x3d,"sv('x3d','0')")+'</div>';
+ if(CFG.x3d)h+='<div class="opt">'+T('EYE MODE','c')+chip('ON',CFG.xeye,CFG.xeye?'':"expAsk('xeye')")+chip('OFF',!CFG.xeye,"sv('xeye','0')")+'</div>';
+ h+=setHd('DEVELOPER');
+ /* everything below is for setting up and debugging the link; hidden unless DEV OPTIONS is switched on */
+ h+='<div class="opt">'+T('DEV OPTIONS','c')+chip('SHOW',CFG.dev,"sv('dev','1')")+chip('HIDE',!CFG.dev,"sv('dev','0')")+'</div>';
+ if(CFG.dev){
+ h+='<div class="opt">'+T('HOST','c')+'<input id="ih" ontouchstart="kb(1)" onmousedown="kb(1)" value="'+CFG.host+'" onchange="sv(\'host\',this.value)">'+T('PORT','c')+'<input id="ip" ontouchstart="kb(1)" onmousedown="kb(1)" style="width:50rem" value="'+CFG.port+'" onchange="sv(\'port\',this.value)"></div>';
+ h+='<div class="opt">'+T('LINK','c')+['auto','m80','m00','ram'].map(function(m){return chip(m.toUpperCase(),CFG.mode===m,"sv('mode','"+m+"')")}).join('')+'</div>';
+ h+='<div class="opt">'+T('STATUS DOT','c')+chip('SHOW',CFG.dot,"sv('dot','1')")+chip('HIDE',!CFG.dot,"sv('dot','0')")+'</div>';
+ h+=onoff('FAST MAP','fast',CFG.fast);
+ h+='<div class="opt">'+T('FIGHT LOG','c')+chip('SHOW',false,'showLog()')+T(blog.length?blog.length+' LINES':'EMPTY','g')+'</div>';
+ if(teach){if(teach.msg)h+='<div class="opt">'+T(teach.msg,'y')+'</div>';else{var ts=TEACH_STEPS[teach.step];
+  h+='<div class="opt">'+T('STEP '+(teach.step+1)+'/4','y')+'</div><div class="opt">'+T(ts[0])+'</div><div class="opt">'+T(ts[1])+'</div><div class="opt">'+(teach.busy?T('Reading...','c'):chip('TAP HERE NOW',true,'teachTap()'))+'</div>'}}
+ h+='<pre>'+readout().join('\n')+'</pre>'}
+ if(h!==lastSet){lastSet=h;document.getElementById('setin').innerHTML=h}}
+/* change one setting: clean the value, store it, apply it, redraw */
+/* experimental switches: a warning first, ENABLE to switch on (shown above the settings panel) */
+function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T('EXPERIMENTAL: '+nm,'y')+'</div><div class="sep"></div>';
+ wrap((k==='x3d'?'Adds a 3D button to the map that draws the room from your disc image.':'Adds an EYE button to the 3D map: a first-person view at the party.')+' Frame rates may be low, and the app is more likely to stop responding or crash, mostly on Android. Switch it off here if that happens.',34).forEach(function(l){h+='<div class="row">'+T(l,'w')+'</div>'});
+ h+='<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('ENABLE',true,"event.stopPropagation();closePop();sv('"+k+"','1')")+'</div>';
+ popup(h,240);document.getElementById('pop').style.zIndex=6}
+function sv(k,v){if(k==='host')v=okHost(v);if(k==='port')v=okPort(v);LS.set(k,v);if(k==='scale')v=+v;if(k==='quiet'){v=String(v)==='1';CFG.quiet=CFG.dlg=CFG.cut=v}
+ if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye')v=String(v)==='1';CFG[k]=v;
+ if((k==='x3d'||k==='xeye')&&!v){if(k==='x3d'&&map3on){map3on=false;LS.set('map3d','0')}if(map3eye){map3eye=false;LS.set('map3eye','0')}last={};render()}
+ if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){if(!v)teach=null;last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
+setInterval(function(){if(Date.now()-pollAt>=CFG.poll-30)poll();if(setOpen()&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))drawSet()},CFG.poll);
+poll();
+</script></body></html>
