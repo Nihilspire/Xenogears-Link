@@ -133,6 +133,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
 <script src="marks.js"></script>
 <script src="shops.js"></script>
 <script src="hints.js"></script>
+<script src="shoprecs.js"></script>
 <script src="exits.js"></script>
 <script src="mapfix.js"></script>
 <script src="rooms.js"></script>
@@ -164,7 +165,7 @@ var CFG={
  /* hiding during dialogue (dlg) and scenes (cut); grace = how long after the last text box before the party screen returns, fixed at one second */
  quiet:QUIET,dlg:QUIET,cut:QUIET,grace:1000,
  /* map */
- maprot:LS.get('maprot','1')==='1',plan:LS.get('plan','1')==='1',mapmir:false,hdot:LS.get('hdot','1')==='1',tre:LS.get('tre','1')==='1',gift:LS.get('gift','1')==='1',enl:LS.get('enl','1')==='1',hint:LS.get('hint','1')==='1',exits:LS.get('exits','1')==='1',places:LS.get('places','1')==='1',
+ maprot:LS.get('maprot','1')==='1',plan:LS.get('plan','1')==='1',mapmir:false,hdot:LS.get('hdot','1')==='1',tre:LS.get('tre','1')==='1',gift:LS.get('gift','1')==='1',enl:LS.get('enl','1')==='1',hint:LS.get('hint','1')==='1',stip:LS.get('stip','1')==='1',exits:LS.get('exits','1')==='1',places:LS.get('places','1')==='1',
  /* battle */
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
@@ -339,7 +340,7 @@ function bootStep(){if(booted)return;
 /* The start screen (SHOW AT START, on by default): how to connect, the options most people will want to set once, and START.
    With it switched off the app opens on the plain logo and START button; either way nothing is read until START is pressed. */
 /* every switch the app has, grouped, with a few words each (the start screen scrolls; SET has the same switches and the dev ones) */
-var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['hdot','HINT SPOTS','Green spots'],
+var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['stip','SHOP TIPS','Marks in shops'],['hdot','HINT SPOTS','Green spots'],
  ['MAP'],['plan','MAP ART','Room pictures'],['maprot','MAP TURNS','Up is camera'],['tre','TREASURE','Chests, taken'],['gift','GIFT SPOTS','Items given'],['places','PLACES','Cubes, shops'],['enl','ENEMY LIST','Room enemies'],['exits','EXITS','Doors, way in'],
  ['BATTLE'],['enc','BATTLE COUNTDOWN','Next fight bar'],['turns','TURN ORDER','Who acts next'],['seq','COMBO KEYS','Deathblow keys'],['dball','ALL DEATHBLOWS','Locked too']];
 /* the first-launch screen: how to link, the main switches, START */
@@ -541,12 +542,14 @@ function shopHave(){var o={},k,i;for(k in BAGS){var b=BAGS[k],q=rd(b[0],b[2]),id
   var g=c.gear<20?readGear(A.GEAR+c.gear*REC):null;if(g&&g.mhp){use.gear_frames[g.frame]=1;use.gear_armor[g.armor]=1;use.gear_engines[g.engine]=1;g.acc.forEach(function(e){if(e)use.gear_parts[e]=1});g.wp.forEach(function(e){if(e)use.gear_weapons[e]=1})}}
  return o}
 /* the shop screen: stock by category with prices (red = cannot pay, green name = already have one) */
-function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='';
+/* a walkthrough tip for buying this item now (SHOPREC kind -> id -> [{f: from step, u: until step, n: the guide's words}]), or null */
+function shopRec(k,id){if(!CFG.stip||!window.SHOPREC)return null;var l=SHOPREC[k]&&SHOPREC[k][id],s=u16(A.STORY),b=null;if(!l||s==null)return null;l.forEach(function(r){if(r.f<=s&&(r.u==null||s<r.u)&&(!b||r.f>=b.f))b=r});return b}
+function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='',nrec=0;
  SHOPCAT[sh.k].forEach(function(c,ci){var l=sh.st[ci]||[],t=window.STATS&&STATS[c[0]],rows='',bag=have[c[0]]||{},use=have.use[c[0]]||{};
   l.forEach(function(id){var nm=gearName(c[0],id);if(!nm)return;var r=t&&t[id],pr=r?r[SHOPPRICE[c[0]]]:null,o=bag[id]||0;
-   rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+')">'+T(nm.trim(),o||use[id]?'n':'w')+T(String(pr==null?'?':pr),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
+   var rc=shopRec(c[0],id);if(rc)nrec++;rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+(rc?',1':'')+')">'+T((rc?'* ':'')+nm.trim(),o||use[id]?'n':rc?'y':'w')+T(String(pr==null?'?':pr),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
   if(rows)h+='<div class="shd">'+T(c[1],'c')+'</div>'+rows});
- return win(h||T('NOTHING LISTED','g'),'list shop')}
+ return win((nrec?'<div class="shd">'+T('* GUIDE TIP: TAP THE ITEM','y')+'</div>':'')+(h||T('NOTHING LISTED','g')),'list shop')}
 /* the main area outside battle: the card or list for the chosen tab */
 /* The party the game's own menu shows: the three party bytes, less anyone whose bit is clear in (members u16 at PARTY-4 AND
    shown-mask u16 at PARTY-2). Scenes put a member in the party before they join on screen (Elly at the start of Blackmoon Forest);
@@ -1122,13 +1125,14 @@ function statPairs(kind,id){var t=window.STATS&&STATS[kind],r=t&&t[id],o=[],who=
    (Fire Shield: "Blocks Water Attack"). So the pop-up adds what the battle code does with each ring next to the game's own description. */
 var RINGNOTE={128:'Code: blocks Earth, +30% from Wind',129:'Code: blocks Wind, +30% from Earth',130:'Code: blocks Water, +30% from Fire',131:'Code: blocks Fire, +30% from Water'};
 /* description pop-up for an item, piece of equipment or gear part (qty = how many are in the bag) */
-function showDesc(kind,id,qty){var nm=gearName(kind,id);if(!nm)return;var d=gearDesc(kind,id);
+function showDesc(kind,id,qty,tip){var nm=gearName(kind,id);if(!nm)return;var d=gearDesc(kind,id);
  var h='<div class="row">'+T(nm,'y')+(qty?'<span class="sp"></span>'+T('x'+qty,'c'):'')+'</div>';
  var st=statPairs(kind,id);
  (d?wrap(d,30):(st.p.length?[]:['No description.'])).forEach(function(l){h+='<div class="row">'+T(l,d?'w':'g')+'</div>'});
  for(var i=0;i<st.p.length;i+=2){h+='<div class="row">';for(var k=i;k<i+2&&k<st.p.length;k++)h+=T(st.p[k][0],'c')+(st.p[k][1]===''?'':T(' '+st.p[k][1]))+(k===i&&k+1<st.p.length?'<span class="sp"></span>':'');h+='</div>'}
  if(kind==='equipment'&&RINGNOTE[id])h+='<div class="row">'+T(RINGNOTE[id],'o')+'</div>';
  if(st.who)wrap(st.who,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});
+ var rc=tip?shopRec(kind,id):null;if(rc){h+='<div class="sep"></div><div class="row">'+T('FROM THE GUIDE','c')+'</div>';wrap(rc.n,30).forEach(function(l){h+='<div class="row">'+T(l,'w')+'</div>'})}
  popup(h,200)}
 /* ================= deathblow progress pop-up =================
    Learned deathblows: u16 at SKILL + id*0x20 + 4, top bit = first deathblow. AP per turn: byte +0x1B.
@@ -1266,7 +1270,7 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+='<div class="opt">'+T('MARKS','c')+chip('TREASURE',CFG.tre,"sv('tre','"+(CFG.tre?0:1)+"')")+chip('GIFTS',CFG.gift,"sv('gift','"+(CFG.gift?0:1)+"')")+chip('PLACES',CFG.places,"sv('places','"+(CFG.places?0:1)+"')")+'</div>';
  h+='<div class="opt">'+T('LISTS','c')+chip('ENEMIES',CFG.enl,"sv('enl','"+(CFG.enl?0:1)+"')")+chip('EXITS',CFG.exits,"sv('exits','"+(CFG.exits?0:1)+"')")+'</div>';
  h+=setHd('HINTS');
- h+=onoff('STORY HINT','hint',CFG.hint);
+ h+=onoff('STORY HINT','hint',CFG.hint);h+=onoff('SHOP TIPS','stip',CFG.stip);
  h+='<div class="opt">'+T('HINT MAPS','c')+chip('GREEN SPOTS',CFG.hdot,"sv('hdot','1')")+chip('PICTURE ONLY',!CFG.hdot,"sv('hdot','0')")+'</div>';
  h+=setHd('EXPERIMENTAL');
  h+='<div class="opt">'+T('3D MAP','c')+chip('ON',CFG.x3d,CFG.x3d?'':"expAsk('x3d')")+chip('OFF',!CFG.x3d,"sv('x3d','0')")+'</div>';
@@ -1291,7 +1295,7 @@ function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T(
  h+='<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('ENABLE',true,"event.stopPropagation();closePop();sv('"+k+"','1')")+'</div>';
  popup(h,240);document.getElementById('pop').style.zIndex=6}
 function sv(k,v){if(k==='host')v=okHost(v);if(k==='port')v=okPort(v);LS.set(k,v);if(k==='scale')v=+v;if(k==='quiet'){v=String(v)==='1';CFG.quiet=CFG.dlg=CFG.cut=v}
- if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye')v=String(v)==='1';CFG[k]=v;
+ if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='stip'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye')v=String(v)==='1';CFG[k]=v;
  if((k==='x3d'||k==='xeye')&&!v){if(k==='x3d'&&map3on){map3on=false;LS.set('map3d','0')}if(map3eye){map3eye=false;LS.set('map3eye','0')}last={};render()}
  if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){if(!v)teach=null;last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
 setInterval(function(){if(Date.now()-pollAt>=CFG.poll-30)poll();if(setOpen()&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))drawSet()},CFG.poll);
