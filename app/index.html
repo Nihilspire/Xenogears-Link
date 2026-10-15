@@ -174,7 +174,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.91';   /* set by build.sh */
+var VERSION='1.92';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -626,11 +626,18 @@ function bestRec(e,i,s,named){var bv=0,bk=-1;for(var k=0;k<8;k++){if(named&&!okN
    a real enemy: the Aveh soldier fights (rooms 57, 58) carry one such unnamed record, which sits in the slot list with full HP for
    the whole fight and is still there when the fight is won; it is marked hide. The copy is only trusted when every enemy it lists
    has the max HP its record says, and no other slot is marked as in the fight. Returns the eight names or null. */
-function lineup(sl){var b=rd(A.BFORM,0x20);if(!b||!window.ENEMIES)return null;var k=b[0],e=k===52||k===68?null:ENEMIES[k-(k>52?1:0)-(k>68?1:0)];if(!e)return null;var out=[],n=0;
- for(var i=0;i<8;i++){var v=b[8+i],s=sl[i],has=s&&(s.m||s.g);if(v===255){if(has&&s.on)return null;out.push({n:'',st:0,p:0});continue}
-  var r=v&127,h=r<8&&e.h[r];if(!h||!has||!((h[0]&&s.m===h[0])||(h[1]&&s.g===h[1])))return null;
-  var nm=okName(e.n[r]);n++;out.push({n:nm,st:s.g>0?e.l[r][1]:e.l[r][0],p:e.p&&e.p[r]||0,hide:!nm&&(b[16+i]&0x80)!==0,sure:true})}
- return n?out:null}
+function lineup(sl){var b=rd(A.BFORM,0x20);if(!b||!window.ENEMIES)return null;var k=b[0],e=k===52||k===68?null:ENEMIES[k-(k>52?1:0)-(k>68?1:0)];if(!e)return null;var out=[],n=0,late=[];
+ for(var i=0;i<8;i++){var v=b[8+i],s=sl[i],has=s&&(s.m||s.g);
+  if(v!==255&&has){var r=v&127,h=r<8&&e.h[r];
+   if(h&&((h[0]&&s.m===h[0])||(h[1]&&s.g===h[1]))){var nm=okName(e.n[r]);n++;out.push({n:nm,st:s.g>0?e.l[r][1]:e.l[r][0],p:e.p&&e.p[r]||0,hide:!nm&&(b[16+i]&0x80)!==0,sure:true});continue}}
+  if(has&&s.on){late.push(i);out.push(null);continue}   /* an enemy that joined after the start, or took a fallen enemy's slot */
+  out.push({n:'',st:0,p:0})}
+ if(!n)return null;   /* nothing in the copy matches this fight: it is stale */
+ /* enemies that joined later come from the same monster bank: name them from it by HP, rewards and stats (v1.92) */
+ late.forEach(function(i){var s=sl[i],r=bestRec(e,i,s,true)||bestRec(e,i,s,false);
+  out[i]=r?{n:okName(e.n[r.k]),st:s.g>0?e.l[r.k][1]:e.l[r.k][0],p:e.p&&e.p[r.k]||0}:{n:'',st:0,p:0,join:1}});
+ if(out.some(function(o){return o.join}))return null;   /* a joiner from another bank: fall back to the search over every bank */
+ return out}
 /* names for the enemy slots: from the fight's line-up record when it can be read (lineup); otherwise find the monster bank that explains
    every enemy, then name each slot from it. Kept per fight in bankCache. */
 function enemyNames(sl){var fb=rd(A.BFORM,0x20),key=sl.map(function(s){return s?[s.m,s.g,s.x,s.gd,s.d,s.st,s.on].join('/'):''}).join(',')+'|'+(fb?hx(fb):'');if(key in bankCache)return bankCache[key];

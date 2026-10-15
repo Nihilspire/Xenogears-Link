@@ -70,6 +70,20 @@ for f,s in sorted(RAW.items()):
         if any(abs(p[0]-g[0])+abs(p[1]-g[1])<40 and g[2]==d for g in got): continue
         got.append([p[0],p[1],d]);st[kind]+=1;st['with way back' if back else 'one way']+=1
     if got: out[f]=got
+# Room 238 ("Debug Map") is a Nortune dispatcher, not a place: its actor 2 routine 1 reads the entrance number and story flags and sends
+# the party on (entrance 0 + var 0x246 bit 11, set by the A Block Wildcat door: Wildcat Bar 205; entrance 3: A Block 195; entrance 1 or 2:
+# Babel rooms 412 / 411). Exits into it are shown with the real destination (v1.92, Jack saw "Debug Map" on the Wildcat door).
+VIA238={(195,864,-29):205,(205,-264,84):195,(411,124,-255):412}
+def resolve238(out):
+    for f in list(out):
+        L=[]
+        for x,z,d in out[f]:
+            if d==238:   # matched within 60 units: the app's copy has the door snapped onto the walkable edge
+                d=next((v for (g,a,b),v in VIA238.items() if g==int(f) and abs(a-x)+abs(b-z)<60),None)
+                if d is None: continue
+            L.append([x,z,d])
+        out[f]=L
+resolve238(out)
 print(dict(st),'rooms with exits',len(out),'exits',sum(len(v) for v in out.values()))
 json.dump(out,open('exits.json','w'),separators=(',',':'))
 if len(sys.argv)>1:
