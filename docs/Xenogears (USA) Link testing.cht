@@ -1,0 +1,41 @@
+cheats = 10
+
+cheat0_desc = "Fast text"
+cheat0_code = "30034964 00FF+30034967 0034"
+cheat0_enable = false
+
+cheat1_desc = "No encounters (rooms)"
+cheat1_code = "800B2298 0000"
+cheat1_enable = false
+
+cheat2_desc = "No encounters (world map)"
+cheat2_code = "8009D64C 0010"
+cheat2_enable = false
+
+cheat3_desc = "On foot: party HP 9999"
+cheat3_code = "800CCD34 270F+800CCEA4 270F+800CD014 270F"
+cheat3_enable = false
+
+cheat4_desc = "On foot: party EP 999"
+cheat4_code = "800CCD38 03E7+800CCEA8 03E7+800CD018 03E7"
+cheat4_enable = false
+
+cheat5_desc = "Gears: HP 99999"
+cheat5_code = "800CCDEC 869F+800CCDEE 0001+800CCF5C 869F+800CCF5E 0001+800CD0CC 869F+800CD0CE 0001"
+cheat5_enable = false
+
+cheat6_desc = "Gears: infinite fuel"
+cheat6_code = "D0083F54 CDC4+80083F56 2400+D0083F54 CDC4+800859FA 2400"
+cheat6_enable = false
+
+cheat7_desc = "XP: level up every battle"
+cheat7_code = "50000BA4 0000+8006D8E4 0001+50000BA4 0000+8006D8E6 0000+50000BA4 0000+8006D8E8 0001+50000BA4 0000+8006D8EA 0000"
+cheat7_enable = false
+
+cheat8_desc = "XP: show level 99 (no stats)"
+cheat8_code = "50000BA4 0000+3006D902 0063"
+cheat8_enable = false
+
+cheat9_desc = "XP: Quick Level Gain (published)"
+cheat9_code = "D01E3234 0044+801E3236 2400"
+cheat9_enable = false

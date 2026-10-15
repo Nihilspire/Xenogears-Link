@@ -52,6 +52,6 @@ Item and Gear shop stock while you shop, with what you already own highlighted.
 - `android/`: the Java wrapper (WebView, RetroArch UDP link, disc reading) and `build.sh`, which builds the APK without Gradle. Signing needs your own `keystore.jks` beside the script and its password in `XG_KS_PASS`.
 - `windows/`: the Electron wrapper and `build.sh` for the portable exe.
 - `tools/`: Python scripts that read the game disc (room scripts, maps, sprites, shops, treasure, hints) and generate the data tables in `app/www`.
-- `docs/RAM_map.md`: the full RAM map the app reads. `docs/save-editor.html` is the testing save editor.
+- `docs/RAM_map.md`: the full RAM map the app reads. `docs/save-editor.html` is the testing save editor, and `docs/Xenogears (USA) Link testing.cht` the RetroArch testing cheats (fast text, no encounters, party and Gear invincibility, fuel, level ups).
 
 No game data is included. The room maps and pictures are built on the device from your own copy of the disc (`discbuild.js`). The game's graphics, font and portraits (`img/`, `spr/`, `world/`, `font.js`) are also left out of the repository and come from the disc with the tools.
