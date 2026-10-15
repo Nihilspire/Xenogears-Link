@@ -1,13 +1,15 @@
 #!/bin/bash
 # Build and sign "Xenogears Link X.X.apk" without Gradle.
-# Usage: ./build.sh 1.23        (version name; version code = 10 + the part after the dot, so 1.23 -> 33)
+# Usage: ./build.sh 1.99.0.1    (version name, up to four parts; version code below)
 # Needs: aapt, zipalign, apksigner, javac, dalvik-exchange, android-23 platform jar; src/, res/, AndroidManifest.xml and keystore.jks beside this script;
 #        the app's web files in ../app/www (index.html is copied in from ../app/index.html first).
 set -e
 cd "$(dirname "$0")"
 unset JAVA_TOOL_OPTIONS
 VER="$1"; [ -n "$VER" ] || { echo "usage: $0 <version, e.g. 1.23>"; exit 1; }
-CODE=$((10 + 10#${VER#*.}))
+# versions are 1.99, then 1.99.0.1, 1.99.0.2 ... until 2.0 (Jack, 15 Oct 2026). Version code = A*1000000 + B*10000 + C*100 + D, so every
+# build is higher than the last (1.99 -> 1990000, 1.99.0.1 -> 1990001, 2.0 -> 2000000; builds up to 1.99 used 10 + B).
+IFS=. read -r VA VB VC VD <<< "$VER"; CODE=$(( 10#${VA:-0}*1000000 + 10#${VB:-0}*10000 + 10#${VC:-0}*100 + 10#${VD:-0} ))
 OUT="Xenogears Link $VER.apk"
 sed -i "s/var VERSION='[^']*'/var VERSION='$VER'/" ../app/index.html   # the start screen shows the version
 cp ../app/index.html ../app/www/index.html
