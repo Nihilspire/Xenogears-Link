@@ -175,7 +175,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.94';   /* set by build.sh */
+var VERSION='1.95';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -411,6 +411,43 @@ function teachFinish(){var c=teach.caps,same=[],diff=[];
  var pick=same.length>=4?same:same.concat(diff);if(pick.length>32){var st=pick.length/32,o=[];for(var k=0;k<32;k++)o.push(pick[Math.floor(k*st)]);pick=o}
  if(pick.length){DLG={a:pick};LS.set('dlg',JSON.stringify(DLG));teach={msg:'Learned. '+pick.length+' signals saved.'}}else teach={msg:'Nothing found. Try again.'}}
 /* forget the taught dialogue bytes */
+/* ================= story snapshots (DEV, Windows) =================
+   SAVE NOW writes the story step, where the party is and the whole 1 KB script variable bank (story and room flags; live copy
+   0x800C3A68 in a room, else the saved copy 0x8006EF64) to Documents\Xenogears Link\Story snapshots, as a text file to read and a
+   JSON file for tools. The text lists what changed since the previous snapshot: each 16-bit variable (byte offset N) that moved,
+   with the bits set or cleared written as [N, mask], the same form as the hint splits (hsplit.js), so a quest's flags can be read
+   straight off two snapshots taken before and after it. */
+var snapMsg='',snapNote='',SNAPN=0x400;
+function snapOn(){return CFG.dev&&setOpen()&&!!(window.Native&&Native.snapSave)}
+function hex4(v){return '0x'+('000'+v.toString(16).toUpperCase()).slice(-4)}
+function snapBank(){var room=u32(A.SIG)===4,b=room?rd(A.SVAR,SNAPN):null;if(!b)b=rd(A.STORY,SNAPN);return b?{b:b,live:!!(room&&rd(A.SVAR,SNAPN))}:null}
+function snapTake(){var bk=snapBank();if(!bk){snapMsg='NO DATA YET, TRY AGAIN';drawSet();return}
+ var now=new Date(),pad=function(v){return (v<10?'0':'')+v},day=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate()),clk=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+ var b=bk.b,V=[];for(var k=0;k<SNAPN;k+=2)V.push(b[k]|b[k+1]<<8);
+ var step=V[0],sig=u32(A.SIG),f=sig===4?(u16(A.FIELD)|0)&0x7FF:null,ar=f!=null?areaOf(f):null,pp=sig===4?playerPos():null,lay=null;try{var pd=playerData();lay=pd!=null?u16(pd+0x10):null}catch(e){}
+ var party=Array.prototype.slice.call(rd(A.PARTY,3)||[]).filter(function(id){return id<=10}).map(cname),pt=u32(A.PTIME),pts=pt==null?null:Math.floor(pt/60);
+ var hn=null;try{hn=hintNext()}catch(e){}var note=snapNote.trim();
+ var S={app:'Xenogears Link '+VERSION,saved:day+' '+clk,note:note,step:step,chapter:chapter(),room:f,roomName:f!=null&&window.ROOMS?ROOMS[f]||null:null,area:ar?ar.n:null,
+  where:sig===5?'world map':sig===6?'battle':sig===4?'room':'other ('+sig+')',x:pp?pp.x:null,z:pp?pp.z:null,y:pp?pp.y:null,layer:lay,entry:V[1],party:party,gold:u32(A.GOLD),
+  playTime:pts==null?null:Math.floor(pts/3600)+':'+pad(Math.floor(pts/60)%60)+':'+pad(pts%60),hint:hn&&hn.note?hn.note.replace(/^\?/,''):null,bank:bk.live?'live 0x800C3A68':'saved copy 0x8006EF64',vars:V};
+ var prev=null;try{prev=JSON.parse(LS.get('snapprev','null'))}catch(e){}
+ var L=[S.app+' - story snapshot','Saved '+S.saved+(note?'   Note: '+note:''),'',
+  'Story step '+step+(S.chapter?'  ('+S.chapter+')':''),S.hint?'Hint shown: '+S.hint:'Hint shown: -',
+  f!=null?'Room '+f+' '+(S.area||'')+' / '+(S.roomName||'(no name)')+(pp?'  at x '+pp.x+', z '+pp.z+', y '+pp.y+(lay!=null?', layer '+lay:''):'')+', came in by entrance '+V[1]:'Where: '+S.where,
+  'Party: '+(party.join(', ')||'-')+'   Gold '+(S.gold==null?'-':S.gold)+'   Play time '+(S.playTime||'-'),'Variables from the '+S.bank,''];
+ if(prev&&prev.vars){var ch=[];for(k=0;k<V.length;k++){var o=prev.vars[k]|0,n=V[k];if(o===n)continue;var on=n&~o,off=o&~n,bits=[];
+   if(k===0)on=off=0;   /* the story step: the values say it all */
+   if(on)bits.push('set '+hex4(on)+' ['+(2*k)+', '+on+']');if(off)bits.push('cleared '+hex4(off)+' ['+(2*k)+', '+off+']');
+   ch.push('  var '+hex4(2*k)+' ('+(2*k)+'): '+o+' -> '+n+'   '+bits.join(', '))}
+  L.push('Changes since the previous snapshot (step '+prev.step+(prev.room!=null?', room '+prev.room:'')+', '+prev.saved+(prev.note?', "'+prev.note+'"':'')+'): '+ch.length);L=L.concat(ch.length?ch:['  (none)'])}
+ else L.push('No previous snapshot to compare with: this one is the starting point.');
+ L.push('','All variables (byte offset: value), non-zero only:');
+ var row=[];for(k=0;k<V.length;k++)if(V[k]){row.push(hex4(2*k)+'='+V[k]);if(row.length===8){L.push('  '+row.join('  '));row=[]}}if(row.length)L.push('  '+row.join('  '));
+ var base='step '+('00'+step).slice(-3)+(f!=null?' room '+f:' '+S.where)+' '+day+' '+clk.replace(/:/g,'');
+ var r=Native.snapSave(base,L.join('\r\n')+'\r\n',JSON.stringify(S,null,1));
+ if(String(r).slice(0,4)==='ERR:')snapMsg='NOT SAVED: '+String(r).slice(4,40).toUpperCase();
+ else{LS.set('snapprev',JSON.stringify({step:step,room:f,saved:S.saved,note:note,vars:V}));snapMsg='SAVED '+base.toUpperCase();snapNote=''}
+ lastSet='';drawSet()}
 function teachClear(){DLG=null;LS.set('dlg','null');teach=null;drawSet()}
 /* the field program keeps four text boxes; a box is on screen when its order is not 0xFFFF and its visibility word is 0 */
 function boxOpen(){if(u32(A.SIG)!==4)return false;for(var i=0;i<4;i++){var b=A.TBOX+i*TBREC,o=u16(b+0x410),v=u16(b+0x40E);if(o!=null&&o!==0xFFFF&&v===0)return true}return false}
@@ -493,6 +530,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
    want(set,A.CAMEYE,32);if(CFG.enc)want(set,A.ENC,0x4C);wantPeople(set,false)}
   return}
  fullKey=key;
+ if(snapOn()){want(set,A.STORY,0x404);want(set,A.PTIME,4);want(set,A.GOLD,4);want(set,A.PARTY,3)}
  want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
  if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
  if(inBattle()){want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
@@ -505,7 +543,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
-  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
+  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}if(snapOn()){want(set,A.SVAR,0x400);want(set,A.WALKB,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
 /* one letter of a name in the game's own letter codes (two encodings: one byte, and 16-bit 'wide') */
@@ -1431,6 +1469,8 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+='<div class="opt">'+T('LINK','c')+['auto','m80','m00','ram'].map(function(m){return chip(m.toUpperCase(),CFG.mode===m,"sv('mode','"+m+"')")}).join('')+'</div>';
  h+='<div class="opt">'+T('STATUS DOT','c')+chip('SHOW',CFG.dot,"sv('dot','1')")+chip('HIDE',!CFG.dot,"sv('dot','0')")+'</div>';
  h+=onoff('FAST MAP','fast',CFG.fast);
+ if(window.Native&&Native.snapSave){h+='<div class="opt">'+T('STORY SNAPSHOT','c')+chip('SAVE NOW',false,'snapTake()')+chip('FOLDER',false,'Native.snapOpen()')+'</div>';
+  h+='<div class="opt">'+T('NOTE','c')+'<input id="isn" style="width:200rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="snapNote=this.value" placeholder="what just happened" value="'+snapNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>';if(snapMsg)h+='<div class="opt">'+T(snapMsg.slice(0,44),'g')+'</div>'}
  h+='<div class="opt">'+T('FIGHT LOG','c')+chip('SHOW',false,'showLog()')+T(blog.length?blog.length+' LINES':'EMPTY','g')+'</div>';
  if(teach){if(teach.msg)h+='<div class="opt">'+T(teach.msg,'y')+'</div>';else{var ts=TEACH_STEPS[teach.step];
   h+='<div class="opt">'+T('STEP '+(teach.step+1)+'/4','y')+'</div><div class="opt">'+T(ts[0])+'</div><div class="opt">'+T(ts[1])+'</div><div class="opt">'+(teach.busy?T('Reading...','c'):chip('TAP HERE NOW',true,'teachTap()'))+'</div>'}}

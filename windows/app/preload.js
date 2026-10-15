@@ -29,4 +29,10 @@ Object.assign(window.Native, {
   genHas(p) { try { return fs.statSync(genPath(p)).isFile(); } catch (e) { return false; } },
   genRead(p) { try { return fs.readFileSync(genPath(p), 'utf8'); } catch (e) { return ''; } },
   genClear() { try { fs.rmSync(gen, { recursive: true, force: true }); } catch (e) {} },
+  // DEV story snapshots (Windows only): text + JSON files in Documents\Xenogears Link\Story snapshots
+  snapDir() { return path.join(ipcRenderer.sendSync('docs-dir'), 'Xenogears Link', 'Story snapshots'); },
+  snapSave(base, txt, json) {
+    try { const d = window.Native.snapDir(); fs.mkdirSync(d, { recursive: true }); const b = path.join(d, String(base).replace(/[<>:"/\\|?*]/g, '-'));
+      fs.writeFileSync(b + '.txt', txt); fs.writeFileSync(b + '.json', json); return b + '.txt'; } catch (e) { return 'ERR:' + e.message; } },
+  snapOpen() { const d = window.Native.snapDir(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} require('electron').shell.openPath(d); },
 });

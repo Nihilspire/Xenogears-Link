@@ -46,6 +46,10 @@ Battle countdown bar for random encounters, in rooms and on the world map.
 
 Item and Gear shop stock while you shop, with what you already own highlighted.
 
+# Developer (Windows)
+
+STORY SNAPSHOT under SETTINGS > DEV OPTIONS saves the story step, room, party and the whole script variable bank to Documents\Xenogears Link\Story snapshots (a .txt to read, a .json for tools), with an optional note. Each snapshot lists what changed since the one before, with flag bits written as [variable, mask], the same form as the story hint splits.
+
 # Source layout
 
 - `app/`: the companion page itself (`index.html` and its scripts in `www/`). The same page runs on Android (WebView) and Windows (Electron).

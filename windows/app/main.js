@@ -42,6 +42,7 @@ function create() {
 // the player's disc image (picked once, remembered) and the folder the page builds the room maps into
 const discFile = () => path.join(app.getPath('userData'), 'disc.json');
 ipcMain.on('user-data', e => { e.returnValue = app.getPath('userData'); });
+ipcMain.on('docs-dir', e => { e.returnValue = app.getPath('documents'); });
 ipcMain.handle('disc-pick', async () => {
   const r = await dialog.showOpenDialog(win, { title: 'Choose your Xenogears disc 1 image', properties: ['openFile'],
     filters: [{ name: 'Disc image (.chd, .bin, .iso)', extensions: ['chd', 'bin', 'iso', 'img'] }, { name: 'All files', extensions: ['*'] }] });
