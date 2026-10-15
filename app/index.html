@@ -174,7 +174,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.92';   /* set by build.sh */
+var VERSION='1.93';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -490,7 +490,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
-  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
+  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map')livePlan(set);
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
 /* one letter of a name in the game's own letter codes (two encodings: one byte, and 16-bit 'wide') */
@@ -567,6 +567,22 @@ function itemsView(){var q=rd(A.IQTY,150),ids=rd(A.IID,150);if(!q||!ids)return w
 var SHOPCAT={4:[['weapons','WEAPONS'],['equipment','EQUIPMENT'],['items','ITEMS']],5:[['gear_frames','FRAMES'],['gear_armor','ARMOR'],['gear_engines','ENGINES'],['gear_weapons','GEAR WEAPONS'],['gear_parts','PARTS']]};
 var SHOPPRICE={items:0,weapons:1,equipment:1,gear_frames:2,gear_armor:0,gear_engines:1,gear_parts:0,gear_weapons:0};
 /* the shop open in the game right now ({k: 4 item / 5 gear, n: shop number, st: its stock}), or null */
+/* the save before changing disc (screen 6, opened by FEDA once, in Taura's house, room 612; seen running in the emulator 14 Oct:
+   "Save?" then "INSERT DISC 2"): the page shows a summary of disc 1 meanwhile */
+function discEndOpen(){return u32(A.SIG)===4&&u32(A.MENU)===6}
+/* DISC 1 COMPLETE: play time, gold, every member who has joined with their level, and the treasure found on disc 1 (rooms below 612,
+   read from the live script variables, chests and one-time pickups alike) */
+function discEndView(){var pt=u32(A.PTIME),g=u32(A.GOLD),av=u16(A.PARTY-4)||0,h='';
+ var tt=0,tg=0;if(window.TREASURE)for(var f in TREASURE){if(+f>=612)continue;TREASURE[f].forEach(function(t){var v=u16(A.SVAR+t[0]);tt++;if(v!=null&&(v>>t[1]&1))tg++})}
+ var sec=pt==null?null:Math.floor(pt/60);
+ h+='<div class="row">'+T('DISC 1 COMPLETE','y')+'</div><div class="sep"></div>';
+ h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(sec==null?'-':Math.floor(sec/3600)+':'+p2(Math.floor(sec/60)%60)+':'+p2(sec%60))+'</div>';
+ h+='<div class="row">'+T('GOLD','c')+'<span class="sp"></span>'+T(g==null?'-':String(g))+T(' G','y')+'</div>';
+ h+='<div class="row">'+T('TREASURE FOUND','c')+'<span class="sp"></span>'+T(tg+' / '+tt,tg===tt?'n':'w')+'</div>';
+ var cards='';for(var id=0;id<=10;id++){if(!((av>>id)&1))continue;var c=readChar(A.CHAR+id*REC);if(!c)continue;
+  cards+='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>'}
+ h+='<div class="row">'+T('Next: disc 2.','g')+'</div>';
+ return win('<div class="col" style="padding:0 6rem">'+h+'</div><div class="col" style="padding:0 6rem"><div class="row">'+T('PARTY','y')+'</div><div class="sep"></div>'+cards+'</div>','card')}
 /* the game's party screen (screen 1, opened by FE56 / FECF): returns the IDs on offer (joined & FrMask, 0x801C5600) or null */
 function partyPickOpen(){if(u32(A.SIG)!==4||u32(A.MENU)!==1)return null;var av=u16(A.PARTY-4),fm=u16(A.PARTY-2);if(av==null||fm==null)return null;
  var m=av&fm&0x7FF,o=[];for(var i=0;i<=10;i++)if((m>>i)&1)o.push(i);return o.length?o:null}
@@ -1306,8 +1322,8 @@ function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LO
    One pass decides the mode (movie, dialogue or scene, battle, field) and writes the three parts of the page. */
 var ffOn=false;
 /* draw the whole screen from what was last read */
-function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),mv=false,sh=linked&&!bt&&!bl&&!mv?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,dl=!bt&&!bl&&!mv&&!sh&&!pk&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=mv?'m':bl?'a':sh?'s':pk?'p':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now()}}
+function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),mv=false,sh=linked&&!bt&&!bl&&!mv?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!sh&&!pk&&!de&&inDialogue();
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now()}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var loc=!linked?'NO LINK':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
@@ -1320,7 +1336,7 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  document.getElementById('main').className=pk||(!dl&&!bt&&!sh&&tab==='equip')?'scroll':'';
  var shs=sh&&document.querySelector('.shop'),shy=shs?shs.scrollTop:0;   /* the shop list and the deathblow list keep their scroll place across a redraw */
  var dbs=document.querySelector('#dbl>.in'),dby=dbs?dbs.scrollTop:0,dbw=dbSel;
- put('main',bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):dl?'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>':bt?battleView():fieldView());
+ put('main',bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):de?discEndView():dl?'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>':bt?battleView():fieldView());
  if(bt&&dby&&dbw===dbSel){dbs=document.querySelector('#dbl>.in');if(dbs)dbs.scrollTop=dby}if(shy){shs=document.querySelector('.shop');if(shs)shs.scrollTop=shy}
  if(!dl&&!bt&&!bl&&!sh&&tab==='map')drawMap();encDraw();moreHint();
  /* bottom bar: nothing in dialogue, the shop's name in a shop, the rewards in a fight, otherwise the four tabs; FF is always there */
