@@ -175,7 +175,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99';   /* set by build.sh */
+var VERSION='1.99.0.1';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -827,8 +827,10 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  all.forEach(function(e){if(!e.mhp)return;if(anyLive&&!live[e.s])return;var nm=names[e.s-3];if(nm.hide||ALLY[nm.n])return;fixFoe(nm,e,ptyIds);e.name=nm.n||('Enemy '+(e.s-2));
   /* full HP = the enemy's starting HP: from its bank record when known, and never less than the most HP seen on it this fight */
   var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
- var tx=0,tg=0;ens.forEach(function(e){var q=offField(e.s)?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
- ens.forEach(function(e){e.wait=offField(e.s)});
+ /* a flagged enemy waits only if nothing of the same name is on the field: in a group of the same gear (three Rapid Fires, the
+    Breakers) the game flags the copies too (Jack, 15 Oct), and those are all in the fight */
+ var outN={};ens.forEach(function(e){e.off=offField(e.s);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]});
+ var tx=0,tg=0;ens.forEach(function(e){var q=e.wait?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
  var shownE=ens.filter(function(e){return !e.wait});
