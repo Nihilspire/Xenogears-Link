@@ -175,7 +175,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.98';   /* set by build.sh */
+var VERSION='1.99';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -817,7 +817,7 @@ function actorHidden(s){var a=ptr(u32(A.BACT+4*s));if(a==null)return false;var f
 function offField(s){if(!actorHidden(s)){seenOut[s]=Date.now();return false}return !(seenOut[s]&&Date.now()-seenOut[s]<1000)}
 /* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
    (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
-function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['g55_0',40,30.5]}}
+function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['55_0',37,59]}}
 function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),anyLive=false,s;var ptyIds=[];for(s=0;s<3;s++){var pq=u8(A.BPID+s);if(pq!=null&&pq<=10)ptyIds.push(pq)}
  for(s=3;s<11;s++)if(live&&live[s])anyLive=true;
  for(s=3;s<11;s++){var b=A.BSLOT+s*BREC,hp=u16(b+0x4C),mhp=u16(b+0x4E),ghp=u32(b+REC+0x60),gm=u32(b+REC+0x64);if(hp==null){fp.push(null);continue}

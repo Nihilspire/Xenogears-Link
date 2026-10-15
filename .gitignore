@@ -20,3 +20,4 @@ windows/node_modules/
 # Copied in from app/index.html by the build scripts
 app/www/index.html
 windows/package-lock.json
+__pycache__/
