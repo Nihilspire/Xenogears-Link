@@ -175,7 +175,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.95';   /* set by build.sh */
+var VERSION='1.96';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -806,6 +806,10 @@ function idTag(r,s){return r&&enemyId[s]?T(String(enemyId[s]),'c')+'<span style=
 /* the battle screen: enemies with HP bars, the party of three, the acting member's deathblow list, and the turn timeline along the bottom */
 /* Guests who stand in an enemy slot but fight on the party's side (Margie in the castle fights): left off the enemy list. */
 var ALLY={Margie:1};
+/* Boss phases (v1.96): an enemy that is the boss in another form. While the phase is up and not knocked out, the boss behind it is
+   in the fight but not out on the field: its card is left off (Jack, 15 Oct: the Hecht fight opens with the Super Aerod; Hecht
+   still takes turns, which keep it in the timeline, and its rewards still count). phase name -> boss name. */
+var PHASE={'Super Aerod':'Hecht'};
 /* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
    (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
 function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['g55_0',40,30.5]}}
@@ -819,16 +823,18 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
   /* full HP = the enemy's starting HP: from its bank record when known, and never less than the most HP seen on it this fight */
   var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
  var tx=0,tg=0;ens.forEach(function(e){var q=reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
+ ens.forEach(function(e){e.wait=ens.some(function(p){return PHASE[p.name]===e.name&&!p.ko})});
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
- if(ens.some(function(e){return !enemyId[e.s]})){enemyId={};ens.forEach(function(e,i){enemyId[e.s]=i+1})}   /* a slot without a number = a new line-up (slots left over from the last fight can show for a moment while a battle loads): number the list afresh, 1 at the top */
+ var shownE=ens.filter(function(e){return !e.wait});
+ if(shownE.some(function(e){return !enemyId[e.s]})){enemyId={};shownE.forEach(function(e,i){enemyId[e.s]=i+1})}   /* a slot without a number = a new line-up (slots left over from the last fight can show for a moment while a battle loads): number the list afresh, 1 at the top */
  var enm={};ens.forEach(function(e){enm[e.s]=e.name.replace(/[^A-Za-z0-9 \-]/g,'');if(!e.ko)inFight.push(e.s)});var rk=turnRanks(inFight);
  /* room for the enemy cards = screen height less the top bar, bottom bar and window frames (71), less the timeline when shown.
     The timeline's sprites are 22 high on a 240-high screen and up to 30 where there is more height. With eight enemies on a
     240-high screen the cards drop to 16 and their rows close up (tight). */
- var n=ens.length,RH=remSize()[1],tb=Math.max(22,Math.min(30,Math.floor(RH-218))),room=RH-71-(rk?tb+17:0),ch=Math.min(38,Math.floor((room-(n-1))/(n||1))),tight=false;
+ var n=shownE.length,RH=remSize()[1],tb=Math.max(22,Math.min(30,Math.floor(RH-218))),room=RH-71-(rk?tb+17:0),ch=Math.min(38,Math.floor((room-(n-1))/(n||1))),tight=false;
  if(ch<18){ch=Math.max(16,Math.min(18,Math.floor(room/n)));tight=true}
- ens.forEach(function(e){var pc=names[e.s-3].p,im='',etag=e.ko?'':statusTag(e.s);   /* with a tag the HP number is not padded, so the bar keeps some width */
+ shownE.forEach(function(e){var pc=names[e.s-3].p,im='',etag=e.ko?'':statusTag(e.s);   /* with a tag the HP number is not padded, so the bar keeps some width */
   if(pc)im=sprImg(pc,28,ch-1);
   en+='<div class="ec'+(e.ko?' dim':'')+'" style="height:'+ch+'rem" onclick="showEnemy('+e.s+',\''+enm[e.s]+'\')"><span class="es">'+im+'</span><div class="col">'
    +'<div class="row">'+T(e.name,'r')+'</div><div class="row">'+idTag(rk,e.s)+bar('en',e.hp,e.mhp,'f')+etag+T(etag?String(e.hp):pad(e.hp,5),hpCol(e.hp,e.mhp))+'</div></div></div>'});
