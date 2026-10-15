@@ -27,6 +27,7 @@ Exits marked with where they lead, and an arrow for the way you came in.
 Memory cubes and shops marked.
 Enemy list for the rooms with encounters.
 3D map with an EYE view, under Experimental, off by default.
+EYE view shows the room's people as their own sprites from the disc, standing where they are in the game right now and turning to face the way they do.
 
 # Story hints
 

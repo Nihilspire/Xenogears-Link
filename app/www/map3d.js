@@ -44,6 +44,7 @@ function clear(g){while(g.children.length){var o=g.children[0];g.remove(o);o.tra
 /* the room: one group per placed model (header table at 0x190); sky domes and backdrops round the whole room are left out */
 var covers=[],coverAt=null;
 async function build(h,t){covers=[];coverAt=null;var VR=XB.vram(t),M=XB.models(h),n=u32(h,0x18C)&0xFFFF,texC={},matC={},gain=1;clear(roomG);clear(lineG);
+ peopleRoom(h,VR);
  function mat(kind,tp,cl,semi,abr){var k=kind+tp+'_'+cl+'_'+semi+'_'+abr;if(matC[k])return matC[k];var o={side:T.BackSide,clippingPlanes:[clip]};
   if(kind==='t'){o.map=pageTex(VR,tp,cl,texC);o.alphaTest=0.5}else o.vertexColors=true;
   if(semi){o.transparent=true;o.depthWrite=false;o.blending=abr===1||abr===3?T.AdditiveBlending:abr===2?T.SubtractiveBlending:T.NormalBlending;o.opacity=abr===0?0.5:abr===3?0.3:1;if(o.alphaTest)o.alphaTest=0.01}
@@ -92,7 +93,43 @@ async function build(h,t){covers=[];coverAt=null;var VR=XB.vram(t),M=XB.models(h
  /* dark rooms are brightened the way the room pictures are (95th percentile of texel brightness under 100: up to 3x) */
  var L=[];Object.keys(texC).forEach(function(k){var d=texC[k].image.data;for(var q=0;q<d.length;q+=4*97)if(d[q+3])L.push((d[q]+d[q+1]+d[q+2])/3)});
  if(L.length){L.sort(function(x,y){return x-y});var p95=L[Math.floor(L.length*0.95)];if(p95<100)gain=Math.min(3,100/Math.max(p95,1))}
- Object.keys(matC).forEach(function(k){matC[k].color.setScalar(gain)})}
+ Object.keys(matC).forEach(function(k){matC[k].color.setScalar(gain)});P.gain=gain}
+/* ---------- people in EYE (v1.94) ----------
+   The room's NPCs as flat sprites standing in the room, always facing the camera, showing the frame the game would show from where
+   the camera looks (npc.js XN.dirFrame: front, side, back, mirrored). Where they stand, which way they face and whether they are
+   shown comes live from the game's actor list (the page passes it in, M3.people); which sprite each actor wears comes from running
+   the room's set-up scripts at the current story step with the live script variables (XN.run, as the room viewer does). The
+   sprites are read from the room file and drawn with the room's VRAM plus the room's own sprite sheets, from the player's disc. */
+var P={spr:[],sc:null,head:null,VR:null,run:null,runKey:'',tex:{},objs:{},gain:1};
+var K=2;   /* world units per sprite pixel (Fei is about 48 pixels and 95 units tall) */
+function peopleRoom(h,VR){clearPeople();P.run=null;P.runKey='';P.spr=[];P.sc=null;P.head=null;P.VR=null;if(!G.XN)return;
+ try{P.VR=VR.slice();XN.uploadSheets(h,P.VR,XB);P.spr=XN.sprites(h,XB);P.sc=XN.script(h,XB);P.head=XN.head(h)}catch(e){P.spr=[];P.sc=null}}
+function clearPeople(){Object.keys(P.objs).forEach(function(k){var o=P.objs[k];if(o.parent)o.parent.remove(o);o.material.dispose()});P.objs={};
+ Object.keys(P.tex).forEach(function(k){if(P.tex[k])P.tex[k].tex.dispose()});P.tex={};if(peopleG)clear(peopleG)}
+var peopleG=null;
+function frameTex(si,variant,fi){var k=si+'_'+variant+'_'+fi;if(P.tex[k]!==undefined)return P.tex[k];
+ var fr=null;try{fr=XN.frame(P.spr[si],P.VR,fi,variant)}catch(e){}if(!fr){P.tex[k]=null;return null}
+ var px=new Uint8Array(fr.w*fr.h*4);for(var y=0;y<fr.h;y++)px.set(fr.rgba.subarray(y*fr.w*4,(y+1)*fr.w*4),(fr.h-1-y)*fr.w*4);   /* bottom row first, as WebGL wants */
+ var t=new T.DataTexture(px,fr.w,fr.h,T.RGBAFormat);t.magFilter=T.NearestFilter;t.minFilter=T.NearestFilter;t.flipY=false;t.needsUpdate=true;
+ return P.tex[k]={tex:t,fr:fr}}
+/* which sprite each actor wears: the set-up scripts run again when the story step or the script variables they read change */
+M3.peopleSetup=function(step,vars){if(!P.sc)return;var key=step+'/'+(P.run?Object.keys(P.run.reads).map(function(v){return v+'='+(vars&&vars[v]|0)}).join(','):'-');if(P.run&&key===P.runKey)return;
+ try{P.run=XN.run(P.sc,{step:step|0,vars:vars||{},head:P.head,entry:vars&&vars[2]|0,party:[0]})}catch(e){P.run=null}
+ P.runKey=step+'/'+(P.run?Object.keys(P.run.reads).map(function(v){return v+'='+(vars&&vars[v]|0)}).join(','):'-')};
+/* the actors the page read: [{i, x, y, z, rot, show}], i = actor (script entity) number; the player's own actor is left out by the page */
+var live=[];M3.people=function(list){live=list||[]};
+/* the actors worth reading positions for (those that wear a sprite), or null before the scripts have run (read them all) */
+M3.peopleWanted=function(){if(!P.run)return null;var w={};P.run.E.forEach(function(e){if(e.kind==='npc'&&P.spr[e.sprite])w[e.i]=1});return w};
+M3.peopleCount=function(){var n=0;Object.keys(P.objs).forEach(function(k){if(P.objs[k].visible)n++});return n};
+function placePeople(camA){if(!peopleG){peopleG=new T.Group();scene.add(peopleG)}var seen={};
+ peopleG.visible=FP;if(!FP||!P.run)return;
+ live.forEach(function(a){var e=P.run.E[a.i];if(!e||e.kind!=='npc'||!P.spr[e.sprite]||!a.show)return;
+  var o=P.objs[a.i];if(!o){o=new T.Sprite(new T.SpriteMaterial({transparent:true,alphaTest:0.5,depthWrite:true}));o.userData.last='';P.objs[a.i]=o;peopleG.add(o)}
+  var df=XN.dirFrame(P.spr[e.sprite],((a.rot|0)-camA+0xC00)&0xFFF),key=e.sprite+'_'+(e.variant|0)+'_'+df[0]+(df[1]?'m':'');
+  if(key!==o.userData.last){var ft=frameTex(e.sprite,e.variant|0,df[0]);if(!ft)return;o.material.map=ft.tex;o.material.color.setScalar(P.gain||1);o.material.needsUpdate=true;
+   var fr=ft.fr,w=fr.w*K,hh=fr.h*K;o.scale.set(df[1]?-w:w,hh,1);o.center.set(df[1]?1+fr.x0/fr.w:-fr.x0/fr.w,1+fr.y0/fr.h);o.userData.last=key}
+  o.position.set(a.x,-a.y,-a.z);o.visible=true;seen[a.i]=1});
+ Object.keys(P.objs).forEach(function(k){if(!seen[k])P.objs[k].visible=false})}
 /* load room f in the background; the map draws flat until it is ready */
 M3.load=function(f,canvas){if(M3.room===f&&(M3.ready||M3.busy))return;if(!init(canvas))return;M3.room=f;M3.ready=false;M3.busy=true;M3.err='';
  (async function(){try{var d=await openDisc(),h=await d.file(606+2*f),t=await d.file(607+2*f);if(M3.room!==f)return;if(!h)throw new Error('No room data');await build(h,t);if(M3.room!==f)return;M3.ready=true}
@@ -137,7 +174,10 @@ M3.draw=function(W,H,at,fw){if(!M3.ready||!R||!at)return false;
   cam.position.set(tgt.x-fx*hz,tgt.y+Math.sin(V.pitch)*V.dist,tgt.z-fz*hz);cam.up.set(0,1,0);cam.lookAt(tgt);
   cam.near=Math.max(5,V.dist*0.03);cam.far=V.dist+V.max*2+4000;clip.constant=1e6}
  var ck=FP?'fp':Math.round(at.y/10);if(ck!==coverAt){coverAt=ck;for(var ci=0;ci<covers.length;ci++)covers[ci].visible=FP||Math.abs(covers[ci].userData.cover-at.y)>COVER2}   /* roofs over the floor the party is on are hidden */
- cam.updateProjectionMatrix();cam.updateMatrixWorld();R.render(scene,cam);return true};
+ cam.updateProjectionMatrix();cam.updateMatrixWorld();
+ /* the camera's way as a game angle (4096 a turn), the same reckoning as the room viewer: picks each sprite's front, side or back */
+ placePeople(Math.round(-Math.atan2(-fz,fx)*2048/Math.PI));
+ R.render(scene,cam);return true};
 /* game (x, y, z) -> device pixels on the canvas last drawn */
 var pv=null,pc=null;M3.project=function(x,y,z,W,H){if(!pv){pv=new T.Vector3();pc=new T.Vector3()}pv.set(x,-y,-z);pc.copy(pv).applyMatrix4(cam.matrixWorldInverse);pv.project(cam);return [(pv.x+1)/2*W,(1-pv.y)/2*H,pc.z<0]};   /* third: in front of the camera */
 /* a spot whose floor is in the clipped-away part above the party (an upper level seen from below) */

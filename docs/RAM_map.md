@@ -266,6 +266,8 @@ The same list is stored in each room file (block 9), so the zones can be read of
 | `0x800B0078` | Pointer to the actor the running script belongs to |
 | `0x800AFC7C` | Script instruction budget per frame |
 
+**EYE people (v1.94):** the app reads every actor's entry `+0x4C` / `+0x58` and block `+0x20` / `+0x106` to draw the room's NPCs in the EYE view, taking actor *i* in this list to be script entity *i* (the sprite each one wears comes from running the room's set-up scripts, `npc.js`). Checked off-device only: the list index matching the script entity, and `+0x58` bit `0x20` hiding an actor, are not yet seen on the handheld.
+
 Actor data block fields beyond position (same block as `+0x20` position): `+0x18`/`+0x1A`/`+0x1C` are the actor's width, height and depth, `+0x1E` a solid range, `+0x30` and `+0x40` movement vectors, `+0x50` the surface normal under the actor, `+0x68` the previous position, `+0x74` whether the actor can be interacted with, `+0x76` move speed, `+0x80` the portrait ID used when it talks. Actor entries in the list (0x5C each) hold a transform matrix at `+0x00`, the data pointer at `+0x4C`, rotation at `+0x50` and a status word at `+0x58` (bit `0x20` = invisible).
 
 ## Field room files and walkmesh (added v0.8)

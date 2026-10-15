@@ -146,6 +146,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
 <script src="chd.js"></script>
 <script src="discbuild.js"></script>
 <script src="three.min.js"></script>
+<script src="npc.js"></script>
 <script src="map3d.js"></script>
 <script>
 'use strict';
@@ -174,7 +175,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.93';   /* set by build.sh */
+var VERSION='1.94';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -283,7 +284,7 @@ var A={
  MODE:0x592C0,SIG:0x6FAF0,CLK_S:0x59418,CLK_M:0x59420,CLK_H:0x59484,PTIME:0x59488,RIDE:0x6F8E5,GOLD:0x6EF58,PARTY:0x6F368,FIELD:0x6F94E,
  NAMES:0x6D634,STORY:0x6EF64,MARG:0x59171,INV:0x6F36C,CHAR:0x6D8A0,GEAR:0x6DFAC,SKILL:0x6ECF0,IQTY:0x6F5C4,IID:0x6F65A,FORM:0x658DC,
  /* room program */
- ACTORS:0xAFB10,BTLP:0x987E0,BTLE:0x970C4,BTLIX:0x92700,WALKB:0xAFB18,ROOMCHG:0xAFD04,PIDX:0xB226C,CAMEYE:0xAF880,CAMAT:0xAF890,CAMDIR:0xAF98C,TBOX:0xC2698,EVT:0xB21D0,MENU:0xADB64,EVT2:0xB2176,SCENEFL:0xAF9D8,SVAR:0xC3A68,ENC:0xB2294,
+ ACTORS:0xAFB10,NACT:0xAFB0C,BTLP:0x987E0,BTLE:0x970C4,BTLIX:0x92700,WALKB:0xAFB18,ROOMCHG:0xAFD04,PIDX:0xB226C,CAMEYE:0xAF880,CAMAT:0xAF890,CAMDIR:0xAF98C,TBOX:0xC2698,EVT:0xB21D0,MENU:0xADB64,EVT2:0xB2176,SCENEFL:0xAF9D8,SVAR:0xC3A68,ENC:0xB2294,
  /* world map program */
  WPOS:0x9D55C,BFORM:0x6F9DC,WSTART:0x9C5AC,WLOC:0x9BD00,WCHUNK:0x9C184,WANG:0x9C584,WMODE:0x9BE10,WSAVE:0x6EE54,WENCW:0x9BE40,WENCN:0x9BCC4,WENCC:0x9D64C,WENCS:0x9C854,WENCON:0x9D554,
  /* battle program */
@@ -437,6 +438,20 @@ function ptr(v){return v!=null&&(v>>>24)===0x80&&(v&0xFFFFFF)<0x200000?v&0x1FFFF
 /* address of the player character's movement block in a room, or null */
 function playerData(){if(u32(A.SIG)!==4)return null;var l=ptr(u32(A.ACTORS)),i=u32(A.PIDX);if(l==null||i==null||i>255)return null;return ptr(u32(l+i*AREC+0x4C))}
 /* mark what the player's position and facing need for the next poll */
+/* EYE people (v1.94): the room's actors from the actor list (count 0x800AFB0C, 0x5C-byte entries at the pointer in 0x800AFB10; entry
+   +0x4C the actor's block, +0x58 status with bit 0x20 = not drawn; block +0x20 position x, y, z in 16.16, +0x106 facing). Read only
+   while the MAP tab shows EYE. Full polls read the list (the pointers change only with the room) and the script variables, which
+   decide what each actor wears; quick polls while walking read only the positions of actors that wear a sprite. */
+function eyePeople(){return map3on&&map3eye&&CFG.x3d&&CFG.xeye&&tab==='map'&&u32(A.SIG)===4&&window.M3&&M3.ready}
+function actorIdx(){var n=u32(A.NACT);if(n==null||n<0||n>200)return [];var w=M3.peopleWanted?M3.peopleWanted():null,o=[];for(var i=0;i<n;i++)if(!w||w[i])o.push(i);return o}
+function wantPeople(set,full){if(!eyePeople())return;var l=ptr(u32(A.ACTORS));
+ if(full){want(set,A.NACT,8);want(set,A.SVAR,0x400)}if(l==null)return;
+ actorIdx().forEach(function(i){var e=l+i*AREC;if(full){want(set,e+0x4C,4);want(set,e+0x58,4)}var d=ptr(u32(e+0x4C));if(d!=null){want(set,d+0x20,12);want(set,d+0x104,4)}})}
+function livePeople(){var l=ptr(u32(A.ACTORS)),me=u32(A.PIDX),out=[];if(l==null)return out;
+ actorIdx().forEach(function(i){if(i===me)return;var e=l+i*AREC,d=ptr(u32(e+0x4C)),st=u32(e+0x58);if(d==null||st==null)return;var x=s32(d+0x20),y=s32(d+0x24),z=s32(d+0x28),r=u16(d+0x106);if(x==null||y==null||z==null)return;
+  out.push({i:i,x:x>>16,y:y>>16,z:z>>16,rot:(r|0)&0xFFF,show:!(st&0x20)})});return out}
+/* the live script variables as the room scripts see them (byte offsets into 0x800C3A68), for working out what each actor wears */
+function liveVars(){var b=rd(A.SVAR,0x400);if(!b)return null;var v={};for(var k=0;k+1<0x400;k++)v[k]=b[k]|b[k+1]<<8;return v}
 function wantPlayer(set){want(set,A.ACTORS,4);want(set,A.PIDX,4);want(set,A.CAMDIR,2);var l=ptr(u32(A.ACTORS)),i=u32(A.PIDX);if(l==null||i==null||i>255)return;want(set,l+i*AREC+0x4C,4);var d=playerData();if(d!=null){want(set,d+0x10,2);want(set,d+0x20,12);want(set,d+0x104,8)}}
 /* position is 16.16 fixed point; whole units are the top half */
 /* the walkmesh layer the player stands on (actor data +0x10; 0 = the main floor, 1-3 = a bridge, a second level...), or null */
@@ -475,7 +490,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   want(set,A.SIG,4);want(set,A.FIELD,2);
   if(u32(A.SIG)===5){want(set,A.WPOS,12);want(set,A.WSTART,12);if(CFG.enc){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else{var pd=playerData();if(pd==null)wantPlayer(set);else{want(set,pd+0x10,2);want(set,pd+0x20,12);want(set,pd+0x104,8)}   /* the pointers to the player's block only change with the room; full polls refresh them */
-   want(set,A.CAMEYE,32);if(CFG.enc)want(set,A.ENC,0x4C)}
+   want(set,A.CAMEYE,32);if(CFG.enc)want(set,A.ENC,0x4C);wantPeople(set,false)}
   return}
  fullKey=key;
  want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
@@ -491,7 +506,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
   if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
-   for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map')livePlan(set);
+   for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
 /* one letter of a name in the game's own letter codes (two encodings: one byte, and 16-bit 'wide') */
 function gch(c,wide){return c>=0x20&&c<=0x39?String.fromCharCode(65+c-0x20):c>=0x3D&&c<=0x56?String.fromCharCode(97+c-0x3D):wide&&c===0x1A?'-':wide&&c>=0x10&&c<=0x19?String(c-0x10):!wide&&c>=0x16&&c<=0x1F?String(c-0x16):!wide&&c===0x13?'-':!wide&&c===0x10?' ':'?'}
@@ -1119,7 +1134,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  if(fx!==camWas[0]||fz!==camWas[1]){camWas=fw;moveAt=Date.now()}
  var c3b=document.getElementById('map3dbox'),c3=c3b&&window.M3?M3.canvas(c3b):null,use3=map3on&&window.M3&&M3.can()&&!!c3,pr=use3?playerPos():null;if(use3)M3.load(f,c3);
  var on3=use3&&M3.ready&&M3.room===f;if(c3b)c3b.style.display=on3?'block':'none';if(use3&&!on3&&M3.err)mapMsg('3D: '+M3.err);
- if(sameDraw(cv,[W,H,f,p&&p.x,p&&p.z,fx,fz,mir,mapZoom,pim?1:0,lvNow,on3,on3?M3.key+'/'+map3eye+'/'+(pr&&pr.y):0,CFG.places?1:0,heading,trl?trl.map(function(t){return t.got?1:0}).join(''):'',hn?hn.key:'',exitTap,entry?entry.f+'/'+entry.x+'/'+entry.z+'/'+(entry.d?1:0):'',CFG.exits?1:0,layerSeen[f]|0].join()))return;g.clearRect(0,0,W,H);
+ if(sameDraw(cv,[W,H,f,p&&p.x,p&&p.z,fx,fz,mir,mapZoom,pim?1:0,lvNow,on3,on3?M3.key+'/'+map3eye+'/'+(pr&&pr.y)+(map3eye?'/'+livePeople().map(function(a){return a.i+':'+a.x+','+a.z+','+a.rot+(a.show?'':'h')}).join(';'):''):0,CFG.places?1:0,heading,trl?trl.map(function(t){return t.got?1:0}).join(''):'',hn?hn.key:'',exitTap,entry?entry.f+'/'+entry.x+'/'+entry.z+'/'+(entry.d?1:0):'',CFG.exits?1:0,layerSeen[f]|0].join()))return;g.clearRect(0,0,W,H);
  function pu(x,z){return(x*fz-z*fx)*mir}function pv(x,z){return-(x*fx+z*fz)}
  /* the view is fitted to the walkable triangles only: blocked ones (tone 2) are often huge filler far outside the room,
     and the room pictures are trimmed to the same area (fld/trim_plan.py). m.wk marks the vertices that count. */
@@ -1133,7 +1148,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  /* icon places: flat map, or with 3D on the room drawn in 3D and each spot put on the floor under it nearest the party's height */
  var py3=pr?pr.y:0,PJ={};
  if(on3){if(M3.fitKey!==f+'/'+lvis){M3.fitKey=f+'/'+lvis;var fxs=[],fzs=[];for(i=0;i<m.nv;i++)if(m.wk[i]){fxs.push(m.vx[i]);fzs.push(m.vz[i])}M3.fit(fxs,fzs)}
-  M3.follow(f);M3.firstPerson(map3eye);M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
+  M3.follow(f);M3.firstPerson(map3eye);if(map3eye){var lv3=liveVars();if(lv3)M3.peopleSetup(u16(A.STORY)|0,lv3);M3.people(livePeople())}M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
   /* the map's own outline, each edge on its triangle's walk layer; edges on a floor above the cut are left out */
   var OY={};g.beginPath();if(!M3.isFP())for(i=0;i<m.nt;i++){var e3=(m.fl[i]>>2)&7;if(!e3||!shown(i))continue;var ly=(m.fl[i]>>5)&3;
    for(var k3=0;k3<3;k3++)if(e3>>k3&1){var q3=m.tr[i*3+k3],r3=m.tr[i*3+(k3+1)%3],A3=OY[q3+'/'+ly]||(OY[q3+'/'+ly]=oyP(m.vx[q3],m.vz[q3],ly)),B3=OY[r3+'/'+ly]||(OY[r3+'/'+ly]=oyP(m.vx[r3],m.vz[r3],ly));
