@@ -17,3 +17,6 @@ windows/node_modules/
 *.chd
 *.bin
 *.cue
+# Copied in from app/index.html by the build scripts
+app/www/index.html
+windows/package-lock.json
