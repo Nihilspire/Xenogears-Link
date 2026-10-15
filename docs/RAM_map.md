@@ -1307,6 +1307,7 @@ The walk mesh pointers mean the live room's walkable floor can be read straight 
 | `0x800D30A0` / `0x800D30A8` | SVECTOR | Battle camera eye / target it is moving toward | Noah validator | A |
 | `0x800D30BC` | MATRIX | Battle rendering matrix | Noah validator | A |
 | `0x800CCB3C` | 11 x pointer | Sprite actor of each battle slot (position, facing, current frame) | Noah validator | A |
+| actor `+0xAC` | u16 flags | **Bit 0 set = the fighter is not drawn**: a boss's helpers waiting to be called in (Super Aerod before Hecht's move, Fis-6's Mechanics) sit in the slots with turn timers but have this bit set; clear on every fighter on the field. Two save states, 12 actors (15 Oct 2026). The Super Aerod's actor is also parked about 5,800 units above the field while it waits; the Mechanics stand at normal places | B |
 | `0x800C35D4` | | Battle music override flag (set by some deathblow sequences) | Noah comment | B |
 
 **Kernel (always loaded)**

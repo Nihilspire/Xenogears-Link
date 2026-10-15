@@ -175,7 +175,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.97';   /* set by build.sh */
+var VERSION='1.98';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -533,7 +533,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
  if(snapOn()){want(set,A.STORY,0x404);want(set,A.PTIME,4);want(set,A.GOLD,4);want(set,A.PARTY,3)}
  want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
  if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
- if(inBattle()){want(set,A.BACT,44);for(var ba=0;ba<11;ba++){var bap=ptr(u32(A.BACT+4*ba));if(bap!=null)want(set,bap+6,2)}want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
+ if(inBattle()){want(set,A.BACT,44);for(var ba=0;ba<11;ba++){var bap=ptr(u32(A.BACT+4*ba));if(bap!=null)want(set,bap+0xAC,2)}want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
  else{var p=rd(A.PARTY,3)||[];for(var i=0;i<3;i++){var id=p[i];if(id==null||id>10)continue;want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)}
   if(tab==='items'){want(set,A.IQTY,150);want(set,A.IID,150)}
   if(u32(A.SIG)===5){want(set,A.WPOS,12);want(set,A.WSTART,12);if(setOpen()){want(set,A.WANG,4);want(set,A.WMODE,4);want(set,A.WSAVE,6)}
@@ -806,14 +806,15 @@ function idTag(r,s){return r&&enemyId[s]?T(String(enemyId[s]),'c')+'<span style=
 /* the battle screen: enemies with HP bars, the party of three, the acting member's deathblow list, and the turn timeline along the bottom */
 /* Guests who stand in an enemy slot but fight on the party's side (Margie in the castle fights): left off the enemy list. */
 var ALLY={Margie:1};
-/* Called-in enemies (v1.96): an enemy that waits off-stage until the boss calls it in. It is in the fight's slots from the start,
-   but the game parks its battle actor far above the field (Jack, 15 Oct: Hecht is out and targetable all fight; the Super Aerod
-   only comes in after one of Hecht's moves, and until then its actor sits about 5,800 units above the party). While it is up
-   there it is left off the cards and the timeline. Actor of battle slot s: pointer at 0x800CCB3C + 4s, s16 height (y, down) at +6. */
-var OFFSTAGE={'Super Aerod':1};
-function actorY(s){var a=ptr(u32(A.BACT+4*s));return a==null?null:s16b(a+6)}
-function s16b(a){var v=u16(a);return v==null?null:(v<<16)>>16}
-function offField(s){var y=actorY(s),py=null;for(var q=0;q<3&&py==null;q++)py=actorY(q);return y!=null&&py!=null&&y<py-3000}
+/* Enemies not out yet (v1.98): a boss's helpers are in the fight's slots from the start (with turn timers) but are not drawn until
+   the boss calls them in (Jack, 15 Oct: the Super Aerod comes in after one of Hecht's moves; Fis-6's Mechanics come in later too).
+   The battle actor of slot s (pointer at 0x800CCB3C + 4s) has a flags word at +0xAC whose bit 0 is set while the actor is not
+   drawn: set on all five waiting enemies and clear on every fighter on the field in both of Jack's save states. While it is set the
+   enemy is left off the cards, the timeline and the rewards. An enemy seen on the field in the last second keeps its card, so a
+   moment out of sight (an attack, a flash) does not make it flicker. */
+var seenOut={};
+function actorHidden(s){var a=ptr(u32(A.BACT+4*s));if(a==null)return false;var f=u16(a+0xAC);return f!=null&&(f&1)===1}
+function offField(s){if(!actorHidden(s)){seenOut[s]=Date.now();return false}return !(seenOut[s]&&Date.now()-seenOut[s]<1000)}
 /* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
    (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
 function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['g55_0',40,30.5]}}
@@ -826,8 +827,8 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  all.forEach(function(e){if(!e.mhp)return;if(anyLive&&!live[e.s])return;var nm=names[e.s-3];if(nm.hide||ALLY[nm.n])return;fixFoe(nm,e,ptyIds);e.name=nm.n||('Enemy '+(e.s-2));
   /* full HP = the enemy's starting HP: from its bank record when known, and never less than the most HP seen on it this fight */
   var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
- var tx=0,tg=0;ens.forEach(function(e){var q=OFFSTAGE[e.name]&&offField(e.s)?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
- ens.forEach(function(e){e.wait=!!OFFSTAGE[e.name]&&offField(e.s)});
+ var tx=0,tg=0;ens.forEach(function(e){var q=offField(e.s)?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
+ ens.forEach(function(e){e.wait=offField(e.s)});
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
  var shownE=ens.filter(function(e){return !e.wait});
