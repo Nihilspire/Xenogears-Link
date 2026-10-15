@@ -1400,3 +1400,5 @@ Variable `0x244` holds the Nortune story bits (bit 1 set in Rico's room 218, bit
 
 - **Story FMV in rooms** is played by the field program itself, through the module at `0x801D3000` (disc file 19; the field calls `0x801D3538`, `0x801D37CC`, `0x801D3F7C`, `0x801D43B0`), not by switching to program 6.
 - Recomp data second pass (Battle Arena, Gear fights, gear shop screens, party / name / load / disc-change screens, every room entrance, story set-ups): `xenogears_recomp_data.md`.
+
+**Script notes from the 1.91 hint work (14 Oct 2026, from reading room scripts):** script variable 2 is the entrance number the party came in by (rooms branch on it: the Thames Beer Hall only plays Bart's drinking scene for entrances 8 and 3). Commands `12 <room | 0x8000> <entrance>` and `FE84` are room changes that the exit scan (`exits_raw`) does not list. `46` is a bit-set test; `42` / `43` compare >= / <=. The story counter does not always go up: in Nortune waking sets 99, the start of the Baptism sets 105, meeting Hammer sets 102, the Special Pardon sets 108. Hint tools: `fld/hintkit.py`, `fld/dossier.py`.
