@@ -92,7 +92,7 @@ for st,L in HR.items():
         out.append([g,d]);rooms.add(g)
     PATH[v]=out;PRE.pop(v,None)
 R={}
-for f in sorted(rooms):
+for f in sorted(r for r in rooms if r>=0):
     m=trim_plan.mesh(f)
     if m is None or str(f) not in trim_plan.PLAN: continue
     v,t=m; w=t[(t[:,3]&3)!=2]

@@ -1147,11 +1147,11 @@ The screen programs are in the menu directory (directory 16 in the disc's direct
 |---|---|---|---|---|---|---|
 | 0 | `FE55`, Triangle (`0x80`) | 2 | 2597 (the main menu program, same bytes as file 39) | **The main menu.** A memory cube is just the main menu opened with saving allowed | 1 = Save can be chosen, 0 = Save greyed out (`0x801DA7D8`) | 111 rooms, 127 uses |
 | 1 | `FE56` (also `FECF`) | 4 | 2598 | **Party screen** (choose who is in the party). Reads the joined mask, `FrMask` and the locked mask, writes the party slots `0x8006F368` | the command's number goes to script variable 1 (`0x8006EF66`) and its saved copy `0x8006F954` instead | 22 rooms: Nortune, Goliath Factory, Yggdrasil, Shevat, Solaris, Krelian's Lab, Mahanon, the Anima Relics, Merkava |
-| 2 | `FE57` | 2 | 2599 (main program again) | Probably the **load screen** of the title: the main program runs with a cut-down set-up, and if it comes back with nothing loaded the field program starts in room 4 (`0x80079EC4`). Not seen running | - | room 490 and debug rooms |
+| 2 | `FE57` | 2 | 2599 (main program again) | Probably the **load screen** of the title: the main program runs with a cut-down set-up, and if it comes back with nothing loaded the field program starts in room 4 (`0x80079EC4`). **Seen running 14 Oct** (emulator): New Game / Continue / Sound, then the memory card's file list and "Load this file?". The code it runs is not the main program's: it matches disc file 900 from offset 0x6FC, loaded at `0x801C5000` | - | room 490 and debug rooms |
 | 3 | `FE58` | 4 | 2600 | **Name entry**: 0-10 renames that character, 11-26 renames gear (number - 11) | who to rename | Yggdrasil rooms 292, 293, 296, 301 and debug |
 | 4 | `FE59` | 4 | 2601 | **Item shop** | shop number | 31 rooms |
 | 5 | `FE5A` | 4 | 2602, plus 2604 loaded at `0x801DC000` | **Gear shop** | shop number | 25 rooms |
-| 6 | `FEDA` | 2 | 2603 (main program again) | Probably the **save before changing disc**: same cut-down set-up as screen 2, used once, in the room where disc 1 ends. Not seen running | 1 | room 612, Taura's House |
+| 6 | `FEDA` | 2 | 2603 (main program again) | Probably the **save before changing disc**: same cut-down set-up as screen 2, used once, in the room where disc 1 ends. **Seen running 14 Oct** (emulator): "Save?" Yes / No, then "INSERT DISC 2". Runs the same file 900 code as screen 2 | 1 | room 612, Taura's House |
 
 **Saving allowed: `0x800B236C`** (u16, field memory). Script command `FE99 n` writes `n XOR 1` here, and both Triangle and `FE55` pass it on as the menu's argument. 0 at room start, so Save is greyed out; a memory cube's talk routine is `FE99 00` (allow), `FE55` (open the menu), `FE87` (wait for it to close). 166 uses allow, 90 forbid again. Not read on the handheld yet.
 
@@ -1372,3 +1372,31 @@ The game now runs here: the pcsx_rearmed libretro core (built from GitHub, with 
 - **Main menu:** opens without changing `0x800592C0` (stays −1) or the program word (stays 4); no single reliable "menu open" byte found yet.
 - **Shops:** item and gear shops opened, stock pointers, top-level cursor, buying and selling (see "Shops checked in the emulator" under the menu screens).
 - Not done: text boxes (already confirmed on the handheld in v0.5), status ailments, gear fights.
+
+## Nortune sewer milestones between story steps 111 and 114 (14 Oct 2026, from the room scripts; not yet seen live)
+
+Step 114 is only set by the cutscene in the sewers (room 239, actor 31, `87 72`), so the hint for 114 stays up from registering Weltall onward. Two flags in between:
+
+| Address | Script variable | Set when | Set by |
+|---|---|---|---|
+| `0x8006F1A8` bit `0x0001` | `0x244` bit 0 | Rico has decided to search the sewers and Fei and Citan go with him ("For the sake of my men too, I am about to check out the sewers") | room 213 controller (`3A 0244 0`), then the party moves to room 211 |
+| `0x8006F164` bit `0x0001` | `0x200` bit 0 | The scene the first time the party enters the sewers with Rico has finished | room 239, actor 34 routine 1 (`3A 0200 0`), which only runs while `0x244` bit 0 is set and this bit is clear |
+
+The sewer watchman in D Block (room 196, actor 37 routine 5: Rico "Thanks for watching the sewers. I'm going down there now!", watchman "Yes sir, Champ") sets nothing of its own: it clears bits 2 and 4 of variable `0x24A` (as every way into the sewers from room 196 does) and moves the party to room 239. It plays when the party walks into the entrance zone (trigger zone 0) while `0x244` bit 0 is set (room 196 actor 56 routine 1).
+
+Variable `0x244` holds the Nortune story bits (bit 1 set in Rico's room 218, bits 2 and 9 by the sewer entrance, 3/4/10 in room 211, 6/7 at the Battling arena, 8/11-15 in room 213), and `0x200` / `0x202` hold the sewer search bits (slime spots, rooms 239-242).
+
+
+## Checked in the emulator, second pass (14 Oct 2026)
+
+| Address | Size | Meaning | Grade |
+|---|---|---|---|
+| `0x8001808C` | 7 × 16 bytes | `g_MainGameStates`: entry, memory start, heap start, has-overlay. States: 0 start-up, 1 field, 2 battle, 3 world map, 4 Battle Arena, 5 menu runner, 6 movie (the program table above) | A |
+| `0x80018088` | u32 | `g_CurGameState`: 0 while a program runs (the main loop calls `ChangeGameState(0)` before starting it); holds the next state only while switching. Writing 4 here at a battle start crashes, because the arena needs the field's hand-over | A |
+| `0x800ADBE8` | u32 | Field's arena request word (-1 idle). **Writing 0 in any room opens the Battle Arena** ("Bonus Battling": Practice, Tutorial, Exit; then Player 1 vs COM / Player 1 vs Player 2 / COM vs COM, number of matches, COM level, rubber band; Gear choice). The field leaves through kind 2 (`0x80079654`), which also adds 1 to `0x8004F30C` | A |
+| `0x8006F8E5`-`0x8006F8E7` | 3 × u8 | `gearRide` (game state `+0x22B1`), one per party slot: 1 = in a Gear. Written by the field commands "ride Gear" (`0x8009FC48`) and "get out" (`0x8009FCAC`). Setting them to 1 and starting a random fight gives a Gear fight (Weltall, fuel 1200, against the room's on-foot enemies) | A |
+| `0x800658DC` | 16 × 32 bytes | Room line-up table (as before). Writing a line-up whose bank has Gear enemies (bank 2: Gigafoot, Trooper) gives Gear-vs-Gear fights | A |
+| `0x800B0064` + `0x800ADBD8` | u32 | Field exit kind 3: write a program number to `0x800B0064` and 0 to `0x800ADBD8`. Program 6 plays the intro movie (Squaresoft logo, Xenogears title), then returns to the field. FE83 is used only in debug rooms 488 and 723 and in room 490, always to programs 1 or 3 | A |
+
+- **Story FMV in rooms** is played by the field program itself, through the module at `0x801D3000` (disc file 19; the field calls `0x801D3538`, `0x801D37CC`, `0x801D3F7C`, `0x801D43B0`), not by switching to program 6.
+- Recomp data second pass (Battle Arena, Gear fights, gear shop screens, party / name / load / disc-change screens, every room entrance, story set-ups): `xenogears_recomp_data.md`.

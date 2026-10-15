@@ -28,6 +28,10 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 .card .col{gap:0}
 .pt{width:48rem;height:48rem;image-rendering:pixelated;flex:none;border:1rem solid #524a31;background:#100808}
 .pt.ko{filter:grayscale(1) brightness(.5)}
+.pt.dim{opacity:.6}
+.pick{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:start;width:100%}
+.pick .card.pk>.in{padding:1rem 0}
+.card.on{filter:brightness(1.25)}
 .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem;justify-content:center}
 .bar{margin:0 4rem;width:64rem;height:6rem;border:1rem solid #8c7352;background:#100808;position:relative;flex:none}
 .bar>i{position:absolute;left:0;top:0;bottom:0;display:block}
@@ -133,7 +137,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
 <script src="treasure.js"></script>
 <script src="marks.js"></script>
 <script src="shops.js"></script>
-<script src="hints.js"></script>
+<script src="hsplit.js"></script><script src="hints.js"></script>
 <script src="exits.js"></script>
 <script src="mapfix.js"></script>
 <script src="rooms.js"></script>
@@ -170,7 +174,7 @@ var CFG={
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.89';   /* set by build.sh */
+var VERSION='1.91';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -276,7 +280,7 @@ function setOpen(){return document.getElementById('set').className!==''}
 /* RAM offsets (address minus 0x80000000). The RAM map in the project notes says how each was found. */
 var A={
  /* always loaded */
- MODE:0x592C0,SIG:0x6FAF0,CLK_S:0x59418,CLK_M:0x59420,CLK_H:0x59484,GOLD:0x6EF58,PARTY:0x6F368,FIELD:0x6F94E,
+ MODE:0x592C0,SIG:0x6FAF0,CLK_S:0x59418,CLK_M:0x59420,CLK_H:0x59484,PTIME:0x59488,RIDE:0x6F8E5,GOLD:0x6EF58,PARTY:0x6F368,FIELD:0x6F94E,
  NAMES:0x6D634,STORY:0x6EF64,MARG:0x59171,INV:0x6F36C,CHAR:0x6D8A0,GEAR:0x6DFAC,SKILL:0x6ECF0,IQTY:0x6F5C4,IID:0x6F65A,FORM:0x658DC,
  /* room program */
  ACTORS:0xAFB10,BTLP:0x987E0,BTLE:0x970C4,BTLIX:0x92700,WALKB:0xAFB18,ROOMCHG:0xAFD04,PIDX:0xB226C,CAMEYE:0xAF880,CAMAT:0xAF890,CAMDIR:0xAF98C,TBOX:0xC2698,EVT:0xB21D0,MENU:0xADB64,EVT2:0xB2176,SCENEFL:0xAF9D8,SVAR:0xC3A68,ENC:0xB2294,
@@ -474,7 +478,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
    want(set,A.CAMEYE,32);if(CFG.enc)want(set,A.ENC,0x4C)}
   return}
  fullKey=key;
- want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x70);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
+ want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
  if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
  if(inBattle()){want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
  else{var p=rd(A.PARTY,3)||[];for(var i=0;i<3;i++){var id=p[i];if(id==null||id>10)continue;want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)}
@@ -486,7 +490,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
-  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
+  if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map')livePlan(set);
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
 /* one letter of a name in the game's own letter codes (two encodings: one byte, and 16-bit 'wide') */
@@ -519,7 +523,19 @@ var last={};
 /* write html into element id, only when it differs from what is there */
 function put(id,html){if(last[id]===html)return;last[id]=html;document.getElementById(id).innerHTML=html}
 /* STATUS tab: one party member (HP, EP, level, experience, stats) */
-function statusCard(id){var c=readChar(A.CHAR+id*REC);if(!c)return win(T('...','g'),'card');
+/* Gear mode outside battle: one byte per party slot at 0x8006F8E5 (game state +0x22B1, gearRide in the decomp), 1 while that
+   member is in a Gear. The field's "ride Gear" / "get out" commands write it (0x8009FC48 / 0x8009FCAC); checked in the emulator 14 Oct */
+function riding(id){if(u32(A.SIG)!==4&&u32(A.SIG)!==5)return false;var p=rd(A.PARTY,3),r=rd(A.RIDE,3);if(!p||!r)return false;for(var i=0;i<3;i++)if(p[i]===id&&r[i]===1)return true;return false}
+function anyRiding(){if(u32(A.SIG)!==4&&u32(A.SIG)!==5)return false;var r=rd(A.RIDE,3),p=rd(A.PARTY,3);if(!r||!p)return false;for(var i=0;i<3;i++)if(r[i]===1&&p[i]!=null&&p[i]<=10)return true;return false}
+/* STATUS card while the member is in a Gear: the Gear's HP and fuel first, the pilot's own HP and EP below */
+function gearStatusCard(id,c){var g=c.gear<20?readGear(A.GEAR+c.gear*REC):null;if(!g||!g.mhp)return null;
+ var l1='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>';
+ var l2='<div class="row">'+T(padr(gname(c.gear),12),'n')+'<span class="sp"></span>'+T('IN GEAR','c')+'</div>';
+ var l3='<div class="row">'+T('HP','c')+bar('hp',g.hp,g.mhp)+T(pad(g.hp,5),hpCol(g.hp,g.mhp))+T('/','g')+T(pad(g.mhp,5))+'</div>';
+ var l4='<div class="row">'+T('FL','c')+bar('ep',g.fuel,g.mfuel)+T(pad(g.fuel,5),g.mfuel&&g.fuel*4<=g.mfuel?'r':'w')+T('/','g')+T(pad(g.mfuel,5))+'</div>';
+ var l5='<div class="row">'+T('PILOT HP','o')+T(pad(c.hp,4),hpCol(c.hp,c.mhp))+T('/','g')+T(pad(c.mhp,4))+T(' EP','o')+T(pad(c.ep,4))+'</div>';
+ return win(portrait(id,g.hp===0?'ko':'')+'<div class="col">'+l1+l2+l3+l4+l5+'</div>','card','onclick="showDB('+id+')"')}
+function statusCard(id){var c=readChar(A.CHAR+id*REC);if(!c)return win(T('...','g'),'card');if(riding(id)){var gc=gearStatusCard(id,c);if(gc)return gc}
  var l1='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>';
  var l2='<div class="row">'+T('HP','c')+bar('hp',c.hp,c.mhp)+T(pad(c.hp,4),hpCol(c.hp,c.mhp))+T('/','g')+T(pad(c.mhp,4))+'</div>';
  var l3='<div class="row">'+T('EP','c')+bar('ep',c.ep,c.mep)+T(pad(c.ep,4))+T('/','g')+T(pad(c.mep,4))+'</div>';
@@ -551,6 +567,20 @@ function itemsView(){var q=rd(A.IQTY,150),ids=rd(A.IID,150);if(!q||!ids)return w
 var SHOPCAT={4:[['weapons','WEAPONS'],['equipment','EQUIPMENT'],['items','ITEMS']],5:[['gear_frames','FRAMES'],['gear_armor','ARMOR'],['gear_engines','ENGINES'],['gear_weapons','GEAR WEAPONS'],['gear_parts','PARTS']]};
 var SHOPPRICE={items:0,weapons:1,equipment:1,gear_frames:2,gear_armor:0,gear_engines:1,gear_parts:0,gear_weapons:0};
 /* the shop open in the game right now ({k: 4 item / 5 gear, n: shop number, st: its stock}), or null */
+/* the game's party screen (screen 1, opened by FE56 / FECF): returns the IDs on offer (joined & FrMask, 0x801C5600) or null */
+function partyPickOpen(){if(u32(A.SIG)!==4||u32(A.MENU)!==1)return null;var av=u16(A.PARTY-4),fm=u16(A.PARTY-2);if(av==null||fm==null)return null;
+ var m=av&fm&0x7FF,o=[];for(var i=0;i<=10;i++)if((m>>i)&1)o.push(i);return o.length?o:null}
+/* PARTY PICK: every member on offer side by side, so the choice can be made without the game's own status pages. The three
+   slots (0x8006F368) change as members are picked, so the ones in the party are lit. */
+function partyPickView(ids){var p=rd(A.PARTY,3)||[],h='';
+ ids.forEach(function(id){var c=readChar(A.CHAR+id*REC);if(!c)return;var inP=p.indexOf(id)>=0,g=c.gear<20?readGear(A.GEAR+c.gear*REC):null,db=dbRows(id),dn=0;
+  if(db)db.forEach(function(d){if(d.got)dn++});
+  var r1='<div class="row">'+T(padr(cname(id),9),inP?'n':'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>';
+  var r2='<div class="row">'+T('HP','c')+T(pad(c.hp,5),hpCol(c.hp,c.mhp))+T('/','g')+T(pad(c.mhp,4))+'</div>';
+  var r3='<div class="row">'+T('AT','o')+T(pad(c.at,3))+T(' DF','o')+T(pad(c.df,3))+(db?'<span class="sp"></span>'+T('DB','c')+T(pad(dn,3)):'')+'</div>';
+  var r4='<div class="row">'+(g&&g.mhp?T(padr(gname(c.gear),9),'w')+'<span class="sp"></span>'+T('HP','c')+T(pad(g.hp,6),hpCol(g.hp,g.mhp)):T('NO GEAR','g'))+'</div>';
+  h+=win(portrait(id,inP?'':'dim')+'<div class="col">'+r1+r2+r3+r4+'</div>','card pk'+(inP?' on':''),'onclick="showDB('+id+')"')});
+ return '<div class="pick">'+h+'</div>'}
 function shopOpen(){if(u32(A.SIG)!==4)return null;var m=u32(A.MENU),n=u8(A.MARG);if(m==null||n==null||(m!==4&&m!==5)||!window.SHOPS)return null;var st=SHOPS[m===4?'i':'g'][n];return st?{k:m,n:n,st:st}:null}
 /* what the party already has: the five bags (quantity list, ID list, slots; all inside INV..INV+0x578) plus what the three party members and their gears are using */
 var BAGS={weapons:[0x6F36C,0x6F3D0,100],equipment:[0x6F434,0x6F4FC,200],items:[A.IQTY,A.IID,150],gear_weapons:[0x6F6F0,0x6F754,100],gear_parts:[0x6F7B8,0x6F84E,150]};
@@ -986,12 +1016,13 @@ function drawWorld(cv,g,W,H,dpr){var p=worldPos();if(p){worldDetect(p);if(wPrev&
  var im=worldImg(wSel);if(!im){g.clearRect(0,0,W,H);cv._sig=null;mapMsg('LOADING');return}mapMsg(p?'':'NO POSITION YET');
  p=glide('w',p,0,3000);
  var pls=worldPlaces();
- if(sameDraw(cv,['w',W,H,wSel,mapZoom,p&&p.x,p&&p.z,wHead,pls?pls.map(function(q){return q.x+':'+q.z}).join('/'):''].join()))return;g.clearRect(0,0,W,H);
+ if(sameDraw(cv,['w',W,H,wSel,mapZoom,p&&p.x,p&&p.z,wHead,(hintNext()||{}).key,pls?pls.map(function(q){return q.x+':'+q.z}).join('/'):''].join()))return;g.clearRect(0,0,W,H);
  var fitS=Math.min(W,H)/1024,sc=fitS,cx=512,cy=512;
  if(mapZoom&&p){sc=fitS*4;cx=Math.max(W/2/sc,Math.min(1024-W/2/sc,p.x/32));cy=Math.max(H/2/sc,Math.min(1024-H/2/sc,p.z/32))}
  g.imageSmoothingEnabled=sc<1.5;g.drawImage(im,W/2-cx*sc,H/2-cy*sc,1024*sc,1024*sc);
  if(pls)pls.forEach(function(q){var ex=W/2+(q.x/32-cx)*sc,ey=H/2+(q.z/32-cy)*sc,r=3.4*dpr;
    g.beginPath();g.moveTo(ex,ey-r);g.lineTo(ex+r,ey);g.lineTo(ex,ey+r);g.lineTo(ex-r,ey);g.closePath();g.fillStyle='#7fd8ff';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr;g.stroke()});
+ if(CFG.hdot)hintSpots(-1).forEach(function(q){var qx=W/2+(q[0]/32-cx)*sc,qy=H/2+(q[1]/32-cy)*sc;g.beginPath();g.arc(qx,qy,5*dpr,0,6.2832);g.strokeStyle='#ffffff';g.lineWidth=3*dpr;g.stroke();g.strokeStyle='#5f5';g.lineWidth=1.5*dpr;g.stroke();g.beginPath();g.arc(qx,qy,1.6*dpr,0,6.2832);g.fillStyle='#5f5';g.fill()});
  if(!p)return;var X=W/2+(p.x/32-cx)*sc,Y=H/2+(p.z/32-cy)*sc;
  marker(g,X,Y,wHead,dpr)}
 var MAPCV='<div style="flex:1;min-height:0;position:relative"><div id="map3dbox" style="position:absolute;left:0;top:0;width:100%;height:100%;display:none"></div><canvas id="mapcv" onclick="mapTap(event)" style="position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none"></canvas></div><div id="mapmsg"></div>';
@@ -1021,7 +1052,7 @@ function mapView(){if(u32(A.SIG)===5){var wl=worldList(),wb='',wp='';
  if(mk){btn+='<div class="mbtn'+(mapSide==='x'?' on':'')+'" onclick="sideTap(\'x\')"><span class="mic">'+MARK_ICON+'</span>'+T(String(mk.length),'w')+'</div>'}
  if(mapSide==='x'&&mk){pan='<div class="row">'+T('PLACES','y')+'</div>';var mc={s:0,i:0,g:0};mk.forEach(function(e){mc[e[2]]++});[['s','Memory Cube'],['i','Item Shop'],['g','Gear Shop']].forEach(function(q){if(mc[q[0]])pan+='<div class="row"><span class="lg lg'+q[0]+'"></span>'+T(q[1],q[0]==='s'?'r':'o')+'<span class="sp"></span>'+T(mc[q[0]]>1?'    x'+mc[q[0]]:'  HERE','n')+'</div>'})}
  if(mapSide==='t'&&tl){pan='<div class="row"><span class="lg lgt"></span>'+T('TREASURE','y')+'</div>';if(tl.some(function(t){return t.gift&&t.x!=null}))pan+='<div class="row"><span class="lg lgf"></span>'+T('GIFT SPOT','c')+'</div>';tl.forEach(function(t){var n=t.n.length>20?t.n.slice(0,19)+'.':t.n;pan+='<div class="row">'+T(n,t.got?'g':'w')+'<span class="sp"></span>'+T(t.got==null?'   ?':t.got?' GOT':t.gift?'GIFT':'HERE',t.got?'n':t.got==null?'g':t.gift?'c':'y')+'</div>'})}
- if(mapSide==='e'&&en&&en.length){pan='<div class="row">'+T('ENEMIES','y')+'</div>';en.forEach(function(e){pan+='<div class="erow"><span class="mic">'+(e.p?sprImg(e.p,22,15):'')+'</span>'+T(e.n,'r')+'</div>'})}
+ if(mapSide==='e'&&en&&en.length){pan='<div class="row">'+T('ENEMIES','y')+(anyRiding()?'<span class="sp"></span>'+T('IN GEARS','n'):'')+'</div>';en.forEach(function(e){pan+='<div class="erow"><span class="mic">'+(e.p?sprImg(e.p,22,15):'')+'</span>'+T(e.n,'r')+'</div>'})}
  var rn=f!=null&&window.ROOMS&&ROOMS[f],hd=a?a.n:'',pp=CFG.dev&&f!=null?playerPos():null;   /* DEV: x, z under the room number, for placing hint spots */
  if(rn){var mx=Math.max(14,Math.floor((remSize()[0]-46)/7)-('ROOM '+f).length-2);hd=(a?a.s+': ':'')+rn;if(hd.length>mx)hd=rn;if(hd.length>mx)hd=hd.slice(0,mx-2)+'..'}   /* room name when one is known, shortened to fit beside the number */
  return win('<div class="row">'+T(hd,'y')+'<span class="sp"></span>'+T(f==null?'':'ROOM '+f,'g')+'</div><div class="mapbox">'+MAPCV+(f!=null&&mapsReady()&&CFG.x3d?'<div class="m3btn'+(map3on?' on':'')+'" onclick="toggle3d(event)">'+T('3D',map3on?'y':'w')+'</div>'+(map3on&&CFG.xeye?'<div class="m3btn eye'+(map3eye?' on':'')+'" onclick="toggleEye(event)">'+T('EYE',map3eye?'y':'w')+'</div>':''):'')+(pp?'<div class="mcoord">'+T(pp.x+', '+pp.z,'g')+'</div>':'')+(btn?'<div class="mside">'+btn+'</div>':'')+(pan?'<div class="mpanel" onclick="sideTap(mapSide)">'+pan+'</div>':'')+'</div>','card mapw')}
@@ -1065,7 +1096,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  if(fx!==camWas[0]||fz!==camWas[1]){camWas=fw;moveAt=Date.now()}
  var c3b=document.getElementById('map3dbox'),c3=c3b&&window.M3?M3.canvas(c3b):null,use3=map3on&&window.M3&&M3.can()&&!!c3,pr=use3?playerPos():null;if(use3)M3.load(f,c3);
  var on3=use3&&M3.ready&&M3.room===f;if(c3b)c3b.style.display=on3?'block':'none';if(use3&&!on3&&M3.err)mapMsg('3D: '+M3.err);
- if(sameDraw(cv,[W,H,f,p&&p.x,p&&p.z,fx,fz,mir,mapZoom,pim?1:0,lvNow,on3,on3?M3.key+'/'+map3eye+'/'+(pr&&pr.y):0,CFG.places?1:0,heading,trl?trl.map(function(t){return t.got?1:0}).join(''):'',hn?hn.step:'',exitTap,entry?entry.f+'/'+entry.x+'/'+entry.z+'/'+(entry.d?1:0):'',CFG.exits?1:0,layerSeen[f]|0].join()))return;g.clearRect(0,0,W,H);
+ if(sameDraw(cv,[W,H,f,p&&p.x,p&&p.z,fx,fz,mir,mapZoom,pim?1:0,lvNow,on3,on3?M3.key+'/'+map3eye+'/'+(pr&&pr.y):0,CFG.places?1:0,heading,trl?trl.map(function(t){return t.got?1:0}).join(''):'',hn?hn.key:'',exitTap,entry?entry.f+'/'+entry.x+'/'+entry.z+'/'+(entry.d?1:0):'',CFG.exits?1:0,layerSeen[f]|0].join()))return;g.clearRect(0,0,W,H);
  function pu(x,z){return(x*fz-z*fx)*mir}function pv(x,z){return-(x*fx+z*fz)}
  /* the view is fitted to the walkable triangles only: blocked ones (tone 2) are often huge filler far outside the room,
     and the room pictures are trimmed to the same area (fld/trim_plan.py). m.wk marks the vertices that count. */
@@ -1119,7 +1150,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  if(!on3&&CFG.exits&&entry&&entry.f===f&&entry.d){var ax=SX(entry.x,entry.z),ay=SY(entry.x,entry.z),ed=DIR(entry.x,entry.z,entry.d[0],entry.d[1]),dx=ed[0],dy=ed[1],l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;var L=7*dpr,Wd=4.5*dpr;
    g.beginPath();g.moveTo(ax+dx*L,ay+dy*L);g.lineTo(ax-dy*Wd,ay+dx*Wd);g.lineTo(ax-dx*L*.3,ay-dy*L*.3);g.lineTo(ax+dy*Wd,ay-dx*Wd);g.closePath();g.fillStyle='#e33';g.fill();g.strokeStyle='#fff';g.lineWidth=dpr;g.stroke()}
  /* the story hint's spot, when this is the room the next step is set in: a green ring */
- if(!on3&&hn)hn.rows.forEach(function(r){if(r[0]!==f||r.length<4)return;var qx=SX(r[2],r[3]),qy=SY(r[2],r[3]);g.beginPath();g.arc(qx,qy,5*dpr,0,6.2832);g.strokeStyle='#ffffff';g.lineWidth=3*dpr;g.stroke();g.strokeStyle='#5f5';g.lineWidth=1.5*dpr;g.stroke();g.beginPath();g.arc(qx,qy,1.6*dpr,0,6.2832);g.fillStyle='#5f5';g.fill()});
+ if(!on3&&hn&&CFG.hdot)hintSpots(f).forEach(function(r){var qx=SX(r[0],r[1]),qy=SY(r[0],r[1]);g.beginPath();g.arc(qx,qy,5*dpr,0,6.2832);g.strokeStyle='#ffffff';g.lineWidth=3*dpr;g.stroke();g.strokeStyle='#5f5';g.lineWidth=1.5*dpr;g.stroke();g.beginPath();g.arc(qx,qy,1.6*dpr,0,6.2832);g.fillStyle='#5f5';g.fill()});
  if(p&&!(on3&&M3.isFP())){var mp=on3?M3.project(p.x,py3,p.z,W,H):PP(p.x,p.z);marker(g,mp[0],mp[1],heading?DIR(p.x,p.z,heading[0],heading[1]):null,dpr)}}
 /* ================= random battles =================
    Both the room program and the world map decide random battles the same way (room: 0x80079288 / 0x8008E718, world: 0x8007528C).
@@ -1144,7 +1175,8 @@ function roomEnemies(){var b=rd(A.FORM,0x210);if(!b||!window.ENEMIES)return null
  return out}
 /* the battle countdown bar under the top bar (green to red) */
 function encDraw(){var el=document.getElementById('enc'),e=CFG.enc&&!inBattle()?encInfo():null;if(el){if(!e)el.style.display='none';else{var f=e.next!=null?e.next/(e.w+1):1;
-   el.style.display='block';el.style.width=Math.max(1,Math.round(f*100))+'%';el.style.background=e.next==null?'#456':e.next<=45?'#e44':e.next<=120?'#dc4':'#5c5'}}}
+   el.style.display='block';el.style.width=Math.max(1,Math.round(f*100))+'%';var col=e.next==null?'#456':e.next<=45?'#e44':e.next<=120?'#dc4':'#5c5';
+   el.style.background=anyRiding()?'repeating-linear-gradient(90deg,'+col+' 0 10px,#223 10px 13px)':col}}}   /* striped: the next fight will be in Gears */
 /* ================= treasure =================
    TREASURE (treasure.js) lists each room's chests and one-time pickups, read off the room scripts on the disc. Each has a flag: one bit
    of a 16-bit script variable (live bank at 0x800C3A68). The room's set-up script tests that bit to decide whether the chest is still
@@ -1203,29 +1235,52 @@ function showDB(id){var rows=dbRows(id),r=rd(A.SKILL+id*0x20,0x20);if(!rows||!r)
    ringed on the live map. HNOTE adds a one-line note per step: white when it comes from the trigger's own dialogue on the disc,
    grey (a leading ?) when written from memory of the game and not checked. It names the destination, not the way there, and nothing between two steps. Not yet checked on the handheld. */
 function hintNext(){var s=u16(A.STORY);if(!CFG.hint||s==null||!window.HINTS)return null;if(!hintNext.k)hintNext.k=Object.keys(HINTS).map(Number).sort(function(a,b){return a-b});
- for(var i=0;i<hintNext.k.length;i++)if(hintNext.k[i]>s)return{step:hintNext.k[i],rows:HINTS[hintNext.k[i]]};return null}
+ for(var i=0;i<hintNext.k.length;i++)if(hintNext.k[i]>s){var h=hintAt(i);if(h)return h}return null}
+/* a story flag for the hint splits: the live copy of the script variables while in a room, else the saved copy */
+function hintFlag(v,m){var b=u32(A.SIG)===4?A.SVAR:A.STORY,x=u16(b+v);return x!=null&&(x&m)!==0}
+function hintFlagWant(set){if(!window.HSPLIT)return;var b=u32(A.SIG)===4?A.SVAR:A.STORY;for(var k in HSPLIT)HSPLIT[k].forEach(function(r){r[0].forEach(function(f){want(set,b+f[0],2)})})}
+/* the hint for step key i, with the parts already done taken out (HSPLIT): the sentences and path rooms a split names are dropped,
+   or a split with its own text and rooms replaces them; when nothing is left the next step's hint is used (null) */
+function hintAt(i){var k=hintNext.k[i],nt=window.HNOTE&&HNOTE[k]||'',path=window.HPATH&&HPATH[k]||null,sp=window.HSPLIT&&HSPLIT[k],done=0;
+ var o={step:k,rows:HINTS[k],note:nt,path:path,key:k+'.0'};if(!sp||!nt)return o;
+ var unv=nt.charAt(0)==='?',pt=hintParts(unv?nt.slice(1):nt),dS={},dP={},rep=null;
+ sp.forEach(function(r,j){if(!r[0].every(function(f){return hintFlag(f[0],f[1])}))return;done=j+1;r[1].forEach(function(x){dS[x]=1});r[2].forEach(function(x){dP[x]=1});if(r[3])rep=r});
+ if(!done)return o;o.key=k+'.'+done;
+ if(rep){o.note=rep[3];o.path=rep[4];return o}
+ var left=pt.filter(function(x,j){return !dS[j]});if(!left.length)return null;
+ o.note=(unv?'?':'')+left.join(' ');if(path)o.path=path.filter(function(x,j){return !dP[j]});return o}
 /* Story hint pop-up. lv 0: where the story goes on, as area names (one line says whether the party is already in one of them).
    lv 1: one page per part of the hint. The note is split at each full stop; the rooms listed for the step (HPATH, or the rooms the
    scripts point to) are spread over the pages in order, one picture a page, with BACK / NEXT to move between them. The green
    spots can be switched off (SETTINGS > HINTS > SPOTS). */
 var hintPage=0;
+/* the green spots of the current hint in one room (-1 = the world map): the rooms Jack listed (HPATH), else the script's own place */
+function hintSpots(room){var hn=hintNext();if(!hn)return [];var path=hn.path,o=[];
+ if(path)path.forEach(function(q){if(q[0]===room)q[1].forEach(function(v){o.push(v)})});
+ else hn.rows.forEach(function(r){if(r[0]===room&&r.length>3)o.push([r[2],r[3]])});
+ return o}
 function hintParts(t){if(!t)return [];var o=[],cur='';t.split(/(\.\s+)/).forEach(function(x){cur+=x;if(/\.\s+$/.test(x)){o.push(cur.trim());cur=''}});if(cur.trim())o.push(cur.trim());return o}
 function showHint(lv,pg){var hn=hintNext(),f=u32(A.SIG)===4?u16(A.FIELD):null;f=f==null?null:f&0x7FF;var h='<div class="row">'+T('STORY HINT','y')+'</div><div class="sep"></div>';
  if(!hn){popup(h+'<div class="row">'+T('Nothing more to point to.','g')+'</div>',200);return}
- var cur=areaOf(f),seen={},path=window.HPATH&&HPATH[hn.step],pre=window.HPRE&&HPRE[hn.step]||[];
+ var cur=areaOf(f),seen={},path=hn.path,pre=window.HPRE&&HPRE[hn.step]||[];
  /* the rooms for the step, in visiting order: [room, [[x, z]...], how the step happens (2 talk, 3 go, else scene)] */
  var rooms=path?path.map(function(q){return [q[0],q[1],3]}):pre.map(function(q){return [q[0],q[1],3]}).concat(hn.rows.slice(0,Math.max(1,3-pre.length)).map(function(r){return [r[0],r.length>3?[[r[2],r[3]]]:[],r[1]]}));
- var nt=window.HNOTE&&HNOTE[hn.step],unv=nt&&nt.charAt(0)==='?';if(unv)nt=nt.slice(1);   /* a note from memory, not from the game's own text, is grey */
- if(!lv){var areas=[];rooms.forEach(function(r){var k=(areaOf(r[0])||{n:'Room '+r[0]}).n;if(!seen[k]){seen[k]=1;areas.push(k)}});
+ var nt=hn.note,unv=nt&&nt.charAt(0)==='?';if(unv)nt=nt.slice(1);   /* a note from memory, not from the game's own text, is grey */
+ if(!lv){var areas=[];rooms.forEach(function(r){var k=r[0]<0?'World map':(areaOf(r[0])||{n:'Room '+r[0]}).n;if(!seen[k]){seen[k]=1;areas.push(k)}});
   h+='<div class="row">'+T('THE STORY GOES ON IN','c')+'</div>';areas.forEach(function(k){h+='<div class="row">'+T(k,'w')+'</div>'});
-  var inRoom=rooms.some(function(r){return r[0]===f}),inArea=cur&&areas.indexOf(cur.n)>=0;
+  var onW=u32(A.SIG)===5,inRoom=rooms.some(function(r){return r[0]===f||(r[0]<0&&onW)}),inArea=cur&&areas.indexOf(cur.n)>=0;
   h+='<div class="row">'+(inRoom?T('You are in one of the rooms.','n'):inArea?T('You are in this area.','n'):T('Not where you are now.','o'))+'</div>';
   h+='<div class="row" style="height:14rem"><span class="sp"></span>'+chip('SHOW THE ROOM',false,'event.stopPropagation();showHint(1,0)')+'<span class="sp"></span></div>';
   popup(h,200);return}
  var parts=hintParts(nt),n=Math.max(parts.length,rooms.length,1);pg=Math.max(0,Math.min(n-1,pg|0));hintPage=pg;
  var r=rooms[Math.min(pg,rooms.length-1)],ar=r&&areaOf(r[0]),here=r&&f===r[0];
  h+='<div class="row">'+T('THE STORY GOES ON IN','c')+'<span class="sp"></span>'+(n>1?T('  '+(pg+1)+'/'+n,'g'):'')+'</div>';
- if(r){var pm=window.PLAN&&PLAN[r[0]],hb=window.HROOM&&HROOM[r[0]]||[0,0,1],dot='';
+ if(r&&r[0]<0){var onWm=u32(A.SIG)===5,V=128,sp=r[1][0],wx=sp?Math.max(V/2,Math.min(1024-V/2,sp[0]/32)):512,wz=sp?Math.max(V/2,Math.min(1024-V/2,sp[1]/32)):512,full=!sp,wd='';
+  if(CFG.hdot)r[1].forEach(function(q){wd+='<span class="hdot" style="left:'+(full?q[0]/32/1024*100:((q[0]/32-wx)/V+.5)*100)+'%;top:'+(full?q[1]/32/1024*100:((q[1]/32-wz)/V+.5)*100)+'%"></span>'});
+  h+='<div class="hone"><div class="hpic big"><img src="world/'+wSel+'.png" style="width:'+(full?100:1024/V*100)+'%;left:'+(full?0:-(wx-V/2)/V*100)+'%;top:'+(full?0:-(wz-V/2)/V*100)+'%">'+wd+'</div>'
+   +'<div class="hside"><div class="row">'+T('World map','w')+'</div><div class="row">'+(onWm?T('YOU ARE HERE','n'):'')+'</div>'
+   +'<div class="row">'+T(CFG.hdot&&r[1].length?'Go to the green spot.':rooms.length>1?(pg>=rooms.length-1?'Then here.':pg?'And here.':'Go here.'):'Go here.','c')+'</div></div></div>'}
+ else if(r){var pm=window.PLAN&&PLAN[r[0]],hb=window.HROOM&&HROOM[r[0]]||[0,0,1],dot='';
   if(pm&&CFG.hdot)r[1].forEach(function(q){dot+='<span class="hdot" style="left:'+((((q[0]-pm[0])/pm[2]+.5)-hb[0])/hb[2]*100)+'%;top:'+((((q[1]-pm[1])/pm[2]+.5)-hb[1])/hb[2]*100)+'%"></span>'});
   h+='<div class="hone">';
   if(pm&&mapsReady())h+='<div class="hpic big"><img src="'+asset('plan/'+r[0]+'.'+picExt())+'" onerror="this.style.display=\'none\'" style="width:'+(100/hb[2])+'%;left:'+(-hb[0]/hb[2]*100)+'%;top:'+(-hb[1]/hb[2]*100)+'%">'+dot+'</div>';
@@ -1244,20 +1299,21 @@ function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LO
    One pass decides the mode (movie, dialogue or scene, battle, field) and writes the three parts of the page. */
 var ffOn=false;
 /* draw the whole screen from what was last read */
-function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),mv=false,sh=linked&&!bt&&!bl&&!mv?shopOpen():null,dl=!bt&&!bl&&!mv&&!sh&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=mv?'m':bl?'a':sh?'s':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now()}}
+function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),mv=false,sh=linked&&!bt&&!bl&&!mv?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,dl=!bt&&!bl&&!mv&&!sh&&!pk&&inDialogue();
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=mv?'m':bl?'a':sh?'s':pk?'p':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now()}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var loc=!linked?'NO LINK':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
- put('loc',linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint(0)" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'));   /* tap the chapter name for a story hint */
- var hh=u8(A.CLK_H),mm=u8(A.CLK_M),ss=u8(A.CLK_S);put('clock',hh==null?'':T(p2(hh)+':'+p2(mm)+(loc.length>8?'':':'+p2(ss))));
+ var rg=linked&&!bt&&!bl&&anyRiding(),rgt=rg?' '+T('GEAR','n'):'';   /* someone is in a Gear outside battle */
+ put('loc',(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint(0)" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
+ var pt=u32(A.PTIME),pts=pt==null?null:Math.floor(pt/60),hh=pts==null?null:Math.floor(pts/3600),mm=pts==null?null:Math.floor(pts/60)%60,ss=pts==null?null:pts%60;   /* the play time itself (vertical blanks); the clock bytes can be stale after a load */put('clock',hh==null?'':T(p2(hh)+':'+p2(mm)+(loc.length+(rg?5:0)>8?'':':'+p2(ss))));
  var g=u32(A.GOLD);put('gold',g==null?'':T(String(g))+T(' G','y'));
  put('gearbtn','<span onclick="openSet()" style="padding:3rem 0 3rem 6rem;display:flex">'+GEAR_ICON+'</span>');
  if(mv){document.getElementById('main').className='';put('main',win('<img class="ttl" src="img/title.png">'+T('FF',ffOn?'n':'w'),'btn big'+(ffOn?' on':''),'onclick="ff()"'));put('bot','');encDraw();moreHint();return}
- document.getElementById('main').className=(!dl&&!bt&&!sh&&tab==='equip')?'scroll':'';
+ document.getElementById('main').className=pk||(!dl&&!bt&&!sh&&tab==='equip')?'scroll':'';
  var shs=sh&&document.querySelector('.shop'),shy=shs?shs.scrollTop:0;   /* the shop list and the deathblow list keep their scroll place across a redraw */
  var dbs=document.querySelector('#dbl>.in'),dby=dbs?dbs.scrollTop:0,dbw=dbSel;
- put('main',bl?battlerView():sh?shopView(sh):dl?'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>':bt?battleView():fieldView());
+ put('main',bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):dl?'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>':bt?battleView():fieldView());
  if(bt&&dby&&dbw===dbSel){dbs=document.querySelector('#dbl>.in');if(dbs)dbs.scrollTop=dby}if(shy){shs=document.querySelector('.shop');if(shs)shs.scrollTop=shy}
  if(!dl&&!bt&&!bl&&!sh&&tab==='map')drawMap();encDraw();moreHint();
  /* bottom bar: nothing in dialogue, the shop's name in a shop, the rewards in a fight, otherwise the four tabs; FF is always there */
