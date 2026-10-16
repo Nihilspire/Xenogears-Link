@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.6';   /* set by build.sh */
+var VERSION='1.99.0.7';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -1280,6 +1280,13 @@ var RTM={key:'',v:null};
 function routeTo(f,p){var E=window.EXITS&&EXITS[f]||[];
  if(exitTap!=null){var ex=roomExits(f)[exitTap];if(ex)return{x:ex[0],z:ex[1],y:ex[3]==null?null:ex[3]}}
  var hn=hintNext();if(!hn)return null;
+ /* once the hint has been opened, the line follows the room of the page last read: its green spot when the party is in it, else the
+    door towards it (the world-map exit for a world-map page) */
+ var pgS=hintSavedPage(hn);if(pgS!=null){var HR=hintRooms(hn);if(HR.length){var hr=HR[Math.min(pgS,HR.length-1)],to=hr[0];
+   if(to===f){if(!hr[1].length)return null;var b0=null,d0=1e9;hr[1].forEach(function(q){var d=Math.hypot(q[0]-p.x,q[1]-p.z);if(d<d0){d0=d;b0=q}});return{x:b0[0],z:b0[1],y:null}}
+   var hk='p'+f+'/'+to,hop;if(RTM.key===hk)hop=RTM.v;else{hop=to<0?null:routeHop(f,to);if(hop==null&&E.some(function(e){return e[2]===-1&&e[0]!=null}))hop=-1;RTM.key=hk;RTM.v=hop}
+   if(hop==null)return null;var b1=null,d1=1e9;E.forEach(function(e){if(e[2]!==hop||e[0]==null)return;var d=Math.hypot(e[0]-p.x,e[1]-p.z);if(d<d1){d1=d;b1=e}});
+   return b1?{x:b1[0],z:b1[1],y:b1[3]==null?null:b1[3]}:null}}
  var sp=hintSpots(f);if(sp.length){var b=null,bd=1e9;sp.forEach(function(q){var d=Math.hypot(q[0]-p.x,q[1]-p.z);if(d<bd){bd=d;b=q}});return{x:b[0],z:b[1],y:null}}
  var L=hn.path?hn.path.map(function(q){return q[0]}):hn.rows.map(function(r){return r[0]}),i=L.indexOf(f),goal=(i>=0?L.slice(i+1):L).filter(function(r){return r>=0&&r!==f});if(!goal.length)return null;
  var key=f+'/'+goal.join(','),d;if(RTM.key===key)d=RTM.v;else{d=null;for(var g=0;g<goal.length&&d==null;g++)d=routeHop(f,goal[g]);if(d==null&&E.some(function(e){return e[2]===-1&&e[0]!=null}))d=-1;RTM.key=key;RTM.v=d}if(d==null)return null;   /* not reachable through rooms: the way out to the world map */
@@ -1377,6 +1384,14 @@ function hintAt(i){var k=hintNext.k[i],nt=window.HNOTE&&HNOTE[k]||'',path=window
    scripts point to) are spread over the pages in order, one picture a page, with BACK / NEXT to move between them. The green
    spots can be switched off (SETTINGS > HINTS > SPOTS). */
 var hintPage=0;
+/* the page last read of the hint now showing (v1.99.0.7): {key, pg}, kept across restarts. The key is the hint's step and split part
+   (hintAt), so a new hint or a finished part starts again at page 1. Tapping the chapter name reopens that page, and the route line
+   follows that page's room. */
+var HPG=null;try{HPG=JSON.parse(LS.get('hintpg','null'))}catch(e){HPG=null}
+function hintSavedPage(hn){return hn&&HPG&&HPG.key===hn.key?HPG.pg:null}
+/* the rooms of a hint in visiting order, as the pop-up pages them: [room, [[x, z]...], 2 talk / 3 go / else scene] */
+function hintRooms(hn){var path=hn.path,pre=window.HPRE&&HPRE[hn.step]||[];
+ return path?path.map(function(q){return [q[0],q[1],3]}):pre.map(function(q){return [q[0],q[1],3]}).concat(hn.rows.slice(0,Math.max(1,3-pre.length)).map(function(r){return [r[0],r.length>3?[[r[2],r[3]]]:[],r[1]]}))}
 /* the green spots of the current hint in one room (-1 = the world map): the rooms Jack listed (HPATH), else the script's own place */
 function hintSpots(room){var hn=hintNext();if(!hn)return [];var path=hn.path,o=[];
  if(path)path.forEach(function(q){if(q[0]===room)q[1].forEach(function(v){o.push(v)})});
@@ -1385,17 +1400,19 @@ function hintSpots(room){var hn=hintNext();if(!hn)return [];var path=hn.path,o=[
 function hintParts(t){if(!t)return [];var o=[],cur='';t.split(/(\.\s+)/).forEach(function(x){cur+=x;if(/\.\s+$/.test(x)){o.push(cur.trim());cur=''}});if(cur.trim())o.push(cur.trim());return o}
 function showHint(lv,pg){var hn=hintNext(),f=u32(A.SIG)===4?u16(A.FIELD):null;f=f==null?null:f&0x7FF;var h='<div class="row">'+T('STORY HINT','y')+'</div><div class="sep"></div>';
  if(!hn){popup(h+'<div class="row">'+T('Nothing more to point to.','g')+'</div>',200);return}
- var cur=areaOf(f),seen={},path=hn.path,pre=window.HPRE&&HPRE[hn.step]||[];
- /* the rooms for the step, in visiting order: [room, [[x, z]...], how the step happens (2 talk, 3 go, else scene)] */
- var rooms=path?path.map(function(q){return [q[0],q[1],3]}):pre.map(function(q){return [q[0],q[1],3]}).concat(hn.rows.slice(0,Math.max(1,3-pre.length)).map(function(r){return [r[0],r.length>3?[[r[2],r[3]]]:[],r[1]]}));
+ var sv0=hintSavedPage(hn);if(lv==null&&sv0!=null){lv=1;pg=sv0}   /* the chapter name reopens the page last read of this hint */
+ if(lv===1&&pg==null)pg=sv0||0;
+ var cur=areaOf(f),seen={};
+ var rooms=hintRooms(hn);
  var nt=hn.note,unv=nt&&nt.charAt(0)==='?';if(unv)nt=nt.slice(1);   /* a note from memory, not from the game's own text, is grey */
  if(!lv){var areas=[];rooms.forEach(function(r){var k=r[0]<0?'World map':(areaOf(r[0])||{n:'Room '+r[0]}).n;if(!seen[k]){seen[k]=1;areas.push(k)}});
   h+='<div class="row">'+T('THE STORY GOES ON IN','c')+'</div>';areas.forEach(function(k){h+='<div class="row">'+T(k,'w')+'</div>'});
   var onW=u32(A.SIG)===5,inRoom=rooms.some(function(r){return r[0]===f||(r[0]<0&&onW)}),inArea=cur&&areas.indexOf(cur.n)>=0;
   h+='<div class="row">'+(inRoom?T('You are in one of the rooms.','n'):inArea?T('You are in this area.','n'):T('Not where you are now.','o'))+'</div>';
-  h+='<div class="row" style="height:14rem"><span class="sp"></span>'+chip('SHOW THE ROOM',false,'event.stopPropagation();showHint(1,0)')+'<span class="sp"></span></div>';
+  h+='<div class="row" style="height:14rem"><span class="sp"></span>'+chip('SHOW THE ROOM',false,'event.stopPropagation();showHint(1)')+'<span class="sp"></span></div>';
   popup(h,200);return}
  var parts=hintParts(nt),n=Math.max(parts.length,rooms.length,1);pg=Math.max(0,Math.min(n-1,pg|0));hintPage=pg;
+ if(!HPG||HPG.key!==hn.key||HPG.pg!==pg){HPG={key:hn.key,pg:pg};LS.set('hintpg',JSON.stringify(HPG));var mc=document.getElementById('mapcv');if(mc)mc._sig=null}
  var r=rooms[Math.min(pg,rooms.length-1)],ar=r&&areaOf(r[0]),here=r&&f===r[0];
  h+='<div class="row">'+T('THE STORY GOES ON IN','c')+'<span class="sp"></span>'+(n>1?T('  '+(pg+1)+'/'+n,'g'):'')+'</div>';
  if(r&&r[0]<0){var onWm=u32(A.SIG)===5,V=128,sp=r[1][0],wx=sp?Math.max(V/2,Math.min(1024-V/2,sp[0]/32)):512,wz=sp?Math.max(V/2,Math.min(1024-V/2,sp[1]/32)):512,full=!sp,wd='';
@@ -1428,7 +1445,7 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var loc=!linked?'NO LINK':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
  var rg=linked&&!bt&&!bl&&anyRiding(),rgt=rg?' '+T('GEAR','n'):'';   /* someone is in a Gear outside battle */
- put('loc',(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint(0)" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
+ put('loc',(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
  var pt=u32(A.PTIME),pts=pt==null?null:Math.floor(pt/60),hh=pts==null?null:Math.floor(pts/3600),mm=pts==null?null:Math.floor(pts/60)%60,ss=pts==null?null:pts%60;   /* the play time itself (vertical blanks); the clock bytes can be stale after a load */put('clock',hh==null?'':T(p2(hh)+':'+p2(mm)+(loc.length+(rg?5:0)>8?'':':'+p2(ss))));
  var g=u32(A.GOLD);put('gold',g==null?'':T(String(g))+T(' G','y'));
  put('gearbtn','<span onclick="openSet()" style="padding:3rem 0 3rem 6rem;display:flex">'+GEAR_ICON+'</span>');
