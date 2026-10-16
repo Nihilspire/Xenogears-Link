@@ -563,6 +563,8 @@ Fields in a record:
 | `+0x20` | u8 | Category flag: `0x80` basic, `0x40` deathblow, `0x20` elemental deathblow, `0x10` ether | B |
 | `+0x22` | u8 | Element bits | B |
 
+**No deathblow carries a status effect (16 Oct 2026).** Across all 143 on-foot deathblow records (11 characters) and 181 gear deathblow and infinity records (17 gears), the fields the ethers use for their effects are all zero: `+0x13` effect type, `+0x14` chance (ethers: 100, 80, 30, 20), `+0x16` duration, `+0x1B`-`+0x1F` (status bits and masks), `+0x21`, `+0x23`, `+0x25`, `+0x26`. Deathblows are damage plus an element and nothing else. The deathblow fields that do vary follow the character, not the move: `+0x0A` (0/1/32/33/64/65; 1 = elemental, 32 Billy, 64 Rico and some Emeralda/Citan moves), `+0x0B` (4, 8, 12, 140), `+0x10` (0, 128 Elly/Bart/sword Citan, 144 Billy) look like weapon or range type; `+0x17` is 4, 5, 5, 6, 6, 6, 6 for the seven basic deathblows and 1 for elemental ones (meaning not worked out). Gear records: `+0x24` rises 10, 20, 30 … (fuel cost, by the look of it) and `+0x27` is the attack level 1-3.
+
 **Element bits**, read off Fei's four elemental deathblows and his last two: `0x08` wind (Fukei), `0x04` earth (Chikei), `0x02` fire (Kakei), `0x01` water (Suikei), `0x20` on Kokei and `0x10` on Yamikei (light and dark, going by the names). Elly's ethers repeat the same four low bits in the same order.
 
 ## Scripted scenes: the player lock (corrected 8 Oct 2026; was "Random encounters in rooms")
