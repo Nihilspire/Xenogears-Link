@@ -21,3 +21,5 @@ windows/node_modules/
 app/www/index.html
 windows/package-lock.json
 __pycache__/
+tools/room_viewer/data.js
+tools/room_viewer/xenogears-room-viewer.html

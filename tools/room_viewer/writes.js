@@ -1,0 +1,17 @@
+const fs=require('fs'),XB=require('/home/claude/xg/v/www/discbuild.js'),XN=require('./npc.js');const LEN=JSON.parse(fs.readFileSync('oplen.min.json'));
+const fd=fs.openSync('/home/claude/xg/disc/d1.bin','r'),size=fs.fstatSync(fd).size;
+const reader=async(o,n)=>{const b=Buffer.alloc(n);fs.readSync(fd,b,0,n,o);return new Uint8Array(b.buffer,b.byteOffset,n)};
+const hx=v=>(v<16?'0':'')+v.toString(16).toUpperCase();
+(async()=>{const d=await XB.open(reader,size);for(const f of process.argv.slice(2).map(Number)){const h=await d.file(606+2*f);const sc=XN.script(h,XB);const c=sc.code,u=p=>c[p]|c[p+1]<<8;
+ const starts=[];sc.ent.forEach((e,i)=>e.forEach((p,k)=>{if(p)starts.push([p,i,k])}));const seen={};
+ for(const [p0,i,k] of starts){if(seen[p0])continue;seen[p0]=1;let p=p0,g=0,tests=[];
+  while(p<c.length&&g++<3000){const op=c[p],key=op===0xFE?'FE'+hx(c[p+1]):hx(op),L=op===0?1:op===1?3:op===0xD?1:LEN[key];if(!L)break;
+   if(op>=0x84&&op<=0x86)tests.push({84:'<',85:'>',86:'='}[key]+(u(p+1)&0x7FFF));
+   if(op===0xFB)tests.push('flag?'+(u(p+1)>>4).toString(16)+'.'+(u(p+1)&15));
+   let w=null;
+   if(key==='FE0A')w='set flag '+(u(p+2)>>4).toString(16)+'.'+(u(p+2)&15);
+   if(op===0x3A&&u(p+1)<0x400)w='set bit v'+u(p+1).toString(16)+' bit '+(u(p+3)&0x7FFF);
+   if((op===0x35||op===0x36)&&u(p+1)<0x400&&u(p+1)>0)w='v'+u(p+1).toString(16)+' = '+(op===0x36?1:(c[p+5]&0x40?(u(p+3)<<16>>16):'v'+u(p+3).toString(16)));
+   if(op===0x87)w='STEP = '+(u(p+1)&0x7FFF);
+   if(w)console.log(f,'ent',i,'scr',k,'@'+p,w,'  after tests:',tests.slice(-4).join(' '));
+   if(op===0)break;p+=L}}}})();
