@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.5';   /* set by build.sh */
+var VERSION='1.99.0.6';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -1213,7 +1213,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  /* icon places: flat map, or with 3D on the room drawn in 3D and each spot put on the floor under it nearest the party's height */
  var py3=pr?pr.y:0,PJ={};
  if(on3){if(M3.fitKey!==f+'/'+lvis){M3.fitKey=f+'/'+lvis;var fxs=[],fzs=[];for(i=0;i<m.nv;i++)if(m.wk[i]){fxs.push(m.vx[i]);fzs.push(m.vz[i])}M3.fit(fxs,fzs)}
-  M3.follow(f);M3.firstPerson(map3eye);M3.smooth=CFG.smooth;M3.sky=CFG.sky;M3.setRoute(CFG.route&&p&&pr?{x:p.x,y:pr.y,z:p.z}:null,CFG.route&&p?routeTo(f,p):null);if(map3eye){var lv3=liveVars();if(lv3)M3.peopleSetup(u16(A.STORY)|0,lv3);M3.people(livePeople())}M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
+  M3.follow(f);M3.firstPerson(map3eye);M3.smooth=CFG.smooth;M3.sky=CFG.sky;var rtg=CFG.route&&p?routeTo(f,p):null;if(CFG.route&&!rtg)M3.routeWarm();else M3.setRoute(CFG.route&&p&&pr?{x:p.x,y:pr.y,z:p.z}:null,rtg);if(map3eye){var lv3=liveVars();if(lv3)M3.peopleSetup(u16(A.STORY)|0,lv3);M3.people(livePeople())}M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
   /* the map's own outline, each edge on its triangle's walk layer; edges on a floor above the cut are left out */
   var OY={};g.beginPath();if(!M3.isFP())for(i=0;i<m.nt;i++){var e3=(m.fl[i]>>2)&7;if(!e3||!shown(i))continue;var ly=(m.fl[i]>>5)&3;
    for(var k3=0;k3<3;k3++)if(e3>>k3&1){var q3=m.tr[i*3+k3],r3=m.tr[i*3+(k3+1)%3],A3=OY[q3+'/'+ly]||(OY[q3+'/'+ly]=oyP(m.vx[q3],m.vz[q3],ly)),B3=OY[r3+'/'+ly]||(OY[r3+'/'+ly]=oyP(m.vx[r3],m.vz[r3],ly));

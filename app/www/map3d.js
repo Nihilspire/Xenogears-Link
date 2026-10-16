@@ -44,7 +44,7 @@ function clear(g){while(g.children.length){var o=g.children[0];g.remove(o);o.tra
 /* the room: one group per placed model (header table at 0x190); sky domes and backdrops round the whole room go in skyG, drawn
    only in EYE when SETTINGS > EXPERIMENTAL > SKY is on (from above, a dome would hide the room) */
 var covers=[],coverAt=null;
-async function build(h,t){covers=[];coverAt=null;var VR=XB.vram(t),M=XB.models(h),n=u32(h,0x18C)&0xFFFF,texC={},matC={},gain=1;clear(roomG);clear(lineG);clear(skyG);clear(routeG);RM=null;RT.key='';SM3=null;
+async function build(h,t){covers=[];coverAt=null;var VR=XB.vram(t),M=XB.models(h),n=u32(h,0x18C)&0xFFFF,texC={},matC={},gain=1;clear(roomG);clear(lineG);clear(skyG);clear(routeG);RM=null;RMP=null;RT.key='';RT.corr=null;RT.mesh=null;SM3=null;
  peopleRoom(h,VR);
  function mat(kind,tp,cl,semi,abr){var k=kind+tp+'_'+cl+'_'+semi+'_'+abr;if(matC[k])return matC[k];var o={side:T.BackSide,clippingPlanes:[clip]};
   if(kind==='t'){o.map=pageTex(VR,tp,cl,texC);o.alphaTest=0.5}else o.vertexColors=true;
@@ -205,62 +205,104 @@ M3.yLayer=function(x,z,l,ref){var W=layers&&layers.L[l];if(!W)return M3.yAt(x,z,
 /* frame the whole-room view on these (x, z) points (the map's walkable vertices) */
 M3.fit=function(xs,zs){fitBox=new T.Box3();for(var i=0;i<xs.length;i++){var fl=M3.floors(xs[i],zs[i]),y=fl.length?fl[fl.length-1]:0;fitBox.expandByPoint(new T.Vector3(xs[i],-y,-zs[i]))}};
 M3.reset=function(){M3.room=null;M3.ready=false};
-/* ---------- the way to go (SETTINGS > EXPERIMENTAL > ROUTE, v1.99.0.5) ----------
+/* ---------- the way to go (SETTINGS > EXPERIMENTAL > ROUTE, v1.99.0.5; made light for the handheld in v1.99.0.6) ----------
    A green line on the floor from the party to a target the page gives (the next hint's spot in this room, or the door towards the
-   hint's room, or a door the player tapped), found with A* over the walkable triangles of the walk mesh (blocked 0x800000, party-
-   blocking 0x80 and the huge bounds sheets left out). Triangles join where they share an edge (same two corners, x, y and z, so the
-   walk layers join at their stairs). The corner path is then straightened wherever the straight line stays on floor within 40
-   units of height, and laid on the floor every 24 units. A thin beam stands on the target. */
-var RM=null,RT={key:'',t:0,fx:0,fz:0};
-function routeMesh(){if(RM)return RM;var F=walk;if(!F)return null;var ok=[],cen=[],grid={},GC=128,edges={},adj=[];
- F.T.forEach(function(t,i){var fl=F.surf[t[3]]||0;ok[i]=!(F.big&&F.big[i])&&!(fl&0x800000)&&!(fl&0x80);adj[i]=[];if(!ok[i])return;
-  cen[i]=[(F.VX[t[0]]+F.VX[t[1]]+F.VX[t[2]])/3,(F.VY[t[0]]+F.VY[t[1]]+F.VY[t[2]])/3,(F.VZ[t[0]]+F.VZ[t[1]]+F.VZ[t[2]])/3];
-  var xs=[F.VX[t[0]],F.VX[t[1]],F.VX[t[2]]],zs=[F.VZ[t[0]],F.VZ[t[1]],F.VZ[t[2]]];
-  for(var gx=Math.floor(Math.min.apply(null,xs)/GC);gx<=Math.floor(Math.max.apply(null,xs)/GC);gx++)for(var gz=Math.floor(Math.min.apply(null,zs)/GC);gz<=Math.floor(Math.max.apply(null,zs)/GC);gz++)(grid[gx+','+gz]||(grid[gx+','+gz]=[])).push(i);
-  for(var k=0;k<3;k++){var a=t[k],b=t[(k+1)%3],ka=F.VX[a]+','+F.VY[a]+','+F.VZ[a],kb=F.VX[b]+','+F.VY[b]+','+F.VZ[b],key=ka<kb?ka+'|'+kb:kb+'|'+ka;(edges[key]||(edges[key]=[])).push([i,a,b])}});
- Object.keys(edges).forEach(function(key){var L=edges[key];for(var p=0;p<L.length;p++)for(var q=p+1;q<L.length;q++){var e=L[p];adj[L[p][0]].push([L[q][0],e[1],e[2]]);adj[L[q][0]].push([L[p][0],e[1],e[2]])}});
- var M0={F:F,ok:ok,cen:cen,grid:grid,GC:GC,adj:adj};
- /* walk layers meet at stairs and ledges without sharing corners: an edge with no neighbour is probed 3 units outside its middle,
-    and a floor there within 24 units of the edge's height joins it */
- F.T.forEach(function(t,i){if(!ok[i])return;for(var k=0;k<3;k++){var a=t[k],b=t[(k+1)%3],c=t[(k+2)%3],mx=(F.VX[a]+F.VX[b])/2,mz=(F.VZ[a]+F.VZ[b])/2,my=(F.VY[a]+F.VY[b])/2;
-  if(adj[i].some(function(e){return (e[1]===a&&e[2]===b)||(e[1]===b&&e[2]===a)}))continue;
-  var ex=F.VX[b]-F.VX[a],ez=F.VZ[b]-F.VZ[a],l=Math.hypot(ex,ez)||1,nx=-ez/l,nz=ex/l;if(nx*(F.VX[c]-mx)+nz*(F.VZ[c]-mz)>0){nx=-nx;nz=-nz}
-  triAt(M0,mx+nx*3,mz+nz*3).forEach(function(r){var j=r[0];if(j===i||!ok[j]||Math.abs(r[1]-my)>24)return;if(adj[i].some(function(e){return e[0]===j}))return;adj[i].push([j,a,b]);adj[j].push([i,a,b])})}});
- return RM=M0}
-/* triangles under (x, z) with the floor height there */
+   hint's room, or a door the player tapped). The way is found with A* over the walkable triangles of the walk mesh (blocked
+   0x800000, party-blocking 0x80 and the huge bounds sheets left out) and pulled straight through the shared edges with the funnel
+   method, then laid on the floor every RSTEP units.
+   - The floor graph is built a few milliseconds at a time after the room appears (prepRoute), so entering a room never stalls.
+     Triangles join where they share an edge (same corners by x, y and z: the merged floor list repeats corners per layer), and an
+     edge with no neighbour is probed 3 units outside its middle for a floor within 24 units of height (walk layers meet at stairs
+     without shared corners).
+   - While the party stays on the found corridor of triangles only the straightening is redone, from the triangle it is on; A* runs
+     again only for a new target or once the party leaves the corridor.
+   - The line's buffers are kept and refilled; the beam on the target is moved, not rebuilt. */
+var RM=null,RMP=null,RT={key:'',t:0,fx:0,fz:0,corr:null,idx:null,portal:null,to:null,mesh:null,beam:null};
+var RSTEP=MOBILE?40:24,RMAX=700;
+function prepRoute(){if(RM||RMP||!walk)return;var F=walk,gen=F,nT=F.T.length,nV=F.VX.length,GC=128;RMP=gen;
+ var ok=new Uint8Array(nT),cx=new Float32Array(nT),cy=new Float32Array(nT),cz=new Float32Array(nT),grid={},vid=new Int32Array(nV),vm={},nid=0,edges=new Map(),adj=[],ph=0,i=0;
+ var M={F:F,ok:ok,cx:cx,cy:cy,cz:cz,grid:grid,GC:GC,adj:adj,n:nT};
+ function hasE(i,a,b){var A=adj[i];for(var q=0;q<A.length;q+=3)if(A[q+1]===a&&A[q+2]===b||A[q+1]===b&&A[q+2]===a)return true;return false}
+ function hasN(i,j){var A=adj[i];for(var q=0;q<A.length;q+=3)if(A[q]===j)return true;return false}
+ function work(){var t=F.T[i];
+  if(ph===0){var k=F.VX[i]+','+F.VY[i]+','+F.VZ[i],v=vm[k];if(v==null)v=vm[k]=nid++;vid[i]=v;if(++i>=nV){ph=1;i=0}return}
+  if(ph===1){var fl=F.surf[t[3]]||0;adj[i]=[];ok[i]=!(F.big&&F.big[i])&&!(fl&0x800000)&&!(fl&0x80)?1:0;
+   if(ok[i]){cx[i]=(F.VX[t[0]]+F.VX[t[1]]+F.VX[t[2]])/3;cy[i]=(F.VY[t[0]]+F.VY[t[1]]+F.VY[t[2]])/3;cz[i]=(F.VZ[t[0]]+F.VZ[t[1]]+F.VZ[t[2]])/3;
+    var x0=Math.min(F.VX[t[0]],F.VX[t[1]],F.VX[t[2]]),x1=Math.max(F.VX[t[0]],F.VX[t[1]],F.VX[t[2]]),z0=Math.min(F.VZ[t[0]],F.VZ[t[1]],F.VZ[t[2]]),z1=Math.max(F.VZ[t[0]],F.VZ[t[1]],F.VZ[t[2]]);
+    for(var gx=Math.floor(x0/GC);gx<=Math.floor(x1/GC);gx++)for(var gz=Math.floor(z0/GC);gz<=Math.floor(z1/GC);gz++)(grid[gx+','+gz]||(grid[gx+','+gz]=[])).push(i);
+    for(var k2=0;k2<3;k2++){var a=t[k2],b=t[(k2+1)%3],va=vid[a],vb=vid[b],key=va<vb?va*1048576+vb:vb*1048576+va,o=edges.get(key);
+     if(o==null)edges.set(key,[i,a,b]);else for(var q=0;q<o.length;q+=3){var j=o[q];adj[i].push(j,a,b);adj[j].push(i,a,b)}if(o!=null)o.push(i,a,b)}}
+   if(++i>=nT){ph=2;i=0}return}
+  if(ph===2){if(ok[i])for(var k3=0;k3<3;k3++){var a2=t[k3],b2=t[(k3+1)%3],c2=t[(k3+2)%3];if(hasE(i,a2,b2))continue;
+    var mx=(F.VX[a2]+F.VX[b2])/2,mz=(F.VZ[a2]+F.VZ[b2])/2,my=(F.VY[a2]+F.VY[b2])/2,ex=F.VX[b2]-F.VX[a2],ez=F.VZ[b2]-F.VZ[a2],l=Math.sqrt(ex*ex+ez*ez)||1,nx=-ez/l,nz=ex/l;
+    if(nx*(F.VX[c2]-mx)+nz*(F.VZ[c2]-mz)>0){nx=-nx;nz=-nz}
+    var hit=triAt(M,mx+nx*3,mz+nz*3);for(var h=0;h<hit.length;h+=2){var j2=hit[h];if(j2===i||!ok[j2]||Math.abs(hit[h+1]-my)>24||hasN(i,j2))continue;adj[i].push(j2,a2,b2);adj[j2].push(i,a2,b2)}}
+   if(++i>=nT){ph=3}return}}
+ (function run(){if(walk!==gen){RMP=null;return}var t0=performance.now(),n=0;
+  while(ph<3){work();if((++n&63)===0&&performance.now()-t0>(MOBILE?5:10))break}
+  if(ph<3){setTimeout(run,0);return}
+  RM=M;RMP=null;M.g=new Float32Array(nT);M.came=new Int32Array(nT);M.ca=new Int32Array(nT);M.cb=new Int32Array(nT);M.st=new Uint32Array(nT);M.gen=0;RT.key='';redrawSoon()})()}
+/* triangles under (x, z): flat list of [triangle, floor height] pairs */
 function triAt(M,x,z){var L=M.grid[Math.floor(x/M.GC)+','+Math.floor(z/M.GC)],out=[],F=M.F;if(!L)return out;
  for(var q=0;q<L.length;q++){var i=L[q],t=F.T[i],ax=F.VX[t[0]],az=F.VZ[t[0]],bx=F.VX[t[1]],bz=F.VZ[t[1]],cx=F.VX[t[2]],cz=F.VZ[t[2]];
   var den=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);if(!den)continue;var A=((bz-cz)*(x-cx)+(cx-bx)*(z-cz))/den,B=((cz-az)*(x-cx)+(ax-cx)*(z-cz))/den,C=1-A-B;
-  if(A>=-0.02&&B>=-0.02&&C>=-0.02)out.push([i,A*F.VY[t[0]]+B*F.VY[t[1]]+C*F.VY[t[2]]])}return out}
-function pickTri(M,x,z,y){var L=triAt(M,x,z),best=null;L.forEach(function(r){if(!best||y!=null&&Math.abs(r[1]-y)<Math.abs(best[1]-y))best=r});if(best)return best[0];
- var bi=-1,bd=400;for(var i=0;i<M.cen.length;i++){var c=M.cen[i];if(!c)continue;var d=Math.hypot(c[0]-x,c[2]-z)+(y!=null?Math.abs(c[1]-y)*0.5:0);if(d<bd){bd=d;bi=i}}return bi<0?null:bi}
-function floorNear(M,x,z,y){var L=triAt(M,x,z),b=null;L.forEach(function(r){if(b==null||Math.abs(r[1]-y)<Math.abs(b-y))b=r[1]});return b!=null&&Math.abs(b-y)<40?b:null}
-M3.route=function(from,to){var M=routeMesh();if(!M)return null;var s=pickTri(M,from.x,from.z,from.y),g=pickTri(M,to.x,to.z,to.y!=null?to.y:from.y);if(s==null||g==null)return null;
- var F=M.F,gc=M.cen[g],open=[[0,s]],gs={},came={},n=0;gs[s]=0;
- function push(v){open.push(v);var i=open.length-1;while(i>0){var p=(i-1)>>1;if(open[p][0]<=open[i][0])break;var tt=open[p];open[p]=open[i];open[i]=tt;i=p}}
- function pop(){var top=open[0],last=open.pop();if(open.length){open[0]=last;var i=0;for(;;){var l=2*i+1,r=l+1,m=i;if(l<open.length&&open[l][0]<open[m][0])m=l;if(r<open.length&&open[r][0]<open[m][0])m=r;if(m===i)break;var tt=open[m];open[m]=open[i];open[i]=tt;i=m}}return top}
- while(open.length&&n++<20000){var cu=pop()[1];if(cu===g)break;var c=M.cen[cu];
-  M.adj[cu].forEach(function(e){var nb=e[0];if(!M.ok[nb])return;var d=M.cen[nb],ng=gs[cu]+Math.hypot(d[0]-c[0],d[1]-c[1],d[2]-c[2]);if(gs[nb]!=null&&gs[nb]<=ng)return;gs[nb]=ng;came[nb]=[cu,e[1],e[2]];
-   push([ng+Math.hypot(d[0]-gc[0],d[1]-gc[1],d[2]-gc[2]),nb])})}
- M3.routeDbg={s:s,g:g,seen:Object.keys(gs).length,tris:M.cen.filter(Boolean).length,gy:gc[1],fy:from.y};if(gs[g]==null)return null;
- var pts=[[to.x,to.y!=null?to.y:gc[1],to.z]],cur=g;while(cur!==s){var cm=came[cur];pts.push([(F.VX[cm[1]]+F.VX[cm[2]])/2,(F.VY[cm[1]]+F.VY[cm[2]])/2,(F.VZ[cm[1]]+F.VZ[cm[2]])/2]);cur=cm[0]}
- pts.push([from.x,from.y,from.z]);pts.reverse();
- function clear2(a,b){var L=Math.hypot(b[0]-a[0],b[2]-a[2]),n2=Math.max(1,Math.ceil(L/16));for(var k=1;k<n2;k++){var t=k/n2,x=a[0]+(b[0]-a[0])*t,z=a[2]+(b[2]-a[2])*t,y=a[1]+(b[1]-a[1])*t;if(floorNear(M,x,z,y)==null)return false}return true}
- var out=[pts[0]],i=0;while(i<pts.length-1){var j=pts.length-1;while(j>i+1&&!clear2(pts[i],pts[j]))j--;out.push(pts[j]);i=j}
- var lay=[];for(var q=0;q<out.length-1;q++){var a=out[q],b=out[q+1],L2=Math.hypot(b[0]-a[0],b[2]-a[2]),n3=Math.max(1,Math.ceil(L2/24));
-  for(var k2=0;k2<n3;k2++){var t2=k2/n3,x2=a[0]+(b[0]-a[0])*t2,z2=a[2]+(b[2]-a[2])*t2,y2=a[1]+(b[1]-a[1])*t2,fy=floorNear(M,x2,z2,y2);lay.push([x2,fy!=null?fy:y2,z2])}}
- lay.push(out[out.length-1]);return lay};
-/* to = {x, y (or null), z} or null to hide; recomputed when the target changes, the party moves 30 units, or each 1.5 s */
-M3.setRoute=function(from,to){if(!routeG)return;if(!to||!from||!M3.ready){routeG.visible=false;RT.key='';return}routeG.visible=true;
- var key=Math.round(to.x)+','+Math.round(to.z)+','+(to.y==null?'-':Math.round(to.y)),now=Date.now();
- if(key===RT.key&&Math.hypot(from.x-RT.fx,from.z-RT.fz)<30&&now-RT.t<1500)return;RT.key=key;RT.t=now;RT.fx=from.x;RT.fz=from.z;clear(routeG);
- var pts=M3.route(from,to);if(!pts||pts.length<2){routeG.visible=false;return}
- var pos=[],W2=FP?6:11;for(var i=0;i<pts.length;i++){var a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)],dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1,nx=-dz/l*W2,nz=dx/l*W2,p=pts[i];
-  pos.push(p[0]+nx,-p[1]+4,-(p[2]+nz),p[0]-nx,-p[1]+4,-(p[2]-nz))}
- var idx=[];for(i=0;i<pts.length-1;i++){var o=2*i;idx.push(o,o+1,o+2,o+1,o+3,o+2)}
- var geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setIndex(idx);
- var m=new T.Mesh(geo,new T.MeshBasicMaterial({color:0x55ff66,transparent:true,opacity:0.7,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,clippingPlanes:[clip]}));m.renderOrder=1;routeG.add(m);
- var e=pts[pts.length-1],beam=new T.Mesh(new T.CylinderGeometry(6,6,260,10,1,true),new T.MeshBasicMaterial({color:0x55ff66,transparent:true,opacity:0.35,depthWrite:false,side:T.DoubleSide}));
- beam.position.set(e[0],-e[1]+130,-e[2]);beam.renderOrder=5;routeG.add(beam)};
+  if(A>=-0.02&&B>=-0.02&&C>=-0.02)out.push(i,A*F.VY[t[0]]+B*F.VY[t[1]]+C*F.VY[t[2]])}return out}
+function pickTri(M,x,z,y){var L=triAt(M,x,z),bi=-1,by=0;for(var q=0;q<L.length;q+=2){if(!M.ok[L[q]])continue;if(bi<0||y!=null&&Math.abs(L[q+1]-y)<Math.abs(by-y)){bi=L[q];by=L[q+1]}}if(bi>=0)return bi;
+ var bd=400;for(var i=0;i<M.n;i++){if(!M.ok[i])continue;var dx=M.cx[i]-x,dz=M.cz[i]-z;if(dx>bd||dx<-bd||dz>bd||dz<-bd)continue;var d=Math.sqrt(dx*dx+dz*dz)+(y!=null?Math.abs(M.cy[i]-y)*0.5:0);if(d<bd){bd=d;bi=i}}return bi<0?null:bi}
+function floorNear(M,x,z,y){var L=triAt(M,x,z),b=null;for(var q=0;q<L.length;q+=2)if(b==null||Math.abs(L[q+1]-y)<Math.abs(b-y))b=L[q+1];return b!=null&&Math.abs(b-y)<40?b:null}
+/* A* from triangle s to g: the corridor of triangles and the shared edge (two corners) crossed after each, or null */
+function aStar(M,s,g){var gen=++M.gen,G=M.g,st=M.st,cx=M.cx,cy=M.cy,cz=M.cz,hk=[],hv=[],n=0;
+ function push(k,v){hk.push(k);hv.push(v);var i=hk.length-1;while(i>0){var p=(i-1)>>1;if(hk[p]<=hk[i])break;var t=hk[p];hk[p]=hk[i];hk[i]=t;t=hv[p];hv[p]=hv[i];hv[i]=t;i=p}}
+ function pop(){var v=hv[0],lk=hk.pop(),lv=hv.pop();if(hk.length){hk[0]=lk;hv[0]=lv;var i=0,N=hk.length;for(;;){var l=2*i+1,r=l+1,m=i;if(l<N&&hk[l]<hk[m])m=l;if(r<N&&hk[r]<hk[m])m=r;if(m===i)break;var t=hk[m];hk[m]=hk[i];hk[i]=t;t=hv[m];hv[m]=hv[i];hv[i]=t;i=m}}return v}
+ st[s]=gen;G[s]=0;M.came[s]=-1;push(0,s);var gx=cx[g],gy=cy[g],gz=cz[g];
+ while(hk.length&&n++<30000){var c=pop();if(c===g)break;var A=M.adj[c];
+  for(var q=0;q<A.length;q+=3){var nb=A[q],dx=cx[nb]-cx[c],dy=cy[nb]-cy[c],dz=cz[nb]-cz[c],ng=G[c]+Math.sqrt(dx*dx+dy*dy+dz*dz);if(st[nb]===gen&&G[nb]<=ng)continue;
+   st[nb]=gen;G[nb]=ng;M.came[nb]=c;M.ca[nb]=A[q+1];M.cb[nb]=A[q+2];var hx=gx-cx[nb],hy=gy-cy[nb],hz=gz-cz[nb];push(ng+Math.sqrt(hx*hx+hy*hy+hz*hz),nb)}}
+ if(st[g]!==gen)return null;var corr=[g],por=[],cur=g;while(cur!==s){por.push([M.ca[cur],M.cb[cur]]);cur=M.came[cur];corr.push(cur)}corr.reverse();por.reverse();return {corr:corr,por:por}}
+/* the funnel: the shortest line from p through the portals from corridor index k on to q, as [x, y, z] corners */
+function funnel(M,R,k,p,q){var F=M.F,P=[[p.x,p.y,p.z],[p.x,p.y,p.z]];
+ for(var i=k;i<R.por.length;i++){var a=R.por[i][0],b=R.por[i][1],t=R.corr[i],dx=M.cx[R.corr[i+1]]-M.cx[t],dz=M.cz[R.corr[i+1]]-M.cz[t],
+   A=[F.VX[a],F.VY[a],F.VZ[a]],B=[F.VX[b],F.VY[b],F.VZ[b]],sa=dx*(A[2]-M.cz[t])-dz*(A[0]-M.cx[t]);P.push(sa>0?A:B,sa>0?B:A)}
+ P.push([q.x,q.y,q.z],[q.x,q.y,q.z]);
+ function ar(a,b,c){return (c[0]-a[0])*(b[2]-a[2])-(b[0]-a[0])*(c[2]-a[2])}
+ function eq(a,b){return Math.abs(a[0]-b[0])<0.01&&Math.abs(a[2]-b[2])<0.01}
+ var out=[P[0]],apex=P[0],left=P[0],right=P[1],ai=0,li=0,ri=0,n=P.length/2;
+ for(var i2=1;i2<n;i2++){var l=P[2*i2],r=P[2*i2+1];
+  if(ar(apex,right,r)<=0){if(eq(apex,right)||ar(apex,left,r)>0){right=r;ri=i2}else{out.push(left);apex=left;ai=li;left=right=apex;li=ri=ai;i2=ai;continue}}
+  if(ar(apex,left,l)>=0){if(eq(apex,left)||ar(apex,right,l)<0){left=l;li=i2}else{out.push(right);apex=right;ai=ri;left=right=apex;li=ri=ai;i2=ai;continue}}}
+ out.push(P[P.length-1]);return out}
+/* corners laid on the floor every RSTEP units */
+function layRoute(M,out){var lay=[];for(var q=0;q<out.length-1;q++){var a=out[q],b=out[q+1],dx=b[0]-a[0],dz=b[2]-a[2],n=Math.max(1,Math.ceil(Math.sqrt(dx*dx+dz*dz)/RSTEP));
+  for(var k=0;k<n;k++){var t=k/n,x=a[0]+dx*t,z=a[2]+dz*t,y=a[1]+(b[1]-a[1])*t,fy=floorNear(M,x,z,y);lay.push([x,fy!=null?fy:y,z]);if(lay.length>=RMAX-1)break}}
+ lay.push(out[out.length-1]);return lay}
+M3.route=function(from,to){var M=RM;if(!M)return null;var s=pickTri(M,from.x,from.z,from.y),g=pickTri(M,to.x,to.z,to.y!=null?to.y:from.y);if(s==null||g==null)return null;
+ var R=aStar(M,s,g);if(!R)return null;var q={x:to.x,y:to.y!=null?to.y:M.cy[g],z:to.z};return layRoute(M,funnel(M,R,0,from,q))};
+M3.routeReady=function(){return !!RM};
+function routeHide(){if(routeG)routeG.visible=false}
+/* the line and the beam share one material and are made with the room (drawing nothing), so their shader is compiled while the room
+   loads rather than in the middle of a walk (a 200 ms stall at the first line on a slow CPU) */
+function routeObjs(){if(RT.mesh&&RT.mesh.parent===routeG)return;var geo=new T.BufferGeometry(),pa=new T.BufferAttribute(new Float32Array(RMAX*6),3),ix2=[];pa.setUsage(T.DynamicDrawUsage);geo.setAttribute('position',pa);
+ for(var i=0;i<RMAX-1;i++){var o=2*i;ix2.push(o,o+1,o+2,o+1,o+3,o+2)}geo.setIndex(ix2);geo.setDrawRange(0,0);
+ var mt=new T.MeshBasicMaterial({color:0x55ff66,transparent:true,opacity:0.6,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,clippingPlanes:[clip]});
+ RT.mesh=new T.Mesh(geo,mt);RT.mesh.renderOrder=1;RT.mesh.frustumCulled=false;routeG.add(RT.mesh);
+ RT.beam=new T.Mesh(new T.CylinderGeometry(6,6,260,8,1,true),mt);RT.beam.renderOrder=5;RT.beam.visible=false;routeG.add(RT.beam)}
+M3.routeWarm=function(){if(routeG&&M3.ready){routeObjs();RT.beam.visible=false;RT.mesh.geometry.setDrawRange(0,0);routeG.visible=true}};
+/* to = {x, y (or null), z} or null to hide */
+M3.setRoute=function(from,to){if(!routeG)return;if(!to||!from||!M3.ready){routeHide();RT.key='';return}
+ if(!RM){prepRoute();M3.routeWarm();return}var M=RM;
+ var key=Math.round(to.x)+','+Math.round(to.z)+','+(to.y==null?'-':Math.round(to.y)),now=Date.now(),dx=from.x-RT.fx,dz=from.z-RT.fz,mv=Math.sqrt(dx*dx+dz*dz);
+ if(key===RT.key&&mv<(MOBILE?20:12)&&now-RT.t<3000)return;RT.t=now;RT.fx=from.x;RT.fz=from.z;
+ var s=pickTri(M,from.x,from.z,from.y),k=-1;if(s==null){routeHide();return}
+ if(key===RT.key&&RT.corr){var ix=RT.idx.get(s);if(ix!=null)k=ix}
+ if(k<0){var g=pickTri(M,to.x,to.z,to.y!=null?to.y:from.y),R=g==null?null:aStar(M,s,g);RT.key=key;if(!R){RT.corr=null;routeHide();return}
+  RT.corr=R;RT.idx=new Map();R.corr.forEach(function(t,i){RT.idx.set(t,i)});RT.to={x:to.x,y:to.y!=null?to.y:M.cy[g],z:to.z};k=0}
+ var pts=layRoute(M,funnel(M,RT.corr,k,from,RT.to));if(pts.length<2){routeHide();return}
+ routeObjs();
+ var arr=RT.mesh.geometry.attributes.position.array,W2=FP?6:11,n=Math.min(pts.length,RMAX);
+ for(var j=0;j<n;j++){var a=pts[Math.max(0,j-1)],b=pts[Math.min(n-1,j+1)],ex=b[0]-a[0],ez=b[2]-a[2],l=Math.sqrt(ex*ex+ez*ez)||1,nx=-ez/l*W2,nz=ex/l*W2,p=pts[j],o2=6*j;
+  arr[o2]=p[0]+nx;arr[o2+1]=-p[1]+4;arr[o2+2]=-(p[2]+nz);arr[o2+3]=p[0]-nx;arr[o2+4]=-p[1]+4;arr[o2+5]=-(p[2]-nz)}
+ RT.mesh.geometry.attributes.position.needsUpdate=true;RT.mesh.geometry.setDrawRange(0,(n-1)*6);
+ var e=pts[n-1];
+ RT.beam.position.set(e[0],-e[1]+130,-e[2]);RT.beam.visible=true;routeG.visible=true};
 G.M3=M3;
 })(window);
