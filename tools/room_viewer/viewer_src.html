@@ -77,6 +77,11 @@ input[type=range]{accent-color:var(--brass);width:100%}
 .li .k.exit{background:var(--brass);clip-path:polygon(0 0,100% 50%,0 100%)}.li .k.tre{background:var(--brass)}.li .k.gift{background:transparent;border:1px dashed var(--brass)}
 .li .k.cube{background:var(--cube);transform:rotate(45deg)}.li .k.shop{background:var(--shop);border-radius:50%}.li .k.hint{background:var(--hint);border-radius:50%}
 .li .x{color:var(--dim);font:11px var(--mono);white-space:nowrap}
+.li.ex{grid-template-columns:14px 1fr auto auto}.li.ex.sel{background:#2a2414;outline:1px solid var(--brass)}
+.li.ex .del{padding:0 6px;font-size:11px;line-height:18px}
+.tag.mk.exit.sel{background:var(--brass);color:#14100a}
+#exSec .row{flex-wrap:wrap}
+.exout{width:100%;height:240px;font:11px var(--mono);background:#0e1116;color:var(--ink);border:1px solid var(--line)}
 .li .n2{min-width:0;overflow-wrap:anywhere}
 .next{border-left:2px solid var(--hint);padding-left:8px;display:flex;flex-direction:column;gap:6px}
 .next b{color:var(--hint);font-weight:600}
@@ -184,6 +189,15 @@ input[type=range]{accent-color:var(--brass);width:100%}
    <div class="list" id="places"></div>
   </div>
 
+  <div class="sec" id="exSec" hidden>
+   <div class="lab">Edit ways out <span class="mono" id="exCount"></span></div>
+   <div class="note">Pick a way out, then click the floor where it is. Its height is taken from the floor you click, so on a room with several levels use Cut or the level buttons to reach the right one first. Click again to adjust.</div>
+   <div class="list" id="exList"></div>
+   <div class="row"><input type="number" id="exDest" min="-1" max="729" placeholder="to room" aria-label="Destination room (-1 world map)" style="width:84px"><button id="exAdd">Add way out</button><button id="exRevert">Undo this room</button></div>
+   <div class="row"><button id="exExport" class="on">Export edits</button><label class="filebtn">Import edits<input type="file" id="exImport" accept=".json"></label><button id="exClear">Clear all</button></div>
+   <div class="note" id="exNote"></div>
+  </div>
+
   <div class="sec" id="peopleSec" hidden>
    <div class="lab" id="peopleHead">People</div>
    <div class="people" id="people"></div>
@@ -210,6 +224,7 @@ input[type=range]{accent-color:var(--brass);width:100%}
    <button id="bTop" title="Look straight down">Top</button>
    <button id="bMarks" class="on" title="Ways out, treasure, memory cubes, shops and hint spots">Marks</button>
    <button id="bArr" title="Where the game puts you when you come in from each room">Arrivals</button>
+   <button id="bEdit" title="Place and move ways out (with their height), then export them for the app">Edit exits</button>
    <button id="bReset" title="Back to the starting view">Reset</button>
    <button id="bPng" title="Save this view with its labels as a picture, for marking up">Save picture</button>
    <span class="levels" id="levels"></span>
@@ -387,8 +402,8 @@ loop();
 var markG=new THREE.Group();scene.add(markG);var marks=[],RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 var MCOL={arr:0x3fd6f0,exit:0xd7a54a,tre:0xd7a54a,gift:0xd7a54a,cube:0x8fb3ff,shop:0xcf9fe8,hint:0x86d08c};
 function markY(x,z){if(x==null)return null;var y=floorY(x,z,0);return y==null?0:y}
-function placeList(f){var out=[],E=XD.EXITS[f]||[],seen={};
- E.forEach(function(e){var d=e[2],dup=out.some(function(o){return o.dest===d&&(o.x==null&&e[0]==null||o.x!=null&&e[0]!=null&&Math.hypot(o.x-e[0],o.z-e[1])<80)});if(dup)return;out.push({kind:'exit',x:e[0],z:e[1],dest:d,label:d===-1?'World map':(d+' '+(roomName(d)||areaOf(d)||''))})});
+function placeList(f){var out=[],E=exitsOf(f),seen={};
+ E.forEach(function(e,i){var d=e[2];if(state.edit){out.push({kind:'exit',x:e[0],z:e[1],ey:e[3],ei:i,dest:d,label:exName(d)});return}var dup=!state.edit&&out.some(function(o){return o.dest===d&&(o.x==null&&e[0]==null||o.x!=null&&e[0]!=null&&Math.hypot(o.x-e[0],o.z-e[1])<80)});if(dup)return;out.push({kind:'exit',x:e[0],z:e[1],ey:e[3],ei:i,dest:d,label:d===-1?'World map':(d+' '+(roomName(d)||areaOf(d)||''))})});
  var T={},haveV=!!state.saveVars;(XD.TRE[f]||[]).forEach(function(t){var tk=haveV&&t[4]!=null&&flagOn(t[4],1<<t[5]),k=(t[1]==null?'n':t[1]+'_'+t[2])+'_'+t[3]+(tk?'t':'');if(!T[k]){T[k]={kind:t[3]?'gift':'tre',x:t[1],z:t[2],names:[],taken:tk};out.push(T[k])}T[k].names.push(t[0])});
  out.forEach(function(o){if(o.names)o.label=o.names.join(', ')+(o.taken?' (taken)':'')});
  if(state.arr){var A=XD.ARR[f]||{};Object.keys(A).forEach(function(from){var seen={};A[from].forEach(function(p){var key=p[0]+'_'+p[1];if(seen[key])return;seen[key]=1;
@@ -398,14 +413,15 @@ function placeList(f){var out=[],E=XD.EXITS[f]||[],seen={};
  return out}
 function buildMarks(){while(markG.children.length){var o=markG.children[0];markG.remove(o);o.geometry.dispose();o.material.dispose()}
  marks.forEach(function(m){if(m.tag)m.tag.remove()});marks=[];if(cur.f==null)return;
- placeList(cur.f).forEach(function(m){m.y=markY(m.x,m.z);
-  if(m.x!=null){var r=m.kind==='hint'?[30,40]:m.kind==='exit'?[18,26]:m.kind==='arr'?[6,11]:[12,19],ring=new THREE.Mesh(new THREE.RingGeometry(r[0],r[1],m.kind==='cube'?4:28),new THREE.MeshBasicMaterial({color:MCOL[m.kind],transparent:true,opacity:0.9,side:THREE.DoubleSide,depthWrite:false}));
+ if(exRoom!==cur.f){exRoom=cur.f;exSel=-1}
+ placeList(cur.f).forEach(function(m){m.y=m.ey!=null?m.ey:markY(m.x,m.z);var sel=state.edit&&m.kind==='exit'&&m.ei===exSel;
+  if(m.x!=null){var r=m.kind==='hint'?[30,40]:m.kind==='exit'?[18,26]:m.kind==='arr'?[6,11]:[12,19],ring=new THREE.Mesh(new THREE.RingGeometry(r[0],r[1],m.kind==='cube'?4:28),new THREE.MeshBasicMaterial({color:sel?0xffffff:MCOL[m.kind],transparent:true,opacity:0.9,side:THREE.DoubleSide,depthWrite:false}));
    ring.rotation.x=-Math.PI/2;ring.position.set(m.x,-m.y+4,-m.z);ring.renderOrder=4;markG.add(ring);m.ring=ring;
-   var tg=document.createElement('div');tg.className='tag mk '+m.kind+(m.kind==='gift'?' tre':'')+(m.taken?' taken':'')+(m.kind==='exit'&&m.dest===-1?' world':'');
+   var tg=document.createElement('div');tg.className='tag mk '+m.kind+(m.kind==='gift'?' tre':'')+(m.taken?' taken':'')+(m.kind==='exit'&&m.dest===-1?' world':'')+(sel?' sel':'');
    tg.textContent=m.kind==='exit'?'\u25B8 '+m.label:m.label.length>34?m.label.slice(0,33)+'\u2026':m.label;tg.title=m.label;
-   tg.onclick=function(){if(m.kind==='exit'&&m.dest>=0)goTo(m.dest);else if(m.kind==='arr')goTo(m.from);else focusAt(m.x,m.y,m.z)};$('tags').appendChild(tg);m.tag=tg}
+   tg.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if(m.kind==='exit'&&m.dest>=0)goTo(m.dest);else if(m.kind==='arr')goTo(m.from);else focusAt(m.x,m.y,m.z)};$('tags').appendChild(tg);m.tag=tg}
   marks.push(m)});
- markG.visible=state.marks;renderPlaces()}
+ markG.visible=state.marks;renderPlaces();if(state.edit)exRender()}
 var tmpM=new THREE.Vector3();
 function updateMarks(){if(!marks)return;var W=$('cv').clientWidth,H=$('cv').clientHeight,t=performance.now()/1000;
  marks.forEach(function(m){if(!m.tag)return;
@@ -421,7 +437,7 @@ function renderPlaces(){var L=marks,box=$('places');$('placeSec').hidden=!L.leng
  L.slice().sort(function(a,b){return ord[a.kind]-ord[b.kind]}).forEach(function(m){var row=document.createElement('div');row.className='li'+(m.taken?' taken':'');
   row.innerHTML='<span class="k '+m.kind+'"></span><span class="n2">'+esc(m.label)+'</span><span class="x">'+(m.x==null?(m.kind==='exit'?'no fixed spot':''):m.x+', '+m.z)+'</span>';
   row.title=KN[m.kind]+(m.kind==='exit'&&m.dest>=0?': click to go there':'');
-  row.onclick=function(){if((m.kind==='exit'&&m.dest>=0)||m.kind==='arr')goTo(m.kind==='arr'?m.from:m.dest);else if(m.x!=null)focusAt(m.x,m.y,m.z)};box.appendChild(row)})}
+  row.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if((m.kind==='exit'&&m.dest>=0)||m.kind==='arr')goTo(m.kind==='arr'?m.from:m.dest);else if(m.x!=null)focusAt(m.x,m.y,m.z)};box.appendChild(row)})}
 function focusAt(x,y,z){var d=cam.position.clone().sub(ctl.target);ctl.target.set(x,-y,-z);cam.position.copy(ctl.target).add(d.multiplyScalar(0.6))}
 /* the next hint after the story step: the app shows the note for the first step above the current one */
 var HKEYS=Object.keys(XD.HINTS).map(Number).sort(function(a,b){return a-b});
@@ -546,7 +562,7 @@ $('bright').oninput=function(){state.bright=+this.value;applyBright()};
 var hovT=0,pin=null,pinText='',pinMesh=null,rayF=new THREE.Raycaster();
 function floorHit(e){var r=$('cv').getBoundingClientRect();rayF.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),cam);
  var hits=rayF.intersectObjects(roomG.children,true);for(var i=0;i<hits.length;i++){var o=hits[i].object,vis=true;while(o){if(o.visible===false){vis=false;break}o=o.parent}if(vis&&hits[i].point.y<=CLIP.constant+1)return hits[i].point}return null}
-$('cv').addEventListener('pointermove',function(e){if(e.buttons)return;var now=performance.now();if(now-hovT<70)return;hovT=now;var p=floorHit(e);$('xzHover').textContent=p?Math.round(p.x)+', '+Math.round(-p.z):'off the room'});
+$('cv').addEventListener('pointermove',function(e){if(e.buttons)return;var now=performance.now();if(now-hovT<70)return;hovT=now;var p=floorHit(e);$('xzHover').textContent=p?Math.round(p.x)+', '+Math.round(-p.z)+'  y '+Math.round(-p.y):'off the room'});
 function clearPin(){pin=null;pinText='';if(pinMesh){scene.remove(pinMesh);pinMesh.geometry.dispose();pinMesh.material.dispose();pinMesh=null}if($('xzPin')){$('xzPin').hidden=true;$('xzCopy').hidden=true}}
 function setPin(p){clearPin();pin={x:Math.round(p.x),z:Math.round(-p.z)};pinMesh=new THREE.Mesh(new THREE.RingGeometry(10,16,24),new THREE.MeshBasicMaterial({color:0x5fb7b0,side:THREE.DoubleSide,depthTest:false,transparent:true}));
  pinMesh.rotation.x=-Math.PI/2;pinMesh.position.set(p.x,p.y+3,p.z);pinMesh.renderOrder=6;scene.add(pinMesh);
@@ -558,6 +574,7 @@ $('xzCopy').onclick=function(){if(!pinText)return;var t=pinText,b=this;
 var ray=new THREE.Raycaster(),down=null;
 $('cv').addEventListener('pointerdown',function(e){down=[e.clientX,e.clientY]});
 $('cv').addEventListener('pointerup',function(e){if(!down||Math.abs(e.clientX-down[0])+Math.abs(e.clientY-down[1])>5)return;var r=$('cv').getBoundingClientRect();
+ if(state.edit){var ep=floorHit(e);if(!ep)return;if(exSel>=0)exPlace(ep);else setPin(ep);return}
  ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),cam);
  var hit=ray.intersectObjects(npcG.children.filter(function(o){return o.isSprite&&o.visible}));if(hit.length){state.sel=hit[0].object.userData.e.i;renderPanel();
   var row=$('people').querySelector('.sel');if(row)row.scrollIntoView({block:'nearest'});return}
@@ -598,7 +615,7 @@ function wList(){var L=wPlaces().slice().sort(function(a,b){return (a[4]||'~').l
  L.forEach(function(q){var row=document.createElement('div');row.className='li';row.innerHTML='<span class="k"></span><span class="n2">'+esc(q[4]||'Place '+q[3])+' <span class="note">room '+q[2]+'</span></span><span class="x">'+q[0]+', '+q[1]+'</span>';
   row.title='Show it on the map';row.onclick=function(){var c=$('wcv');WV.s=Math.max(WV.s,2);WV.ox=c.clientWidth/2-q[0]/32*WV.s;WV.oy=c.clientHeight/2-q[1]/32*WV.s;wDraw()};box.appendChild(row)})}
 async function worldOn(on){WV.on=on;$('wcv').hidden=!on;$('cv').hidden=on;$('tags').hidden=on;$('tools').hidden=on||cur.f==null;$('worldSec').hidden=!on;
- ['stepSec','entrySec','saveSec','placeSec','peopleSec','varSec'].forEach(function(id){if(on)$(id).dataset.was=$(id).hidden?'1':'';$(id).hidden=on?true:$(id).dataset.was==='1'});
+ ['stepSec','entrySec','saveSec','placeSec','exSec','peopleSec','varSec'].forEach(function(id){if(on)$(id).dataset.was=$(id).hidden?'1':'';$(id).hidden=on?true:$(id).dataset.was==='1'});
  $('worldBtn').classList.toggle('on',on);
  if(!on){$('hud').innerHTML='Room '+cur.f+'<small>'+esc((roomName(cur.f)||areaOf(cur.f)||'').slice(0,60))+'</small>';clearPin();$('xzHover').textContent='move over the room';resize();return}
  clearPin();$('hud').innerHTML='World map<small>'+(WV.k==='a'?'Normal world':'Late game world')+'</small>';$('xzHover').textContent='move over the map';
@@ -658,6 +675,49 @@ $('bPng').onclick=function(){if(cur.f==null)return;R.render(scene,cam);var cv=$(
   var u=URL.createObjectURL(blob),ov=document.createElement('div');ov.className='picov';
   ov.innerHTML='<div class="picbox"><div class="row"><b>'+esc(name)+'</b><span class="note">Right-click (or press and hold) the picture to save or copy it.</span><button type="button">Close</button></div><img alt="Room picture"></div>';
   ov.querySelector('img').src=u;ov.querySelector('button').onclick=function(){URL.revokeObjectURL(u);ov.remove()};document.body.appendChild(ov)},'image/png')};
+/* ---------- editing ways out ----------
+   Edits are kept per room as the whole list [x, z, destination, y] (y = the floor height clicked, game units, smaller is higher),
+   in this browser until exported. tools/app/import_exits.js puts an exported file into the app's exits.js. */
+var EXED={},exSel=-1,exRoom=null;try{EXED=JSON.parse(store('xgv.exitEdits')||'{}')||{}}catch(e){EXED={}}
+function exitsOf(f){return EXED[f]||XD.EXITS[f]||[]}
+function exEditable(f){if(!EXED[f])EXED[f]=(XD.EXITS[f]||[]).map(function(e){return e.slice()});return EXED[f]}
+function exName(d){return d===-1?'World map':d+' '+(roomName(d)||areaOf(d)||'')}
+function exSave(){store('xgv.exitEdits',JSON.stringify(EXED));exCount()}
+function exCount(){var n=Object.keys(EXED).length;$('exCount').textContent=n?'· '+n+' room'+(n===1?'':'s')+' changed':''}
+function exPick(i){exSel=exSel===i?-1:i;buildMarks()}
+function exPlace(p){var A=exEditable(cur.f);if(!A[exSel])return;A[exSel]=[Math.round(p.x),Math.round(-p.z),A[exSel][2],Math.round(-p.y)];exSave();buildMarks()}
+function exRender(){if(cur.f==null)return;var L=exitsOf(cur.f),box=$('exList');box.innerHTML='';
+ if(!L.length)box.innerHTML='<div class="note">No ways out listed for this room.</div>';
+ L.forEach(function(e,i){var row=document.createElement('div');row.className='li ex'+(i===exSel?' sel':'');
+  row.innerHTML='<span class="k exit"></span><span class="n2">'+esc(exName(e[2]))+'</span><span class="x">'+(e[0]==null?'no spot':e[0]+', '+e[1]+(e[3]!=null?' · y '+e[3]:''))+'</span><button class="del" title="Remove this way out" aria-label="Remove">✕</button>';
+  row.onclick=function(ev){if(ev.target.classList.contains('del')){var A=exEditable(cur.f);A.splice(i,1);exSel=exSel===i?-1:exSel>i?exSel-1:exSel;exSave();buildMarks();return}
+   exPick(i);if(exSel>=0&&e[0]!=null)focusAt(e[0],e[3]!=null?e[3]:markY(e[0],e[1]),e[1])};box.appendChild(row)});
+ $('exNote').textContent=exSel>=0?'Click the floor to put “'+exName(L[exSel][2])+'” there.':EXED[cur.f]?'This room has your changes.':'';
+ $('exRevert').disabled=!EXED[cur.f];exCount()}
+$('bEdit').onclick=function(){state.edit=!state.edit;this.classList.toggle('on',state.edit);$('exSec').hidden=!state.edit;exSel=-1;
+ if(state.edit&&!state.marks){state.marks=true;$('bMarks').classList.add('on')}buildMarks();if(state.edit)$('exSec').scrollIntoView({block:'nearest'})};
+$('exAdd').onclick=function(){var d=parseInt($('exDest').value,10);if(isNaN(d)||d<-1||d>729){$('exNote').textContent='Type the room it leads to (0 to 729, or -1 for the world map).';return}
+ var A=exEditable(cur.f);A.push([null,null,d]);exSel=A.length-1;exSave();buildMarks()};
+$('exRevert').onclick=function(){delete EXED[cur.f];exSel=-1;exSave();buildMarks()};
+var clrT=0;$('exClear').onclick=function(){var b=this;if(Date.now()-clrT>4000){clrT=Date.now();b.textContent='Click again to clear';setTimeout(function(){b.textContent='Clear all'},4000);return}
+ EXED={};exSel=-1;exSave();b.textContent='Clear all';buildMarks()};
+function exFile(){var R={};Object.keys(EXED).sort(function(a,b){return a-b}).forEach(function(k){R[k]=EXED[k].map(function(e){return e[0]==null?[null,null,e[2]]:[e[0],e[1],e[2],e[3]!=null?e[3]:Math.round(markY(e[0],e[1]))]})});
+ var rows=Object.keys(R).map(function(k){return ' '+JSON.stringify(k)+': ['+R[k].map(function(e){return JSON.stringify(e)}).join(', ')+']'});
+ return '{"format": "xenogears-link-exit-edits", "version": 1, "made": '+JSON.stringify(new Date().toISOString())+',\n "note": "room -> [x, z, destination room, y]; y is the floor height (smaller is higher)",\n "rooms": {\n'+rows.join(',\n').replace(/^/gm,' ')+'\n }}\n'}
+$('exExport').onclick=async function(){if(!Object.keys(EXED).length){$('exNote').textContent='No changes to export yet.';return}
+ var txt=exFile(),name='Xenogears exit edits '+new Date().toISOString().slice(0,10)+'.json',dl=null;
+ try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
+ if(dl){try{await dl.save({filename:name,data:txt});$('exNote').textContent='Saved '+name+'.';return}catch(e){if(e&&e.code==='declined')return}}
+ var ov=document.createElement('div');ov.className='picov';
+ ov.innerHTML='<div class="picbox"><div class="row"><b>'+esc(name)+'</b><span class="note">Saving isn’t available here: copy this and paste it into a file or a message.</span><button type="button" class="cp">Copy</button><button type="button" class="cl">Close</button></div><textarea class="exout" readonly></textarea></div>';
+ var ta=ov.querySelector('textarea');ta.value=txt;ov.querySelector('.cl').onclick=function(){ov.remove()};
+ ov.querySelector('.cp').onclick=function(){var b=this;function sel(){ta.focus();ta.select();b.textContent='Selected'}try{navigator.clipboard.writeText(txt).then(function(){b.textContent='Copied'},sel)}catch(err){sel()}};
+ document.body.appendChild(ov)};
+$('exImport').onchange=async function(){var file=this.files&&this.files[0];if(!file)return;this.value='';var J;try{J=JSON.parse(await file.text())}catch(e){J=null}
+ if(!J||!J.rooms){$('exNote').textContent='Not an exit edits file.';return}var n=0;
+ Object.keys(J.rooms).forEach(function(k){var L=J.rooms[k];if(Array.isArray(L)&&+k>=0&&+k<730){EXED[k]=L.map(function(e){return e.slice(0,4)});n++}});
+ exSel=-1;exSave();buildMarks();$('exNote').textContent='Loaded changes for '+n+' room'+(n===1?'':'s')+'.'};
+exCount();
 $('dropSave').onclick=function(){state.saveVars=null;state.vars={};state.party=[0];$('saveNote').textContent='Without a save, every flag starts off and only the story step changes who is here.';rerun();buildMarks()};
 })();
 </script>

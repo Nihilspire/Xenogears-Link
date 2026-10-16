@@ -1039,8 +1039,8 @@ var entry=null,prevEntry=null,pendF=-1,pendN=0,lastField=-1,visited={},exitTap=n
 function roomKnown(f){if(visited[f])return true;var ar=areaOf(f);if(!ar||!window.HINTS)return false;var st=u16(A.STORY);if(st==null)return false;
  for(var k in HINTS){if(+k>st)continue;var L=HINTS[k];for(var i=0;i<L.length;i++){var a2=areaOf(L[i][0]);if(a2&&a2.n===ar.n)return true}}return false}
 function exitLabel(d){if(d===-1)return{t:'World Map',k:1};if(window.ROOMS&&ROOMS[d])return{t:ROOMS[d],k:1};if(!roomKnown(d))return{t:'???',k:0};var ar=areaOf(d);return{t:(ar?ar.s:'Room')+' '+d,k:1}}
-function roomExits(f){if(!CFG.exits||!window.EXITS||!EXITS[f])return[];var out=[];   /* exits at one spot (within 40 units) share one door and a joined label */
- EXITS[f].forEach(function(e){if(e[0]==null)return;for(var i=0;i<out.length;i++)if(Math.abs(out[i][0]-e[0])<40&&Math.abs(out[i][1]-e[1])<40){if(out[i][2].indexOf(e[2])<0)out[i][2].push(e[2]);return}out.push([e[0],e[1],[e[2]]])});return out}
+function roomExits(f){if(!CFG.exits||!window.EXITS||!EXITS[f])return[];var out=[];   /* exits at one spot (within 40 units) share one door and a joined label; [x, z, [rooms], y or undefined] */
+ EXITS[f].forEach(function(e){if(e[0]==null)return;for(var i=0;i<out.length;i++)if(Math.abs(out[i][0]-e[0])<40&&Math.abs(out[i][1]-e[1])<40&&(out[i][3]==null||e[3]==null||Math.abs(out[i][3]-e[3])<40)){if(out[i][2].indexOf(e[2])<0)out[i][2].push(e[2]);if(out[i][3]==null)out[i][3]=e[3];return}out.push([e[0],e[1],[e[2]],e[3]])});return out}
 function exitText(ds){var ts=[],k=0;ds.forEach(function(d){var l=exitLabel(d);if(ts.indexOf(l.t)<0)ts.push(l.t);k=k||l.k});return{t:ts.join(' / '),k:k}}
 /* which way the camera looks in the room, as a unit vector (fixed "north" when the map does not turn) */
 function camForward(){if(!CFG.maprot)return[0,1];var ex=s32(A.CAMEYE),ez=s32(A.CAMEYE+8),ax=s32(A.CAMAT),az=s32(A.CAMAT+8);if(ex==null||ez==null||ax==null||az==null)return[0,1];
@@ -1231,8 +1231,9 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
    if(t.got){g.strokeStyle='rgba(16,8,8,.8)';g.strokeRect(tx-q,ty-q*.8,q*2,q*1.6);g.strokeStyle='#9a9a9a';g.strokeRect(tx-q+dpr,ty-q*.8+dpr,q*2-2*dpr,q*1.6-2*dpr)}
    else{g.fillStyle='#100808';g.fillRect(tx-q-dpr,ty-q*.8-dpr,q*2+2*dpr,q*1.6+2*dpr);g.fillStyle='#ffd23c';g.fillRect(tx-q,ty-q*.8,q*2,q*1.6);g.fillStyle='#8a5a10';g.fillRect(tx-q,ty-dpr*.5,q*2,dpr)}});
  /* exits as small doors (cv._ex keeps their screen places for taps), the tapped one labelled; the way in as a red arrow */
- var exl=on3?[]:roomExits(f);cv._ex=[];   /* with 3D on the map shows no icons (v1.80), only the party */
- exl.forEach(function(e,i){var ex=SX(e[0],e[1]),ey=SY(e[0],e[1]),q=3.4*dpr;cv._ex.push([ex,ey]);
+ var exl=roomExits(f);cv._ex=[];   /* in 3D (1.99.0.4) the doors stand at their own height when exits.js gives one (placed in the room viewer), else on the floor nearest the party; doors on a level cut away above are left out */
+ function EP(e){if(!on3||e[3]==null)return PP(e[0],e[1]);if(M3.above(e[3],py3))return [-1e5,-1e5];var q=M3.project(e[0],e[3],e[1],W,H);return q[2]?q:[-1e5,-1e5]}
+ exl.forEach(function(e,i){var pq=EP(e),ex=pq[0],ey=pq[1],q=3.4*dpr;cv._ex.push([ex,ey]);if(ex<-1e4)return;
    g.fillStyle='#100808';g.fillRect(ex-q-dpr,ey-q*1.3-dpr,2*q+2*dpr,2.6*q+2*dpr);g.fillStyle='#e8d8a8';g.fillRect(ex-q,ey-q*1.3,2*q,2.6*q);g.fillStyle='#8c7352';g.fillRect(ex-q+dpr,ey-q*1.3+dpr,2*q-2*dpr,2.6*q-2*dpr);g.fillStyle='#ffd23c';g.fillRect(ex+q*.2,ey-dpr*.5,dpr*1.2,dpr*1.2)});
  if(exitTap!=null&&exl[exitTap]){var te=exl[exitTap],tx2=cv._ex[exitTap][0],ty2=cv._ex[exitTap][1],lb=exitText(te[2]);g.font=(7*dpr)+'px monospace';g.textAlign='center';var tw=g.measureText(lb.t).width+6*dpr,lx=Math.max(tw/2,Math.min(W-tw/2,tx2)),ly=ty2-4.5*dpr;if(ly-11*dpr<0)ly=ty2+16*dpr;
    g.fillStyle='rgba(16,8,8,.9)';g.fillRect(lx-tw/2,ly-11*dpr,tw,9*dpr);g.fillStyle=lb.k?'#efefef':'#9a9a9a';g.fillText(lb.t,lx,ly-4*dpr)}
