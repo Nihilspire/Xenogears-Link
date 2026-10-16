@@ -173,9 +173,11 @@ var CFG={
  maprot:LS.get('maprot','1')==='1',plan:LS.get('plan','1')==='1',mapmir:false,hdot:LS.get('hdot','1')==='1',tre:LS.get('tre','1')==='1',gift:LS.get('gift','1')==='1',enl:LS.get('enl','1')==='1',hint:LS.get('hint','1')==='1',exits:LS.get('exits','1')==='1',places:LS.get('places','1')==='1',
  /* battle */
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
- enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1'};
+ enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1',
+ /* DEV, Windows: log where each room change happens (exit log) */
+ xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.3';   /* set by build.sh */
+var VERSION='1.99.0.4';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -1002,13 +1004,14 @@ function parseMap(by){var dv=new DataView(by.buffer,by.byteOffset,by.byteLength)
  for(i=0;i<nt;i++,o+=7){tr[i*3]=dv.getUint16(o,true);tr[i*3+1]=dv.getUint16(o+2,true);tr[i*3+2]=dv.getUint16(o+4,true);fl[i]=by[o+6]}
  return {nv:nv,nt:nt,vx:vx,vz:vz,tr:tr,fl:fl,sx:new Float32Array(nv),sy:new Float32Array(nv)}}
 /* heading = the way the player last moved */
-function track(){var sig=u32(A.SIG);if(sig!==4){mapLast=null;if(sig===5)lastField=-1;return}   /* a fight or menu keeps the room's way in; the world map ends it */
+function track(){var sig=u32(A.SIG);if(sig!==4){if(sig===5&&lastField>=0)xlogRoom(lastField,-1);mapLast=null;if(sig===5)lastField=-1;return}   /* a fight or menu keeps the room's way in; the world map ends it */
  var f=u16(A.FIELD),p=playerPos(),pd=playerData();if(f==null||!p)return;f&=0x7FF;
  /* a room change counts only once the new number has been read 3 times running, and a room the party left for under 3 s
     without moving (a number read in passing around a fight, or a fade) gives the old room its way in back */
  if(f===lastField)pendF=-1;
  if(f!==lastField){if(f!==pendF){pendF=f;pendN=1;return}if(++pendN<3)return;
   var now=Date.now(),blip=entry&&entry.d==null&&now-entry.t<3000&&prevEntry&&prevEntry.f===f;
+  if(blip)xlogUndo();else if(lastField>=0)xlogRoom(lastField,f);
   lastField=f;heading=null;mapLast=null;
   if(blip){entry=prevEntry;prevEntry=null}
   else{prevEntry=entry;entry={f:f,x:null,z:null,d:null,t:now,pd:null,ok:0,bx:null,bz:null}}
@@ -1026,9 +1029,19 @@ function track(){var sig=u32(A.SIG);if(sig!==4){mapLast=null;if(sig===5)lastFiel
    else{var ex=p.x-entry.bx,ez=p.z-entry.bz,ed=ex*ex+ez*ez;
     if(ed>=120*120){entry.bx=p.x;entry.bz=p.z}
     else if(ed>=16){entry.x=entry.bx;entry.z=entry.bz;entry.d=[ex,ez]}}}}
- if(mapLast&&mapLast.f===f){var dx=p.x-mapLast.x,dz=p.z-mapLast.z,d=dx*dx+dz*dz;if(d>0&&d<400*400)heading=[dx,dz]}
+ if(mapLast&&mapLast.f===f){var dx=p.x-mapLast.x,dz=p.z-mapLast.z,d=dx*dx+dz*dz;if(d>0&&d<400*400)heading=[dx,dz];if(d>0&&d<400*400)xlogMoved=Date.now()}
  layerMark(f,playerLayer());
- mapLast={f:f,x:p.x,z:p.z}}
+ mapLast={f:f,x:p.x,z:p.z,y:p.y,l:playerLayer()}}
+/* DEV exit log (Windows): each room change the party walks into is written as one line of JSON, {from, to, x, z, y, layer, step, t},
+   with the party's last spot in the room it left (to -1 = out to the world map). Only a change made while the party was walking
+   (moved in the last 2 s) counts, so scene warps are left out; a change undone within 3 s (a number read in passing) writes
+   {"undo":1}. The room viewer's Import edits and tools/app/import_exit_log.js turn the log into exit places with heights. */
+var xlogMoved=0,xlogN=0,xlogLast=0;
+function xlogOn(){return CFG.xlog&&!!(window.Native&&Native.exitLog)}
+function xlogRoom(from,to){if(!xlogOn()||!mapLast||mapLast.f!==from||from===to||Date.now()-xlogMoved>2000)return;
+ var r=Native.exitLog(JSON.stringify({from:from,to:to,x:mapLast.x,z:mapLast.z,y:mapLast.y,layer:mapLast.l==null?null:mapLast.l,step:u16(A.STORY),t:new Date().toISOString(),v:VERSION}));
+ if(String(r).slice(0,4)!=='ERR:'){xlogN++;xlogLast=Date.now();if(setOpen())drawSet()}}
+function xlogUndo(){if(xlogOn()&&xlogLast&&Date.now()-xlogLast<6000){Native.exitLog('{"undo":1}');xlogN=Math.max(0,xlogN-1);xlogLast=0}}
 /* Exits and the way in. EXITS (exits.js, from the room scripts) gives each exit's place and destination room. entry = the spot the
    party first walked from in this room and the direction it went (the red arrow, as on a Zelda map); nothing until it moves. visited = rooms
    the app has seen the party in (kept in localStorage); a room is also counted as known when it lies in an area the story has
@@ -1208,6 +1221,8 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  function oyP(x,z,l){var y=M3.yLayer(x,z,l,py3);if(M3.above(y,py3))return null;var q=M3.project(x,y,z,W,H);return q[2]?q:null}   /* null: above the cut or behind the camera */
  function PP(x,z){if(!on3)return [W/2+(pu(x,z)-cx)*sc,H/2+(pv(x,z)-cy)*sc];var k=x+','+z;if(PJ[k])return PJ[k];var y=M3.yAt(x,z,py3);var q=M3.above(y,py3)?null:M3.project(x,y,z,W,H);return PJ[k]=q&&q[2]?q:[-1e5,-1e5]}   /* spots on a floor above the cut are left out */
  function SX(x,z){return PP(x,z)[0]}function SY(x,z){return PP(x,z)[1]}
+ /* a spot with its own height (exits.js, treasure.js, marks.js): in 3D drawn on that floor, else as PP */
+ function YP(x,z,y){if(!on3||y==null)return PP(x,z);var q=M3.project(x,y,z,W,H);return q[2]?q:[-1e5,-1e5]}
  function DIR(x,z,dx,dz){if(!on3)return [pu(dx,dz),pv(dx,dz)];var l=Math.hypot(dx,dz)||1,y=M3.yAt(x,z,py3),a=M3.project(x,y,z,W,H),b=M3.project(x+dx/l*60,y,z+dz/l*60,W,H);return [b[0]-a[0],b[1]-a[1]]}
  /* the image is drawn with world x to the right and world z downwards, so it goes through exactly the same
     projection as the outline: screen = ((x*fz - z*fx)*mir, -(x*fx + z*fz)). That is a mirror as well as a turn, so it is set as a matrix. */
@@ -1221,18 +1236,18 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  if(!on3){g.beginPath();for(i=0;i<m.nt;i++){var e=(m.fl[i]>>2)&7;if(!e||!shown(i))continue;for(var k=0;k<3;k++)if(e>>k&1){var q=m.tr[i*3+k],r=m.tr[i*3+(k+1)%3];g.moveTo(m.sx[q],m.sy[q]);g.lineTo(m.sx[r],m.sy[r])}}
  g.strokeStyle='#efe0b0';g.lineWidth=Math.max(1,dpr);g.stroke()}
  /* memory cubes (pink square with a white rim, so it cannot be taken for a chest) and shops (orange disc: item shop; with a grey rim: gear shop), from MARKS */
- if(!on3&&CFG.places&&window.MARKS&&MARKS[f])MARKS[f].forEach(function(e){var ex=SX(e[0],e[1]),ey=SY(e[0],e[1]),q=3.2*dpr;
+ if(CFG.places&&window.MARKS&&MARKS[f]&&!(on3&&M3.isFP()))MARKS[f].forEach(function(e){var mq=YP(e[0],e[1],e[3]),ex=mq[0],ey=mq[1],q=3.2*dpr;if(ex<-1e4)return;
    if(e[2]==='s'){g.fillStyle='#100808';g.fillRect(ex-q-dpr,ey-q-dpr,2*q+2*dpr,2*q+2*dpr);g.fillStyle='#ffffff';g.fillRect(ex-q,ey-q,2*q,2*q);g.fillStyle='#ff6ad0';g.fillRect(ex-q+dpr,ey-q+dpr,2*q-2*dpr,2*q-2*dpr)}
    else{g.beginPath();g.arc(ex,ey,q,0,6.2832);g.fillStyle='#e0a878';g.fill();g.strokeStyle=e[2]==='g'?'#c8c8d8':'#100808';g.lineWidth=dpr*1.5;g.stroke()}});
- if(!on3&&trl)trl.forEach(function(t){if(t.x==null)return;var tx=SX(t.x,t.z),ty=SY(t.x,t.z),q=3.2*dpr;
+ if(trl&&!(on3&&M3.isFP()))trl.forEach(function(t){if(t.x==null)return;var tq=YP(t.x,t.z,t.y),tx=tq[0],ty=tq[1],q=3.2*dpr;if(tx<-1e4)return;
    g.lineWidth=dpr;
    /* a gift (handed over by a person or an event at this spot) is a blue dot, a ring once taken; chests are the yellow boxes */
    if(t.gift){g.beginPath();g.arc(tx,ty,q*.8,0,6.2832);if(t.got){g.strokeStyle='#9a9a9a';g.stroke()}else{g.fillStyle='#6cf';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr*1.5;g.stroke()}return}
    if(t.got){g.strokeStyle='rgba(16,8,8,.8)';g.strokeRect(tx-q,ty-q*.8,q*2,q*1.6);g.strokeStyle='#9a9a9a';g.strokeRect(tx-q+dpr,ty-q*.8+dpr,q*2-2*dpr,q*1.6-2*dpr)}
    else{g.fillStyle='#100808';g.fillRect(tx-q-dpr,ty-q*.8-dpr,q*2+2*dpr,q*1.6+2*dpr);g.fillStyle='#ffd23c';g.fillRect(tx-q,ty-q*.8,q*2,q*1.6);g.fillStyle='#8a5a10';g.fillRect(tx-q,ty-dpr*.5,q*2,dpr)}});
  /* exits as small doors (cv._ex keeps their screen places for taps), the tapped one labelled; the way in as a red arrow */
- var exl=roomExits(f);cv._ex=[];   /* in 3D (1.99.0.4) the doors stand at their own height when exits.js gives one (placed in the room viewer), else on the floor nearest the party; doors on a level cut away above are left out */
- function EP(e){if(!on3||e[3]==null)return PP(e[0],e[1]);if(M3.above(e[3],py3))return [-1e5,-1e5];var q=M3.project(e[0],e[3],e[1],W,H);return q[2]?q:[-1e5,-1e5]}
+ var exl=roomExits(f);cv._ex=[];   /* in 3D (1.99.0.4) the doors stand at their own height when exits.js gives one (placed in the room viewer), else on the floor nearest the party; the 3D view no longer clips upper levels, so every door with a height is drawn */
+ function EP(e){return YP(e[0],e[1],e[3])}
  exl.forEach(function(e,i){var pq=EP(e),ex=pq[0],ey=pq[1],q=3.4*dpr;cv._ex.push([ex,ey]);if(ex<-1e4)return;
    g.fillStyle='#100808';g.fillRect(ex-q-dpr,ey-q*1.3-dpr,2*q+2*dpr,2.6*q+2*dpr);g.fillStyle='#e8d8a8';g.fillRect(ex-q,ey-q*1.3,2*q,2.6*q);g.fillStyle='#8c7352';g.fillRect(ex-q+dpr,ey-q*1.3+dpr,2*q-2*dpr,2.6*q-2*dpr);g.fillStyle='#ffd23c';g.fillRect(ex+q*.2,ey-dpr*.5,dpr*1.2,dpr*1.2)});
  if(exitTap!=null&&exl[exitTap]){var te=exl[exitTap],tx2=cv._ex[exitTap][0],ty2=cv._ex[exitTap][1],lb=exitText(te[2]);g.font=(7*dpr)+'px monospace';g.textAlign='center';var tw=g.measureText(lb.t).width+6*dpr,lx=Math.max(tw/2,Math.min(W-tw/2,tx2)),ly=ty2-4.5*dpr;if(ly-11*dpr<0)ly=ty2+16*dpr;
@@ -1276,7 +1291,7 @@ var TKIND=['items','weapons','equipment','gear_weapons','gear_parts'];
 /* the room's treasure with a got / not got mark each, or null */
 function treList(f){if(!CFG.tre||f==null||!window.TREASURE)return null;var l=TREASURE[f];if(!l)return null;if(!CFG.gift)l=l.filter(function(t){return t.length>5&&t[6]!==1});if(!l.length)return null;
  return l.map(function(t){var v=u16(A.SVAR+t[0]),nm=t[2].map(function(c){return gearName(TKIND[c>>8],c&255)||['Item','Weapon','Equip','Gear weapon','Gear part'][c>>8]+' '+(c&255)});if(t[3])nm.push(t[3]+' G');
-  return{n:nm.join(' + '),got:v==null?null:(v>>t[1]&1)===1,x:t.length>5?t[4]:null,z:t.length>5?t[5]:null,gift:t.length<6||t[6]===1}})}
+  return{n:nm.join(' + '),got:v==null?null:(v>>t[1]&1)===1,x:t.length>5?t[4]:null,z:t.length>5?t[5]:null,y:t.length>7?t[7]:null,gift:t.length<6||t[6]===1}})}
 /* ================= description pop-up ================= */
 function gearName(k,id){var t=(window.GEARTBL&&GEARTBL[k])||TABLES[k];var v=t&&t[id];return v&&v!=='/'?v:null}
 /* description text for id of kind k ("" when there is none) */
@@ -1485,6 +1500,7 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+=onoff('FAST MAP','fast',CFG.fast);
  if(window.Native&&Native.snapSave){h+='<div class="opt">'+T('STORY SNAPSHOT','c')+chip('SAVE NOW',false,'snapTake()')+chip('FOLDER',false,'Native.snapOpen()')+'</div>';
   h+='<div class="opt">'+T('NOTE','c')+'<input id="isn" style="width:200rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="snapNote=this.value" placeholder="what just happened" value="'+snapNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>';if(snapMsg)h+='<div class="opt">'+T(snapMsg.slice(0,44),'g')+'</div>'}
+ if(window.Native&&Native.exitLog)h+='<div class="opt">'+T('EXIT LOG','c')+chip('ON',CFG.xlog,"sv('xlog','1')")+chip('OFF',!CFG.xlog,"sv('xlog','0')")+chip('FOLDER',false,'Native.exitLogOpen()')+T(xlogN+' THIS RUN','g')+'</div>';
  h+='<div class="opt">'+T('FIGHT LOG','c')+chip('SHOW',false,'showLog()')+T(blog.length?blog.length+' LINES':'EMPTY','g')+'</div>';
  if(teach){if(teach.msg)h+='<div class="opt">'+T(teach.msg,'y')+'</div>';else{var ts=TEACH_STEPS[teach.step];
   h+='<div class="opt">'+T('STEP '+(teach.step+1)+'/4','y')+'</div><div class="opt">'+T(ts[0])+'</div><div class="opt">'+T(ts[1])+'</div><div class="opt">'+(teach.busy?T('Reading...','c'):chip('TAP HERE NOW',true,'teachTap()'))+'</div>'}}
@@ -1497,7 +1513,7 @@ function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T(
  h+='<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('ENABLE',true,"event.stopPropagation();closePop();sv('"+k+"','1')")+'</div>';
  popup(h,240);document.getElementById('pop').style.zIndex=6}
 function sv(k,v){if(k==='host')v=okHost(v);if(k==='port')v=okPort(v);LS.set(k,v);if(k==='scale')v=+v;if(k==='quiet'){v=String(v)==='1';CFG.quiet=CFG.dlg=CFG.cut=v}
- if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye')v=String(v)==='1';CFG[k]=v;
+ if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye'||k==='xlog')v=String(v)==='1';CFG[k]=v;
  if((k==='x3d'||k==='xeye')&&!v){if(k==='x3d'&&map3on){map3on=false;LS.set('map3d','0')}if(map3eye){map3eye=false;LS.set('map3eye','0')}last={};render()}
  if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){if(!v)teach=null;last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
 setInterval(function(){if(Date.now()-pollAt>=CFG.poll-30)poll();if(setOpen()&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))drawSet()},CFG.poll);

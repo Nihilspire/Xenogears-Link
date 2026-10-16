@@ -34,5 +34,9 @@ Object.assign(window.Native, {
   snapSave(base, txt, json) {
     try { const d = window.Native.snapDir(); fs.mkdirSync(d, { recursive: true }); const b = path.join(d, String(base).replace(/[<>:"/\\|?*]/g, '-'));
       fs.writeFileSync(b + '.txt', txt); fs.writeFileSync(b + '.json', json); return b + '.txt'; } catch (e) { return 'ERR:' + e.message; } },
+  // DEV exit log (Windows only): one JSON line per room change, Documents\Xenogears Link\Exit log\exit log.jsonl
+  exitLogDir() { return path.join(ipcRenderer.sendSync('docs-dir'), 'Xenogears Link', 'Exit log'); },
+  exitLog(line) { try { const d = window.Native.exitLogDir(); fs.mkdirSync(d, { recursive: true }); fs.appendFileSync(path.join(d, 'exit log.jsonl'), String(line) + '\r\n'); return 'ok'; } catch (e) { return 'ERR:' + e.message; } },
+  exitLogOpen() { const d = window.Native.exitLogDir(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} require('electron').shell.openPath(d); },
   snapOpen() { const d = window.Native.snapDir(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} require('electron').shell.openPath(d); },
 });

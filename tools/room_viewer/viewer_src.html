@@ -77,10 +77,13 @@ input[type=range]{accent-color:var(--brass);width:100%}
 .li .k.exit{background:var(--brass);clip-path:polygon(0 0,100% 50%,0 100%)}.li .k.tre{background:var(--brass)}.li .k.gift{background:transparent;border:1px dashed var(--brass)}
 .li .k.cube{background:var(--cube);transform:rotate(45deg)}.li .k.shop{background:var(--shop);border-radius:50%}.li .k.hint{background:var(--hint);border-radius:50%}
 .li .x{color:var(--dim);font:11px var(--mono);white-space:nowrap}
+.cmp .cv{border-bottom:1px solid var(--line);padding:6px 2px;display:grid;gap:4px;font-size:12px}.cmp .cv b{font:600 12px var(--mono);color:var(--brass)}.cmp .cv .chips{gap:4px}.cmp .chip.here{border-color:var(--hint);color:var(--hint)}
+.hp{border-bottom:1px solid var(--line);padding:4px 2px;display:grid;gap:3px;font-size:12px}.hp .row{gap:6px;align-items:center}.hp .del{padding:0 6px;font-size:11px;line-height:18px}
 .li.ex{grid-template-columns:14px 1fr auto auto}.li.ex.sel{background:#2a2414;outline:1px solid var(--brass)}
 .li.ex .del{padding:0 6px;font-size:11px;line-height:18px}
 .tag.mk.exit.sel{background:var(--brass);color:#14100a}
 #exSec .row{flex-wrap:wrap}
+.rq{border:1px solid var(--line);border-radius:4px;padding:6px;display:grid;gap:6px;margin:6px 0}.rq select{width:100%}.li.ex.chk .n2::after{content:' \2713';color:var(--hint)}
 .exout{width:100%;height:240px;font:11px var(--mono);background:#0e1116;color:var(--ink);border:1px solid var(--line)}
 .li .n2{min-width:0;overflow-wrap:anywhere}
 .next{border-left:2px solid var(--hint);padding-left:8px;display:flex;flex-direction:column;gap:6px}
@@ -166,6 +169,16 @@ input[type=range]{accent-color:var(--brass);width:100%}
    <div class="row"><input type="range" id="stepRange" min="0" max="360" value="0" class="grow"><input type="number" id="stepIn" min="0" max="999" value="0" style="width:68px"></div>
    <div class="step-label" id="stepLabel"></div>
    <div class="next" id="nextBox" hidden></div>
+   <div class="row"><button id="hEdit" title="Change a step's note and the rooms and green spots it points to, then export them for the app">Edit hints</button><span class="note" id="hCount"></span></div>
+   <div id="hEd" class="rq" hidden>
+    <div class="row"><label class="note">Step <input type="number" id="hStep" min="0" max="999" style="width:68px"></label><label class="note"><input type="checkbox" id="hOk"> checked in game</label><button id="hNext" title="The step after the current story step">Next hint</button></div>
+    <textarea id="hText" rows="3" aria-label="Hint note" style="width:100%;font:12px var(--body);background:#0e1116;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px"></textarea>
+    <div class="note">The rooms the hint points to, in order. While this is open, clicking the floor adds a green spot in this room (adding the room if it isn't listed).</div>
+    <div class="list" id="hPath"></div>
+    <div class="row"><button id="hAddRoom">Add this room</button><button id="hAddWorld">Add world map</button><button id="hRevert">Undo this step</button></div>
+    <div class="row"><button id="hExport" class="on">Export hint edits</button><label class="filebtn">Import<input type="file" id="hImport" accept=".json"></label><button id="hClear">Clear all</button></div>
+    <div class="note" id="hNote"></div>
+   </div>
    <div class="note">Steps this room's scripts check:</div>
    <div class="chips" id="stepChips"></div>
   </div>
@@ -181,6 +194,10 @@ input[type=range]{accent-color:var(--brass);width:100%}
    <select id="slotSel" hidden></select>
    <div class="row" id="saveBtns" hidden><button id="useSave">Use this save</button><button id="dropSave">Forget it</button></div>
    <div class="row"><label class="filebtn">Open story snapshot<input type="file" id="snapFile" accept=".json"></label><span class="note">.json from the Windows app (DEV OPTIONS)</span></div>
+   <div class="lab" style="margin-top:10px">Compare two snapshots</div>
+   <div class="row"><label class="filebtn">Before<input type="file" id="cmpA" accept=".json"></label><label class="filebtn">After<input type="file" id="cmpB" accept=".json"></label><span class="note" id="cmpFiles"></span></div>
+   <div class="note" id="cmpNote">Open the snapshot from before something happened and the one from after it: every switch that changed, with the rooms whose scripts set or check it.</div>
+   <div class="list cmp" id="cmpList"></div>
    <div class="note" id="saveNote">Without a save, every flag starts off and only the story step changes who is here.</div>
   </div>
 
@@ -190,11 +207,19 @@ input[type=range]{accent-color:var(--brass);width:100%}
   </div>
 
   <div class="sec" id="exSec" hidden>
-   <div class="lab">Edit ways out <span class="mono" id="exCount"></span></div>
-   <div class="note">Pick a way out, then click the floor where it is. Its height is taken from the floor you click, so on a room with several levels use Cut or the level buttons to reach the right one first. Click again to adjust.</div>
+   <div class="lab">Edit places <span class="mono" id="exCount"></span></div>
+   <div class="note">Pick a way out, chest, save or shop, then click the floor where it is. Its height is taken from the floor you click, so on a room with several levels use Cut or the level buttons to reach the right one first. Click again to adjust.</div>
+   <div class="rq">
+    <div class="row"><select id="rqSel" aria-label="Review list"></select></div>
+    <div class="row"><button id="rqPrev" aria-label="Previous">◂</button><span class="mono" id="rqPos">-</span><button id="rqNext" aria-label="Next">▸</button><button id="rqOk" title="Mark this one checked and go to the next">Looks fine</button><span class="note" id="rqDone"></span></div>
+    <div class="note" id="rqWhy"></div>
+   </div>
    <div class="list" id="exList"></div>
-   <div class="row"><input type="number" id="exDest" min="-1" max="729" placeholder="to room" aria-label="Destination room (-1 world map)" style="width:84px"><button id="exAdd">Add way out</button><button id="exRevert">Undo this room</button></div>
-   <div class="row"><button id="exExport" class="on">Export edits</button><label class="filebtn">Import edits<input type="file" id="exImport" accept=".json"></label><button id="exClear">Clear all</button></div>
+ <div class="row"><input type="number" id="exDest" min="-1" max="729" placeholder="to room" aria-label="Destination room (-1 world map)" style="width:84px"><button id="exAdd">Add way out</button><button id="exRevert">Undo this room</button></div>
+   <div class="lab" style="margin-top:8px">Treasure, saves and shops</div>
+   <div class="list" id="mkList"></div>
+   <div class="row"><select id="mkKind" aria-label="Kind of mark"><option value="s">Memory cube</option><option value="i">Item shop</option><option value="g">Gear shop</option></select><button id="mkAdd">Add mark</button></div>
+   <div class="row"><button id="exExport" class="on">Export edits</button><label class="filebtn" title="An exit edits file, or the app's exit log (exit log.jsonl)">Import edits or log<input type="file" id="exImport" accept=".json,.jsonl,.txt"></label><button id="exClear">Clear all</button></div>
    <div class="note" id="exNote"></div>
   </div>
 
@@ -224,7 +249,7 @@ input[type=range]{accent-color:var(--brass);width:100%}
    <button id="bTop" title="Look straight down">Top</button>
    <button id="bMarks" class="on" title="Ways out, treasure, memory cubes, shops and hint spots">Marks</button>
    <button id="bArr" title="Where the game puts you when you come in from each room">Arrivals</button>
-   <button id="bEdit" title="Place and move ways out (with their height), then export them for the app">Edit exits</button>
+   <button id="bEdit" title="Place and move ways out, treasure, saves and shops (with their height), then export them for the app">Edit places</button>
    <button id="bReset" title="Back to the starting view">Reset</button>
    <button id="bPng" title="Save this view with its labels as a picture, for marking up">Save picture</button>
    <span class="levels" id="levels"></span>
@@ -404,22 +429,24 @@ var MCOL={arr:0x3fd6f0,exit:0xd7a54a,tre:0xd7a54a,gift:0xd7a54a,cube:0x8fb3ff,sh
 function markY(x,z){if(x==null)return null;var y=floorY(x,z,0);return y==null?0:y}
 function placeList(f){var out=[],E=exitsOf(f),seen={};
  E.forEach(function(e,i){var d=e[2];if(state.edit){out.push({kind:'exit',x:e[0],z:e[1],ey:e[3],ei:i,dest:d,label:exName(d)});return}var dup=!state.edit&&out.some(function(o){return o.dest===d&&(o.x==null&&e[0]==null||o.x!=null&&e[0]!=null&&Math.hypot(o.x-e[0],o.z-e[1])<80)});if(dup)return;out.push({kind:'exit',x:e[0],z:e[1],ey:e[3],ei:i,dest:d,label:d===-1?'World map':(d+' '+(roomName(d)||areaOf(d)||''))})});
- var T={},haveV=!!state.saveVars;(XD.TRE[f]||[]).forEach(function(t){var tk=haveV&&t[4]!=null&&flagOn(t[4],1<<t[5]),k=(t[1]==null?'n':t[1]+'_'+t[2])+'_'+t[3]+(tk?'t':'');if(!T[k]){T[k]={kind:t[3]?'gift':'tre',x:t[1],z:t[2],names:[],taken:tk};out.push(T[k])}T[k].names.push(t[0])});
+ var T={},haveV=!!state.saveVars;treOf(f).forEach(function(t,ti){var tk=haveV&&t[4]!=null&&flagOn(t[4],1<<t[5]),k=(t[1]==null?'n':t[1]+'_'+t[2])+'_'+t[3]+(tk?'t':'');if(!T[k]){T[k]={kind:t[3]?'gift':'tre',x:t[1],z:t[2],ey:t[6],names:[],ti:[],taken:tk};out.push(T[k])}T[k].names.push(t[0]);T[k].ti.push(ti)});
  out.forEach(function(o){if(o.names)o.label=o.names.join(', ')+(o.taken?' (taken)':'')});
  if(state.arr){var A=XD.ARR[f]||{};Object.keys(A).forEach(function(from){var seen={};A[from].forEach(function(p){var key=p[0]+'_'+p[1];if(seen[key])return;seen[key]=1;
   out.push({kind:'arr',x:p[0],z:p[1],from:+from,label:'in from '+from+' '+(roomName(+from)||areaOf(+from)||'')})})})}
- (XD.MARKS[f]||[]).forEach(function(m){if(m[2]==='s')out.push({kind:'cube',x:m[0],z:m[1],label:'Memory cube'});else out.push({kind:'shop',x:m[0],z:m[1],label:m[2]==='g'?'Gear shop':'Item shop'})});
- var nx=nextHint();if(nx)nx.rooms.forEach(function(q){if(q[0]===f){if(q[1].length)q[1].forEach(function(s){out.push({kind:'hint',x:s[0],z:s[1],label:'Step '+nx.k})});else out.push({kind:'hint',x:null,z:null,label:'Step '+nx.k+' happens in this room'})}});
+ marksOf(f).forEach(function(m,mi){out.push({kind:m[2]==='s'?'cube':'shop',x:m[0],z:m[1],ey:m[3],mi:mi,label:MKN[m[2]]||'Mark'})});
+ var nx=state.hedit?hEditView():nextHint();if(nx)nx.rooms.forEach(function(q){if(q[0]===f){if(q[1].length)q[1].forEach(function(s){out.push({kind:'hint',x:s[0],z:s[1],label:'Step '+nx.k})});else out.push({kind:'hint',x:null,z:null,label:'Step '+nx.k+' happens in this room'})}});
  return out}
 function buildMarks(){while(markG.children.length){var o=markG.children[0];markG.remove(o);o.geometry.dispose();o.material.dispose()}
  marks.forEach(function(m){if(m.tag)m.tag.remove()});marks=[];if(cur.f==null)return;
- if(exRoom!==cur.f){exRoom=cur.f;exSel=-1}
- placeList(cur.f).forEach(function(m){m.y=m.ey!=null?m.ey:markY(m.x,m.z);var sel=state.edit&&m.kind==='exit'&&m.ei===exSel;
+ if(exRoom!==cur.f){exRoom=cur.f;exSel=-1;mkSel=null}
+ if(rqWant&&rqWant[0]===cur.f&&typeof rqWant[1]==='string'){var rw=rqWant;rqWant=null;placeList(cur.f).forEach(function(m){if(rw[1]==='tre'&&m.ti&&m.ti.indexOf(rw[2])>=0)mkSel={t:'tre',i:m.ti.slice(),n:m.label};if(rw[1]==='mk'&&m.mi===rw[2])mkSel={t:'mk',i:m.mi,n:m.label}})}
+ if(rqWant&&rqWant[0]===cur.f){var wl=exitsOf(cur.f),wb=-1,wd=1e9;wl.forEach(function(e,i){if(e[2]!==rqWant[2])return;var d=e[0]==null?1e8:Math.hypot(e[0]-rqWant[3],e[1]-rqWant[4]);if(i===rqWant[1])d-=50;if(d<wd){wd=d;wb=i}});exSel=wb;rqWant=null}
+ placeList(cur.f).forEach(function(m){m.y=m.ey!=null?m.ey:markY(m.x,m.z);var sel=state.edit&&(m.kind==='exit'&&m.ei===exSel||mkSel&&(mkSel.t==='mk'&&m.mi===mkSel.i||mkSel.t==='tre'&&m.ti&&m.ti[0]===mkSel.i[0]));
   if(m.x!=null){var r=m.kind==='hint'?[30,40]:m.kind==='exit'?[18,26]:m.kind==='arr'?[6,11]:[12,19],ring=new THREE.Mesh(new THREE.RingGeometry(r[0],r[1],m.kind==='cube'?4:28),new THREE.MeshBasicMaterial({color:sel?0xffffff:MCOL[m.kind],transparent:true,opacity:0.9,side:THREE.DoubleSide,depthWrite:false}));
    ring.rotation.x=-Math.PI/2;ring.position.set(m.x,-m.y+4,-m.z);ring.renderOrder=4;markG.add(ring);m.ring=ring;
-   var tg=document.createElement('div');tg.className='tag mk '+m.kind+(m.kind==='gift'?' tre':'')+(m.taken?' taken':'')+(m.kind==='exit'&&m.dest===-1?' world':'')+(sel?' sel':'');
+   var tg=document.createElement('div');tg.className='tag mk '+m.kind+(m.kind==='gift'?' tre':'')+(m.taken?' taken':'')+(m.kind==='exit'&&m.dest===-1?' world':'')+(sel?' sel':'');if(sel&&m.kind!=='exit')tg.style.outline='2px solid #fff';
    tg.textContent=m.kind==='exit'?'\u25B8 '+m.label:m.label.length>34?m.label.slice(0,33)+'\u2026':m.label;tg.title=m.label;
-   tg.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if(m.kind==='exit'&&m.dest>=0)goTo(m.dest);else if(m.kind==='arr')goTo(m.from);else focusAt(m.x,m.y,m.z)};$('tags').appendChild(tg);m.tag=tg}
+   tg.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if(state.edit&&(m.ti||m.mi!=null)){mkPick(m);return}if(m.kind==='exit'&&m.dest>=0)goTo(m.dest);else if(m.kind==='arr')goTo(m.from);else focusAt(m.x,m.y,m.z)};$('tags').appendChild(tg);m.tag=tg}
   marks.push(m)});
  markG.visible=state.marks;renderPlaces();if(state.edit)exRender()}
 var tmpM=new THREE.Vector3();
@@ -437,10 +464,10 @@ function renderPlaces(){var L=marks,box=$('places');$('placeSec').hidden=!L.leng
  L.slice().sort(function(a,b){return ord[a.kind]-ord[b.kind]}).forEach(function(m){var row=document.createElement('div');row.className='li'+(m.taken?' taken':'');
   row.innerHTML='<span class="k '+m.kind+'"></span><span class="n2">'+esc(m.label)+'</span><span class="x">'+(m.x==null?(m.kind==='exit'?'no fixed spot':''):m.x+', '+m.z)+'</span>';
   row.title=KN[m.kind]+(m.kind==='exit'&&m.dest>=0?': click to go there':'');
-  row.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if((m.kind==='exit'&&m.dest>=0)||m.kind==='arr')goTo(m.kind==='arr'?m.from:m.dest);else if(m.x!=null)focusAt(m.x,m.y,m.z)};box.appendChild(row)})}
+  row.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if(state.edit&&(m.ti||m.mi!=null)){mkPick(m);return}if((m.kind==='exit'&&m.dest>=0)||m.kind==='arr')goTo(m.kind==='arr'?m.from:m.dest);else if(m.x!=null)focusAt(m.x,m.y,m.z)};box.appendChild(row)})}
 function focusAt(x,y,z){var d=cam.position.clone().sub(ctl.target);ctl.target.set(x,-y,-z);cam.position.copy(ctl.target).add(d.multiplyScalar(0.6))}
 /* the next hint after the story step: the app shows the note for the first step above the current one */
-var HKEYS=Object.keys(XD.HINTS).map(Number).sort(function(a,b){return a-b});
+var HKEYS=[];function hKeys(){HKEYS=Object.keys(XD.HINTS).map(Number).sort(function(a,b){return a-b})}hKeys();
 function nextHint(){for(var i=0;i<HKEYS.length;i++)if(HKEYS[i]>state.step){var h=hintFor(HKEYS[i]);if(h)return h}return null}
 /* walking through doors, with a way back */
 var hist=[];
@@ -540,6 +567,7 @@ $('prevRoom').onclick=function(){state.keepStep=true;loadRoom(cur.f-1)};$('nextR
 function setStep(s){state.step=Math.max(0,Math.min(999,s|0));store('xgv.step',String(state.step));setHash();rerun();buildMarks()}
 /* the address carries the room and story step as a plain token, so a view can be bookmarked or sent: #room102-step63 */
 function setHash(){if(cur.f==null)return;var h='#room'+cur.f+'-step'+state.step;if(location.hash!==h)try{history.replaceState(null,'',h)}catch(e){}}
+window.addEventListener('hashchange',function(){var hs=readHash();if(!hs||!D)return;if(hs.room===cur.f&&(hs.step==null||hs.step===state.step))return;if(hs.step!=null){state.step=hs.step;$('stepIn').value=hs.step}state.keepStep=true;loadRoom(hs.room)});
 function readHash(){var m=/room(\d+)/.exec(location.hash),n=/step(\d+)/.exec(location.hash);return m?{room:+m[1],step:n?+n[1]:null}:null}
 $('stepRange').oninput=function(){setStep(+this.value)};$('stepIn').onchange=function(){setStep(+this.value)};
 $('stepChips').onclick=function(e){var s=e.target.getAttribute('data-s');if(s!=null)setStep(+s)};
@@ -574,7 +602,8 @@ $('xzCopy').onclick=function(){if(!pinText)return;var t=pinText,b=this;
 var ray=new THREE.Raycaster(),down=null;
 $('cv').addEventListener('pointerdown',function(e){down=[e.clientX,e.clientY]});
 $('cv').addEventListener('pointerup',function(e){if(!down||Math.abs(e.clientX-down[0])+Math.abs(e.clientY-down[1])>5)return;var r=$('cv').getBoundingClientRect();
- if(state.edit){var ep=floorHit(e);if(!ep)return;if(exSel>=0)exPlace(ep);else setPin(ep);return}
+ if(state.hedit&&!(state.edit&&(exSel>=0||mkSel))){var hp=floorHit(e);if(hp)hAddSpot(hp);return}
+ if(state.edit){var ep=floorHit(e);if(!ep)return;if(exSel>=0)exPlace(ep);else if(mkSel)mkPlace(ep);else setPin(ep);return}
  ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),cam);
  var hit=ray.intersectObjects(npcG.children.filter(function(o){return o.isSprite&&o.visible}));if(hit.length){state.sel=hit[0].object.userData.e.i;renderPanel();
   var row=$('people').querySelector('.sel');if(row)row.scrollIntoView({block:'nearest'});return}
@@ -678,13 +707,31 @@ $('bPng').onclick=function(){if(cur.f==null)return;R.render(scene,cam);var cv=$(
 /* ---------- editing ways out ----------
    Edits are kept per room as the whole list [x, z, destination, y] (y = the floor height clicked, game units, smaller is higher),
    in this browser until exported. tools/app/import_exits.js puts an exported file into the app's exits.js. */
-var EXED={},exSel=-1,exRoom=null;try{EXED=JSON.parse(store('xgv.exitEdits')||'{}')||{}}catch(e){EXED={}}
+var EXED={},exSel=-1,exRoom=null,rqWant=null;try{EXED=JSON.parse(store('xgv.exitEdits')||'{}')||{}}catch(e){EXED={}}
 function exitsOf(f){return EXED[f]||XD.EXITS[f]||[]}
+/* treasure keeps the app's list (its items come from the scripts), so only places change: TRED[room][index] = [x, z, y];
+   memory cubes and shops are kept whole per room like exits: MKED[room] = [[x, z, kind, y]] */
+var TRED={},MKED={},mkSel=null,MKN={s:'Memory cube',i:'Item shop',g:'Gear shop'};
+try{TRED=JSON.parse(store('xgv.treEdits')||'{}')||{};MKED=JSON.parse(store('xgv.markEdits')||'{}')||{}}catch(e){}
+function treOf(f){var o=TRED[f]||{};return (XD.TRE[f]||[]).map(function(t,i){var t2=t.slice();if(o[i]){t2[1]=o[i][0];t2[2]=o[i][1];t2[6]=o[i][2]}return t2})}
+function marksOf(f){return MKED[f]||XD.MARKS[f]||[]}
+function mkSave(){store('xgv.treEdits',JSON.stringify(TRED));store('xgv.markEdits',JSON.stringify(MKED));exCount()}
+function mkPick(m){var same=mkSel&&(m.ti?mkSel.t==='tre'&&mkSel.i[0]===m.ti[0]:mkSel.t==='mk'&&mkSel.i===m.mi);mkSel=same?null:m.ti?{t:'tre',i:m.ti.slice(),n:m.label}:{t:'mk',i:m.mi,n:m.label};exSel=-1;buildMarks()}
+function mkPlace(p){var x=Math.round(p.x),z=Math.round(-p.z),y=Math.round(-p.y),f=cur.f;
+ if(mkSel.t==='tre'){var o=TRED[f]=TRED[f]||{};mkSel.i.forEach(function(i){o[i]=[x,z,y]})}
+ else{var A=MKED[f]=MKED[f]||(XD.MARKS[f]||[]).map(function(e){return e.slice()});if(A[mkSel.i])A[mkSel.i]=[x,z,A[mkSel.i][2],y]}
+ mkSave();buildMarks()}
+function mkRender(){var box=$('mkList');box.innerHTML='';var L=marks.filter(function(m){return m.ti||m.mi!=null});
+ if(!L.length)box.innerHTML='<div class="note">None in this room.</div>';
+ L.forEach(function(m){var on=mkSel&&(m.ti?mkSel.t==='tre'&&mkSel.i[0]===m.ti[0]:mkSel.t==='mk'&&mkSel.i===m.mi),row=document.createElement('div');row.className='li ex'+(on?' sel':'');
+  row.innerHTML='<span class="k '+m.kind+'"></span><span class="n2">'+esc(m.label)+'</span><span class="x">'+(m.x==null?'no spot':m.x+', '+m.z+(m.ey!=null?' \u00b7 y '+m.ey:''))+'</span>'+(m.mi!=null?'<button class="del" title="Remove this mark" aria-label="Remove">\u2715</button>':'<span></span>');
+  row.onclick=function(ev){if(ev.target.classList.contains('del')){var A=MKED[cur.f]=MKED[cur.f]||(XD.MARKS[cur.f]||[]).map(function(e){return e.slice()});A.splice(m.mi,1);mkSel=null;mkSave();buildMarks();return}
+   mkPick(m);if(mkSel&&m.x!=null)focusAt(m.x,m.y,m.z)};box.appendChild(row)})}
 function exEditable(f){if(!EXED[f])EXED[f]=(XD.EXITS[f]||[]).map(function(e){return e.slice()});return EXED[f]}
 function exName(d){return d===-1?'World map':d+' '+(roomName(d)||areaOf(d)||'')}
 function exSave(){store('xgv.exitEdits',JSON.stringify(EXED));exCount()}
-function exCount(){var n=Object.keys(EXED).length;$('exCount').textContent=n?'· '+n+' room'+(n===1?'':'s')+' changed':''}
-function exPick(i){exSel=exSel===i?-1:i;buildMarks()}
+function exCount(){var R={};[EXED,TRED,MKED].forEach(function(o){Object.keys(o).forEach(function(k){R[k]=1})});var n=Object.keys(R).length;$('exCount').textContent=n?'· '+n+' room'+(n===1?'':'s')+' changed':''}
+function exPick(i){exSel=exSel===i?-1:i;mkSel=null;buildMarks()}
 function exPlace(p){var A=exEditable(cur.f);if(!A[exSel])return;A[exSel]=[Math.round(p.x),Math.round(-p.z),A[exSel][2],Math.round(-p.y)];exSave();buildMarks()}
 function exRender(){if(cur.f==null)return;var L=exitsOf(cur.f),box=$('exList');box.innerHTML='';
  if(!L.length)box.innerHTML='<div class="note">No ways out listed for this room.</div>';
@@ -692,19 +739,21 @@ function exRender(){if(cur.f==null)return;var L=exitsOf(cur.f),box=$('exList');b
   row.innerHTML='<span class="k exit"></span><span class="n2">'+esc(exName(e[2]))+'</span><span class="x">'+(e[0]==null?'no spot':e[0]+', '+e[1]+(e[3]!=null?' · y '+e[3]:''))+'</span><button class="del" title="Remove this way out" aria-label="Remove">✕</button>';
   row.onclick=function(ev){if(ev.target.classList.contains('del')){var A=exEditable(cur.f);A.splice(i,1);exSel=exSel===i?-1:exSel>i?exSel-1:exSel;exSave();buildMarks();return}
    exPick(i);if(exSel>=0&&e[0]!=null)focusAt(e[0],e[3]!=null?e[3]:markY(e[0],e[1]),e[1])};box.appendChild(row)});
- $('exNote').textContent=exSel>=0?'Click the floor to put “'+exName(L[exSel][2])+'” there.':EXED[cur.f]?'This room has your changes.':'';
- $('exRevert').disabled=!EXED[cur.f];exCount()}
+ mkRender();$('exNote').textContent=mkSel?'Click the floor to put \u201c'+mkSel.n+'\u201d there.':exSel>=0?'Click the floor to put “'+exName(L[exSel][2])+'” there.':EXED[cur.f]||TRED[cur.f]||MKED[cur.f]?'This room has your changes.':'';
+ $('exRevert').disabled=!(EXED[cur.f]||TRED[cur.f]||MKED[cur.f]);exCount()}
 $('bEdit').onclick=function(){state.edit=!state.edit;this.classList.toggle('on',state.edit);$('exSec').hidden=!state.edit;exSel=-1;
  if(state.edit&&!state.marks){state.marks=true;$('bMarks').classList.add('on')}buildMarks();if(state.edit)$('exSec').scrollIntoView({block:'nearest'})};
 $('exAdd').onclick=function(){var d=parseInt($('exDest').value,10);if(isNaN(d)||d<-1||d>729){$('exNote').textContent='Type the room it leads to (0 to 729, or -1 for the world map).';return}
  var A=exEditable(cur.f);A.push([null,null,d]);exSel=A.length-1;exSave();buildMarks()};
-$('exRevert').onclick=function(){delete EXED[cur.f];exSel=-1;exSave();buildMarks()};
+$('exRevert').onclick=function(){delete EXED[cur.f];delete TRED[cur.f];delete MKED[cur.f];exSel=-1;mkSel=null;exSave();mkSave();buildMarks()};
+$('mkAdd').onclick=function(){var A=MKED[cur.f]=MKED[cur.f]||(XD.MARKS[cur.f]||[]).map(function(e){return e.slice()}),k=$('mkKind').value;A.push([null,null,k]);mkSel={t:'mk',i:A.length-1,n:MKN[k]};exSel=-1;mkSave();buildMarks()};
 var clrT=0;$('exClear').onclick=function(){var b=this;if(Date.now()-clrT>4000){clrT=Date.now();b.textContent='Click again to clear';setTimeout(function(){b.textContent='Clear all'},4000);return}
- EXED={};exSel=-1;exSave();b.textContent='Clear all';buildMarks()};
-function exFile(){var R={};Object.keys(EXED).sort(function(a,b){return a-b}).forEach(function(k){R[k]=EXED[k].map(function(e){return e[0]==null?[null,null,e[2]]:[e[0],e[1],e[2],e[3]!=null?e[3]:Math.round(markY(e[0],e[1]))]})});
- var rows=Object.keys(R).map(function(k){return ' '+JSON.stringify(k)+': ['+R[k].map(function(e){return JSON.stringify(e)}).join(', ')+']'});
- return '{"format": "xenogears-link-exit-edits", "version": 1, "made": '+JSON.stringify(new Date().toISOString())+',\n "note": "room -> [x, z, destination room, y]; y is the floor height (smaller is higher)",\n "rooms": {\n'+rows.join(',\n').replace(/^/gm,' ')+'\n }}\n'}
-$('exExport').onclick=async function(){if(!Object.keys(EXED).length){$('exNote').textContent='No changes to export yet.';return}
+ EXED={};TRED={};MKED={};exSel=-1;mkSel=null;exSave();mkSave();b.textContent='Clear all';buildMarks()};
+function exFile(){var R={},TR={},MK={};
+ Object.keys(TRED).forEach(function(k){TR[k]=TRED[k]});Object.keys(MKED).forEach(function(k){MK[k]=MKED[k].filter(function(e){return e[0]!=null}).map(function(e){return [e[0],e[1],e[2],e[3]!=null?e[3]:Math.round(markY(e[0],e[1]))]})});Object.keys(EXED).sort(function(a,b){return a-b}).forEach(function(k){R[k]=EXED[k].map(function(e){return e[0]==null?[null,null,e[2]]:[e[0],e[1],e[2],e[3]!=null?e[3]:Math.round(markY(e[0],e[1]))]})});
+ var rows=Object.keys(R).map(function(k){return ' '+JSON.stringify(k)+': ['+R[k].map(function(e){return JSON.stringify(e)}).join(', ')+']'}),line=function(O){return Object.keys(O).map(function(k){return '  '+JSON.stringify(k)+': '+JSON.stringify(O[k])}).join(',\n')};
+ return '{"format": "xenogears-link-exit-edits", "version": 1, "made": '+JSON.stringify(new Date().toISOString())+',\n "note": "room -> [x, z, destination room, y]; y is the floor height (smaller is higher)",\n "rooms": {\n'+rows.join(',\n').replace(/^/gm,' ')+'\n },\n "treasure": {\n'+line(TR)+'\n },\n "marks": {\n'+line(MK)+'\n }}\n'}
+$('exExport').onclick=async function(){if(!Object.keys(EXED).length&&!Object.keys(TRED).length&&!Object.keys(MKED).length){$('exNote').textContent='No changes to export yet.';return}
  var txt=exFile(),name='Xenogears exit edits '+new Date().toISOString().slice(0,10)+'.json',dl=null;
  try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
  if(dl){try{await dl.save({filename:name,data:txt});$('exNote').textContent='Saved '+name+'.';return}catch(e){if(e&&e.code==='declined')return}}
@@ -713,11 +762,106 @@ $('exExport').onclick=async function(){if(!Object.keys(EXED).length){$('exNote')
  var ta=ov.querySelector('textarea');ta.value=txt;ov.querySelector('.cl').onclick=function(){ov.remove()};
  ov.querySelector('.cp').onclick=function(){var b=this;function sel(){ta.focus();ta.select();b.textContent='Selected'}try{navigator.clipboard.writeText(txt).then(function(){b.textContent='Copied'},sel)}catch(err){sel()}};
  document.body.appendChild(ov)};
-$('exImport').onchange=async function(){var file=this.files&&this.files[0];if(!file)return;this.value='';var J;try{J=JSON.parse(await file.text())}catch(e){J=null}
- if(!J||!J.rooms){$('exNote').textContent='Not an exit edits file.';return}var n=0;
+/* the app's exit log (exit log.jsonl, Windows DEV): walks through the same door (same rooms, within 150 units) are averaged, and each
+   group moves the nearest way out to the same room in the current list, or is added when the list has none left */
+function logToEdits(text,base){var L=[];text.split(/\r?\n/).forEach(function(t){t=t.trim();if(!t)return;try{var o=JSON.parse(t)}catch(e){return}if(o.undo)L.pop();else if(o.from!=null&&o.to!=null&&o.x!=null)L.push(o)});
+ var G={};L.forEach(function(o){var k=o.from+'>'+o.to,g=G[k]=G[k]||[],c=null;for(var i=0;i<g.length;i++)if(Math.hypot(g[i].x/g[i].n-o.x,g[i].z/g[i].n-o.z)<150){c=g[i];break}
+  if(!c){c={from:o.from,to:o.to,x:0,z:0,y:0,n:0};g.push(c)}c.x+=o.x;c.z+=o.z;c.y+=o.y;c.n++});
+ var out={},moved=0,added=0;Object.keys(G).forEach(function(k){G[k].forEach(function(c){var f=c.from,x=Math.round(c.x/c.n),z=Math.round(c.z/c.n),y=Math.round(c.y/c.n);
+  if(!out[f])out[f]=(base(f)||[]).map(function(e){return e.slice()}).map(function(e){e.used=0;return e});var A=out[f],best=-1,bd=1e9;
+  A.forEach(function(e,i){if(e[2]!==c.to||e.used)return;var d=e[0]==null?5e8:Math.hypot(e[0]-x,e[1]-z);if(d<bd){bd=d;best=i}});
+  if(best>=0){var e=A[best];A[best]=[x,z,c.to,y];A[best].used=1;moved++}else{var ne=[x,z,c.to,y];ne.used=1;A.push(ne);added++}})});
+ Object.keys(out).forEach(function(f){out[f]=out[f].map(function(e){return e.slice(0,4)})});return {rooms:out,walks:L.length,moved:moved,added:added}}
+$('exImport').onchange=async function(){var file=this.files&&this.files[0];if(!file)return;this.value='';var txt=await file.text(),J;try{J=JSON.parse(txt)}catch(e){J=null}
+ if(!J||!J.rooms){var lg=logToEdits(txt,exitsOf);if(!lg.walks){$('exNote').textContent='Not an exit edits file or an exit log.';return}
+  Object.keys(lg.rooms).forEach(function(k){if(+k>=0&&+k<730)EXED[k]=lg.rooms[k]});exSel=-1;exSave();buildMarks();
+  $('exNote').textContent='Exit log: '+lg.walks+' walks through doors in '+Object.keys(lg.rooms).length+' rooms; '+lg.moved+' ways out moved, '+lg.added+' added. Check them, then Export edits.';return}
+ var n=0;
+ if(J.treasure)Object.keys(J.treasure).forEach(function(k){TRED[k]=J.treasure[k];n++});if(J.marks)Object.keys(J.marks).forEach(function(k){MKED[k]=J.marks[k];n++});mkSave();
  Object.keys(J.rooms).forEach(function(k){var L=J.rooms[k];if(Array.isArray(L)&&+k>=0&&+k<730){EXED[k]=L.map(function(e){return e.slice(0,4)});n++}});
  exSel=-1;exSave();buildMarks();$('exNote').textContent='Loaded changes for '+n+' room'+(n===1?'':'s')+'.'};
 exCount();
+/* ---------- comparing two story snapshots ----------
+   XD.VIDX (tools/app/var_index.js): variable -> {s: {room: bits}, c: {room: bits}}, the rooms whose scripts set and check it
+   (bits 0 = the whole value). For a changed variable, rooms touching one of the changed bits come first, nearest room number to the
+   snapshots' rooms first. [variable, bits] is the form the hint splits use. */
+var CMP={a:null,b:null};
+async function cmpRead(inp,k){var file=inp.files&&inp.files[0];if(!file)return;inp.value='';try{var S=JSON.parse(await file.text());if(!S.vars)throw 0;CMP[k]=S;CMP[k+'n']=file.name}catch(e){$('cmpNote').textContent='Not a story snapshot file.';return}cmpShow()}
+$('cmpA').onchange=function(){cmpRead(this,'a')};$('cmpB').onchange=function(){cmpRead(this,'b')};
+function cmpRooms(o,mask,near){if(!o)return [];return Object.keys(o).map(Number).filter(function(r){var m=o[r];return !mask||!m||(m&mask)}).sort(function(a,b){return Math.abs(a-near)-Math.abs(b-near)||a-b})}
+function cmpChips(L,near,max){return L.slice(0,max).map(function(r){return '<span class="chip'+(r===near?' here':'')+'" data-r="'+r+'" title="'+esc(roomName(r)||areaOf(r)||'')+'">'+r+' '+esc((roomName(r)||areaOf(r)||'').slice(0,22))+'</span>'}).join('')+(L.length>max?'<span class="note">+'+(L.length-max)+' more</span>':'')}
+function cmpShow(){var A=CMP.a,B=CMP.b;$('cmpFiles').textContent=(A?'before: step '+A.step:'')+(A&&B?' \u00b7 ':'')+(B?'after: step '+B.step:'');var box=$('cmpList');box.innerHTML='';
+ if(!A||!B){$('cmpNote').textContent=A||B?'Now open the other one.':'Open the snapshot from before something happened and the one from after it.';return}
+ var near=B.room!=null?B.room:A.room!=null?A.room:0,rows=[];
+ for(var i=0;i<Math.max(A.vars.length,B.vars.length);i++){var o=A.vars[i]|0,n=B.vars[i]|0;if(o===n)continue;var v=2*i,on=n&~o,off=o&~n,X=XD.VIDX[v]||{},mask=v===0?0:(on|off);
+  var st=cmpRooms(X.s,mask,near),ck=cmpRooms(X.c,mask,near),bits=[];for(var b=0;b<16;b++){if(on>>b&1)bits.push('+'+b);if(off>>b&1)bits.push('\u2212'+b)}
+  rows.push('<div class="cv"><div><b>var '+v+'</b> '+(v===0?'story step ':'')+o+' \u2192 '+n+(v?' <span class="note">bits '+bits.join(' ')+'</span>':'')+(on&&v?' <span class="chip cp" data-c="'+esc(JSON.stringify([v,on]))+'" title="Copy in the hint split form">['+v+', '+on+']</span>':'')+'</div>'
+   +'<div class="chips"><span class="note">set in</span>'+(st.length?cmpChips(st,near,8):'<span class="note">no room script (the battle or menu code, or a script variable by number)</span>')+'</div>'
+   +(ck.length?'<div class="chips"><span class="note">checked in</span>'+cmpChips(ck,near,8)+'</div>':'')+'</div>')}
+ $('cmpNote').textContent=rows.length+' switch'+(rows.length===1?'':'es')+' changed between step '+A.step+(A.room!=null?' (room '+A.room+')':'')+' and step '+B.step+(B.room!=null?' (room '+B.room+')':'')+'. Click a room to open it; [variable, bits] copies the split form.';
+ box.innerHTML=rows.join('')||'<div class="note">Nothing changed.</div>'}
+$('cmpList').onclick=function(e){var t=e.target.closest('[data-r],[data-c]');if(!t)return;if(t.dataset.r!=null){state.keepStep=true;goTo(+t.dataset.r);return}
+ var txt=t.dataset.c;try{navigator.clipboard.writeText(txt).then(function(){t.textContent='copied'},function(){t.textContent=txt})}catch(err){t.textContent=txt}};
+
+/* ---------- editing hints ----------
+   HED[step] = {note, path}: note as hints.js keeps it ("?" in front = not yet checked in game), path = [[room, [[x, z], ...]], ...]
+   (room -1 = the world map), the same shape as HPATH. Kept in this browser until exported; tools/app/import_hints.js writes an
+   exported file into app/www/hints.js. */
+var HED={},HORIG={};try{HED=JSON.parse(store('xgv.hintEdits')||'{}')||{}}catch(e){HED={}}
+function hOrig(k){if(!HORIG[k])HORIG[k]={note:XD.HNOTE[k],rooms:XD.HROOMS[k],hints:XD.HINTS[k]};return HORIG[k]}
+function hApply(k){hOrig(k);var e=HED[k];if(e){XD.HNOTE[k]=e.note;XD.HROOMS[k]=e.path;XD.HINTS[k]=e.path.map(function(q){return q[0]})}else{var o=HORIG[k];if(o.note===undefined)delete XD.HNOTE[k];else XD.HNOTE[k]=o.note;if(o.rooms===undefined){delete XD.HROOMS[k];delete XD.HINTS[k]}else{XD.HROOMS[k]=o.rooms;XD.HINTS[k]=o.hints}}hKeys()}
+Object.keys(HED).forEach(hApply);
+function hSave(){store('xgv.hintEdits',JSON.stringify(HED));var n=Object.keys(HED).length;$('hCount').textContent=n?n+' step'+(n===1?'':'s')+' changed':''}
+function hCur(){return +$('hStep').value|0}
+function hEditable(k){if(!HED[k])HED[k]={note:XD.HNOTE[k]||'?',path:(XD.HROOMS[k]||[]).map(function(q){return [q[0],(q[1]||[]).map(function(s){return s.slice()})]})};return HED[k]}
+function hEditView(){var k=hCur();return {k:k,rooms:XD.HROOMS[k]||[]}}
+function hLoad(k){$('hStep').value=k;var n=XD.HNOTE[k]||'';$('hText').value=n.replace(/^\?/,'');$('hOk').checked=!!n&&n.charAt(0)!=='?';hPath();buildMarks()}
+function hPath(){var k=hCur(),P=XD.HROOMS[k]||[],box=$('hPath');box.innerHTML=P.length?'':'<div class="note">No rooms yet.</div>';
+ P.forEach(function(q,i){var d=document.createElement('div');d.className='hp';
+  d.innerHTML='<div class="row"><span class="chip" data-go="'+q[0]+'">'+(q[0]<0?'World map':q[0]+' '+esc((roomName(q[0])||areaOf(q[0])||'').slice(0,26)))+'</span><span class="note">'+q[1].length+' spot'+(q[1].length===1?'':'s')+'</span>'+(i?'<button class="del" data-up="'+i+'" title="Earlier in the path">\u25B4</button>':'')+'<button class="del" data-rm="'+i+'" title="Take this room out">\u2715</button></div>'
+   +(q[1].length?'<div class="chips">'+q[1].map(function(s,j){return '<span class="chip" data-sp="'+i+','+j+'" title="Remove this spot">'+s[0]+', '+s[1]+' \u2715</span>'}).join('')+'</div>':'');box.appendChild(d)});
+ $('hRevert').disabled=!HED[k];$('hNote').textContent=HED[k]?'Step '+k+' has your changes.':''}
+$('hPath').onclick=function(e){var t=e.target,k=hCur();if(t.dataset.go!=null){var g=+t.dataset.go;if(g<0)worldOn(true);else{state.keepStep=true;goTo(g)}return}
+ if(t.dataset.rm!=null||t.dataset.up!=null||t.dataset.sp!=null){var E=hEditable(k);
+  if(t.dataset.rm!=null)E.path.splice(+t.dataset.rm,1);else if(t.dataset.up!=null){var i=+t.dataset.up,q=E.path.splice(i,1)[0];E.path.splice(i-1,0,q)}else{var a=t.dataset.sp.split(',');E.path[+a[0]][1].splice(+a[1],1)}
+  hApply(k);hSave();hPath();buildMarks()}};
+function hAddSpot(p){var k=hCur(),E=hEditable(k),f=cur.f,q=null;E.path.forEach(function(r){if(r[0]===f)q=r});if(!q){q=[f,[]];E.path.push(q)}q[1].push([Math.round(p.x),Math.round(-p.z)]);hApply(k);hSave();hPath();buildMarks()}
+$('hEdit').onclick=function(){state.hedit=!state.hedit;exSel=-1;mkSel=null;this.classList.toggle('on',state.hedit);$('hEd').hidden=!state.hedit;if(state.hedit){var nx=nextHint();hLoad(nx?nx.k:state.step)}else buildMarks()};
+$('hStep').onchange=function(){hLoad(hCur())};$('hNext').onclick=function(){var nx=nextHint();if(nx)hLoad(nx.k)};
+function hText(){var k=hCur(),E=hEditable(k),t=$('hText').value.trim();E.note=($('hOk').checked?'':'?')+t;hApply(k);hSave();hPath();rerun()}
+var hT=0;$('hText').oninput=function(){clearTimeout(hT);hT=setTimeout(hText,500)};$('hText').onchange=function(){clearTimeout(hT);hText()};$('hOk').onchange=hText;
+$('hAddRoom').onclick=function(){if(cur.f==null)return;var k=hCur(),E=hEditable(k);if(!E.path.some(function(q){return q[0]===cur.f}))E.path.push([cur.f,[]]);hApply(k);hSave();hPath();buildMarks()};
+$('hAddWorld').onclick=function(){var k=hCur(),E=hEditable(k);if(!E.path.some(function(q){return q[0]===-1}))E.path.push([-1,[]]);hApply(k);hSave();hPath()};
+$('hRevert').onclick=function(){var k=hCur();delete HED[k];hApply(k);hSave();hLoad(k)};
+var hClrT=0;$('hClear').onclick=function(){var b=this;if(Date.now()-hClrT>4000){hClrT=Date.now();b.textContent='Click again to clear';setTimeout(function(){b.textContent='Clear all'},4000);return}
+ var ks=Object.keys(HED);HED={};ks.forEach(hApply);hSave();b.textContent='Clear all';hLoad(hCur())};
+function hFile(){var ks=Object.keys(HED).sort(function(a,b){return a-b});
+ return '{"format": "xenogears-link-hint-edits", "version": 1, "made": '+JSON.stringify(new Date().toISOString())+',\n "note": "step -> {note (\\"?\\" in front = not checked in game), path: [[room (-1 world map), [[x, z], ...]], ...]}",\n "steps": {\n'+ks.map(function(k){return '  '+JSON.stringify(k)+': '+JSON.stringify(HED[k])}).join(',\n')+'\n }}\n'}
+$('hExport').onclick=async function(){if(!Object.keys(HED).length){$('hNote').textContent='No changes to export yet.';return}
+ var txt=hFile(),name='Xenogears hint edits '+new Date().toISOString().slice(0,10)+'.json',dl=null;try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
+ if(dl){try{await dl.save({filename:name,data:txt});$('hNote').textContent='Saved '+name+'.';return}catch(e){if(e&&e.code==='declined')return}}
+ var ov=document.createElement('div');ov.className='picov';ov.innerHTML='<div class="picbox"><div class="row"><b>'+esc(name)+'</b><span class="note">Saving isn\u2019t available here: copy this and paste it into a file or a message.</span><button type="button" class="cp">Copy</button><button type="button" class="cl">Close</button></div><textarea class="exout" readonly></textarea></div>';
+ var ta=ov.querySelector('textarea');ta.value=txt;ov.querySelector('.cl').onclick=function(){ov.remove()};ov.querySelector('.cp').onclick=function(){var b=this;try{navigator.clipboard.writeText(txt).then(function(){b.textContent='Copied'},function(){ta.focus();ta.select()})}catch(err){ta.focus();ta.select()}};document.body.appendChild(ov)};
+$('hImport').onchange=async function(){var file=this.files&&this.files[0];if(!file)return;this.value='';var J;try{J=JSON.parse(await file.text())}catch(e){J=null}if(!J||!J.steps){$('hNote').textContent='Not a hint edits file.';return}
+ Object.keys(J.steps).forEach(function(k){var e=J.steps[k];if(e&&typeof e.note==='string'&&Array.isArray(e.path)){HED[k]=e;hApply(k)}});hSave();hLoad(hCur());$('hNote').textContent='Loaded '+Object.keys(J.steps).length+' steps.'};
+hSave();
+/* review queue: exits worth checking. look = the 24 from the 1.99.0.3 review pictures; far = on a room with several levels and far
+   from where the game puts you on the way back; noY = no height found (the app falls back to the floor nearest the party).
+   Checked ones are remembered in this browser. */
+var RQ={look:['Worth a look (1.99.0.3 review)',XD.REVIEW.look],far:['Several levels, far from the arrival spot',XD.REVIEW.far],noY:['Ways out with no height',XD.REVIEW.noY],noYm:['Treasure, saves, shops with no height',XD.REVIEW.noYm]},rqK='look',rqI=-1,RQOK={};
+try{RQOK=JSON.parse(store('xgv.reviewed')||'{}')||{}}catch(e){RQOK={}}
+function rqKey(q){return q[0]+':'+q[2]+':'+q[3]+','+q[4]}
+function rqFill(){$('rqSel').innerHTML=Object.keys(RQ).map(function(k){var L=RQ[k][1],d=L.filter(function(q){return RQOK[rqKey(q)]}).length;return '<option value="'+k+'"'+(k===rqK?' selected':'')+'>'+esc(RQ[k][0])+' · '+d+'/'+L.length+' checked</option>'}).join('');rqShow()}
+function rqShow(){var L=RQ[rqK][1],q=L[rqI];$('rqPos').textContent=(rqI<0?'-':rqI+1)+' / '+L.length;$('rqOk').disabled=!q;
+ var d=L.filter(function(q){return RQOK[rqKey(q)]}).length;$('rqDone').textContent=d+' checked';
+ $('rqWhy').textContent=q?'Room '+q[0]+' '+(roomName(q[0])||areaOf(q[0])||'')+(typeof q[1]==='string'?': '+(q[1]==='tre'?'treasure':'save or shop')+' at '+q[3]+', '+q[4]+' (several floors there)':': way out #'+q[1]+' to '+exName(q[2]))+(typeof q[1]!=='string'&&q[5]?', '+q[5]+' units from where the game puts you':'')+(RQOK[rqKey(q)]?' · checked':''):'Pick a list, then ▸ to start.'}
+function rqGo(i){var L=RQ[rqK][1];if(!L.length)return;rqI=(i+L.length)%L.length;var q=L[rqI];rqWant=q;if(!state.edit)$('bEdit').onclick.call($('bEdit'));rqShow();
+ if(cur.f===q[0]){exRoom=null;buildMarks()}else{state.keepStep=true;loadRoom(q[0])}}
+$('rqSel').onchange=function(){rqK=this.value;rqI=-1;rqShow()};
+$('rqPrev').onclick=function(){rqGo(rqI-1)};$('rqNext').onclick=function(){rqGo(rqI+1)};
+$('rqOk').onclick=function(){var q=RQ[rqK][1][rqI];if(!q)return;RQOK[rqKey(q)]=1;store('xgv.reviewed',JSON.stringify(RQOK));rqFill();
+ var L=RQ[rqK][1];for(var k=1;k<=L.length;k++){var j=(rqI+k)%L.length;if(!RQOK[rqKey(L[j])]){rqGo(j);return}}};
+rqFill();
 $('dropSave').onclick=function(){state.saveVars=null;state.vars={};state.party=[0];$('saveNote').textContent='Without a save, every flag starts off and only the story step changes who is here.';rerun();buildMarks()};
 })();
 </script>
