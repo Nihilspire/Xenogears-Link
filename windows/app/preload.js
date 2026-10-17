@@ -34,6 +34,11 @@ Object.assign(window.Native, {
   snapSave(base, txt, json) {
     try { const d = window.Native.snapDir(); fs.mkdirSync(d, { recursive: true }); const b = path.join(d, String(base).replace(/[<>:"/\\|?*]/g, '-'));
       fs.writeFileSync(b + '.txt', txt); fs.writeFileSync(b + '.json', json); return b + '.txt'; } catch (e) { return 'ERR:' + e.message; } },
+  // DEV RAM dumps (Windows only): <name>.bin (2 MB of main RAM, given as base64) and <name>.json, Documents\Xenogears Link\RAM dumps
+  ramDir() { return path.join(ipcRenderer.sendSync('docs-dir'), 'Xenogears Link', 'RAM dumps'); },
+  ramSave(base, b64, json) { try { const d = window.Native.ramDir(); fs.mkdirSync(d, { recursive: true }); const b = path.join(d, String(base).replace(/[<>:"/\\|?*]/g, '-'));
+    fs.writeFileSync(b + '.bin', Buffer.from(b64, 'base64')); fs.writeFileSync(b + '.json', json); return b + '.bin'; } catch (e) { return 'ERR:' + e.message; } },
+  ramOpen() { const d = window.Native.ramDir(); try { fs.mkdirSync(d, { recursive: true }); } catch (e) {} require('electron').shell.openPath(d); },
   // DEV exit log (Windows only): one JSON line per room change, Documents\Xenogears Link\Exit log\exit log.jsonl
   exitLogDir() { return path.join(ipcRenderer.sendSync('docs-dir'), 'Xenogears Link', 'Exit log'); },
   exitLog(line) { try { const d = window.Native.exitLogDir(); fs.mkdirSync(d, { recursive: true }); fs.appendFileSync(path.join(d, 'exit log.jsonl'), String(line) + '\r\n'); return 'ok'; } catch (e) { return 'ERR:' + e.message; } },
