@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.10';   /* set by build.sh */
+var VERSION='1.99.0.11';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -839,6 +839,13 @@ var ALLY={Margie:1};
    or not. In the generator defence after Maria joins (Billy alone, three White Knights, a timer and a total-damage count) all three
    are drawn at the start and then flagged by the event (Jack, 16 Oct), so the flag alone emptied the list. */
 var seenOut={},startOut={};
+/* v1.99.0.11: bit 0 of +0xAC is not a "not drawn" flag after all. Jack's save state of the Shevat fight (17 Oct: Fei, Bart and Elly,
+   Margie as the guest in slot 3, four Shakhan Guards and two Shakhan Monks, all on the field) has it set on the four guards
+   (+0xAC = 0x8005; monks 0x8006, Margie and the party 0x8000), the same value as the waiting Super Aerod (0x8005, Hecht 0x8004)
+   and two of the waiting Mechanics (0x8005, 0x8001; Fis-6 0x8000). The low bits look like a number (a group or row), not flags,
+   and no other actor byte, slot mask or position told waiting from fighting in all three states. So only the enemies known to be
+   called in mid-fight are held back by it; everyone else is always listed. Add a name here when another boss's helper shows too early. */
+var CALLIN={'Super Aerod':1,'Fis-6Mechanic':1,'Fis-6 Mechanic':1};
 function actorHidden(s){var a=ptr(u32(A.BACT+4*s));if(a==null)return false;var f=u16(a+0xAC);return f!=null&&(f&1)===1}
 function actorFlagRead(s){var a=ptr(u32(A.BACT+4*s));return a!=null&&u16(a+0xAC)!=null}   /* the flag has really been read (not just unknown yet) */
 function offField(s,hp){if(!actorHidden(s)){seenOut[s]=Date.now();if(Date.now()-bstart<3000&&actorFlagRead(s))startOut[s]=1;return false}
@@ -857,7 +864,7 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
   var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
  /* a flagged enemy waits only if nothing of the same name is on the field: in a group of the same gear (three Rapid Fires, the
     Breakers) the game flags the copies too (Jack, 15 Oct), and those are all in the fight */
- var outN={};ens.forEach(function(e){e.off=offField(e.s,e.hp);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]});
+ var outN={};ens.forEach(function(e){e.off=offField(e.s,e.hp);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]&&!!CALLIN[e.name]});
  /* v1.99.0.10: a fight always has someone out, so when the flag would leave nobody (Jack, 17 Oct, PC recomp: five Shakhan Guards in
     Fei, Bart and Elly's fight all flagged from the start, the list empty until they died) the flag is ignored for this fight */
  if(ens.length&&ens.every(function(e){return e.wait||e.hp===0})&&ens.some(function(e){return e.hp>0}))ens.forEach(function(e){if(e.hp>0)e.wait=false});
