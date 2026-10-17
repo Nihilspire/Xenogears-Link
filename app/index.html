@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.11';   /* set by build.sh */
+var VERSION='1.99.0.12';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -555,7 +555,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
  if(snapOn()){want(set,A.STORY,0x404);want(set,A.PTIME,4);want(set,A.GOLD,4);want(set,A.PARTY,3)}
  want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
  if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
- if(inBattle()){want(set,A.BACT,44);for(var ba=0;ba<11;ba++){var bap=ptr(u32(A.BACT+4*ba));if(bap!=null)want(set,bap+0xAC,2)}want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
+ if(inBattle()){want(set,A.BACT,44);for(var ba=0;ba<11;ba++){var bap=ptr(u32(A.BACT+4*ba));if(bap!=null){want(set,bap+0xAC,4);want(set,bap+0x3C,4);want(set,bap+4,4)}}want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
  else{var p=rd(A.PARTY,3)||[];for(var i=0;i<3;i++){var id=p[i];if(id==null||id>10)continue;want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)}
   if(tab==='items'){want(set,A.IQTY,150);want(set,A.IID,150)}
   if(u32(A.SIG)===5){want(set,A.WPOS,12);want(set,A.WSTART,12);if(setOpen()){want(set,A.WANG,4);want(set,A.WMODE,4);want(set,A.WSAVE,6)}
@@ -845,10 +845,23 @@ var seenOut={},startOut={};
    and two of the waiting Mechanics (0x8005, 0x8001; Fis-6 0x8000). The low bits look like a number (a group or row), not flags,
    and no other actor byte, slot mask or position told waiting from fighting in all three states. So only the enemies known to be
    called in mid-fight are held back by it; everyone else is always listed. Add a name here when another boss's helper shows too early. */
-var CALLIN={'Super Aerod':1,'Fis-6Mechanic':1,'Fis-6 Mechanic':1};
-function actorHidden(s){var a=ptr(u32(A.BACT+4*s));if(a==null)return false;var f=u16(a+0xAC);return f!=null&&(f&1)===1}
-function actorFlagRead(s){var a=ptr(u32(A.BACT+4*s));return a!=null&&u16(a+0xAC)!=null}   /* the flag has really been read (not just unknown yet) */
-function offField(s,hp){if(!actorHidden(s)){seenOut[s]=Date.now();if(Date.now()-bstart<3000&&actorFlagRead(s))startOut[s]=1;return false}
+var CALLIN={'Super Aerod':1};   /* gear-sized helpers called in mid-fight (sprites need no list) */
+/* v1.99.0.12, from the code (17 Oct): +0xAC bit 0 is the MIRROR flag (the draw code negates x offsets and sets the GPU flip bit when it
+   is set: 0x8001FFF0, 0x800214D8, 0x80022620 ...), which is why it was on the facing-left Shakhan Guards, White Knights and the Super
+   Aerod alike. Two kinds of battle object:
+   - sprites (people on foot; +0xAC bit 24 set, +0xB0 = 1): +0x3C bit 30 is set when the sprite is given a new animation
+     (0x8002232C) and cleared by the sprite draw step once it has uploaded the new frame (0x8001DB70). On screen it clears within a
+     frame; a sprite that is not being drawn keeps it (the four waiting Mechanics: 0x4000000D / 0x40000005; every fighting guard,
+     monk, party member and Margie: clear).
+   - models (gears): no draw flag found yet. The waiting Super Aerod is parked far above the arena (height -6836 against Hecht's -1709
+     and the party's -1061), so a model named in CALLIN counts as waiting while it is more than 3000 units above the party. */
+function actorObj(s){var a=ptr(u32(A.BACT+4*s));return a}
+function actorHidden(s,name){var a=actorObj(s);if(a==null)return false;var ac=u32(a+0xAC),c=u32(a+0x3C);if(ac==null||c==null)return false;
+ if(ac&0x01000000)return (c&0x40000000)!==0;                                  /* sprite: not drawn */
+ if(!CALLIN[name])return false;var y=s16(a+6),top=null;for(var p=0;p<3;p++){var pa=actorObj(p),py=pa!=null?s16(pa+6):null;if(py!=null&&(top==null||py<top))top=py}
+ return y!=null&&top!=null&&y<top-3000}                                         /* model: parked above the arena */
+function actorFlagRead(s){var a=ptr(u32(A.BACT+4*s));return a!=null&&u32(a+0xAC)!=null&&u32(a+0x3C)!=null}   /* the flag has really been read (not just unknown yet) */
+function offField(s,hp,name){if(!actorHidden(s,name)){seenOut[s]=Date.now();if(Date.now()-bstart<3000&&actorFlagRead(s))startOut[s]=1;return false}
  if(startOut[s]&&hp>0)return false;return !(seenOut[s]&&Date.now()-seenOut[s]<1000)}
 /* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
    (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
@@ -864,7 +877,7 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
   var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
  /* a flagged enemy waits only if nothing of the same name is on the field: in a group of the same gear (three Rapid Fires, the
     Breakers) the game flags the copies too (Jack, 15 Oct), and those are all in the fight */
- var outN={};ens.forEach(function(e){e.off=offField(e.s,e.hp);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]&&!!CALLIN[e.name]});
+ var outN={};ens.forEach(function(e){e.off=offField(e.s,e.hp,e.name);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]});
  /* v1.99.0.10: a fight always has someone out, so when the flag would leave nobody (Jack, 17 Oct, PC recomp: five Shakhan Guards in
     Fei, Bart and Elly's fight all flagged from the start, the list empty until they died) the flag is ignored for this fight */
  if(ens.length&&ens.every(function(e){return e.wait||e.hp===0})&&ens.some(function(e){return e.hp>0}))ens.forEach(function(e){if(e.hp>0)e.wait=false});
