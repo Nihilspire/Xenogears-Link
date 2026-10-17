@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.8';   /* set by build.sh */
+var VERSION='1.99.0.9';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -835,9 +835,14 @@ var ALLY={Margie:1};
    drawn: set on all five waiting enemies and clear on every fighter on the field in both of Jack's save states. While it is set the
    enemy is left off the cards, the timeline and the rewards. An enemy seen on the field in the last second keeps its card, so a
    moment out of sight (an attack, a flash) does not make it flicker. */
-var seenOut={};
+/* v1.99.0.9: the other way round, an enemy that is on the field in the battle's first 3 s stays on the list while it has HP, flag
+   or not. In the generator defence after Maria joins (Billy alone, three White Knights, a timer and a total-damage count) all three
+   are drawn at the start and then flagged by the event (Jack, 16 Oct), so the flag alone emptied the list. */
+var seenOut={},startOut={};
 function actorHidden(s){var a=ptr(u32(A.BACT+4*s));if(a==null)return false;var f=u16(a+0xAC);return f!=null&&(f&1)===1}
-function offField(s){if(!actorHidden(s)){seenOut[s]=Date.now();return false}return !(seenOut[s]&&Date.now()-seenOut[s]<1000)}
+function actorFlagRead(s){var a=ptr(u32(A.BACT+4*s));return a!=null&&u16(a+0xAC)!=null}   /* the flag has really been read (not just unknown yet) */
+function offField(s,hp){if(!actorHidden(s)){seenOut[s]=Date.now();if(Date.now()-bstart<3000&&actorFlagRead(s))startOut[s]=1;return false}
+ if(startOut[s]&&hp>0)return false;return !(seenOut[s]&&Date.now()-seenOut[s]<1000)}
 /* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
    (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
 function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['55_0',37,59]}}
@@ -852,7 +857,7 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
   var fk=e.s+'/'+e.mhp+'/'+fp[e.s-3].x;hpSeen[fk]=Math.max(hpSeen[fk]||0,e.hp);blogNote(e.s,e.name,e.hp,e.mhp,e.st,e.rm);e.ko=e.st==null?e.hp===0:(e.st&0x8000)!==0;e.mhp=Math.min(e.mhp,Math.max(hpSeen[fk],nm.st||0))||e.mhp;ens.push(e)});
  /* a flagged enemy waits only if nothing of the same name is on the field: in a group of the same gear (three Rapid Fires, the
     Breakers) the game flags the copies too (Jack, 15 Oct), and those are all in the fight */
- var outN={};ens.forEach(function(e){e.off=offField(e.s);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]});
+ var outN={};ens.forEach(function(e){e.off=offField(e.s,e.hp);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]});
  var tx=0,tg=0;ens.forEach(function(e){var q=e.wait?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
@@ -1477,7 +1482,7 @@ function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LO
 var ffOn=false;
 /* draw the whole screen from what was last read */
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now()}}
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now();startOut={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var loc=!linked?'NO LINK':ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
