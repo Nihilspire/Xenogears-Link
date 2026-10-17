@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.9';   /* set by build.sh */
+var VERSION='1.99.0.10';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -858,6 +858,9 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  /* a flagged enemy waits only if nothing of the same name is on the field: in a group of the same gear (three Rapid Fires, the
     Breakers) the game flags the copies too (Jack, 15 Oct), and those are all in the fight */
  var outN={};ens.forEach(function(e){e.off=offField(e.s,e.hp);if(!e.off)outN[e.name]=1});ens.forEach(function(e){e.wait=e.off&&!outN[e.name]});
+ /* v1.99.0.10: a fight always has someone out, so when the flag would leave nobody (Jack, 17 Oct, PC recomp: five Shakhan Guards in
+    Fei, Bart and Elly's fight all flagged from the start, the list empty until they died) the flag is ignored for this fight */
+ if(ens.length&&ens.every(function(e){return e.wait||e.hp===0})&&ens.some(function(e){return e.hp>0}))ens.forEach(function(e){if(e.hp>0)e.wait=false});
  var tx=0,tg=0;ens.forEach(function(e){var q=e.wait?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
