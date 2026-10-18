@@ -181,7 +181,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.22';   /* set by build.sh */
+var VERSION='2.0';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -352,9 +352,13 @@ function bootStep(){if(booted)return;
 /* The start screen (SHOW AT START, on by default): how to connect, the options most people will want to set once, and START.
    With it switched off the app opens on the plain logo and START button; either way nothing is read until START is pressed. */
 /* every switch the app has, grouped, with a few words each (the start screen scrolls; SET has the same switches and the dev ones) */
-var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['hdot','HINT SPOTS','Green spots'],
+var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['hdot','HINT SPOTS','Green spots'],['route','GUIDE LINE','Path to spot'],
  ['MAP'],['plan','MAP ART','Room pictures'],['maprot','MAP TURNS','Up is camera'],['tre','TREASURE','Chests, taken'],['gift','GIFT SPOTS','Items given'],['places','PLACES','Cubes, shops'],['enl','ENEMY LIST','Room enemies'],['exits','EXITS','Doors, way in'],
- ['BATTLE'],['enc','BATTLE COUNTDOWN','Next fight bar'],['turns','TURN ORDER','Who acts next'],['seq','COMBO KEYS','Deathblow keys'],['dball','ALL DEATHBLOWS','Locked too']];
+ ['BATTLE'],['enc','BATTLE COUNTDOWN','Next fight bar'],['boss','BOSS CARDS','Boss tips'],['turns','TURN ORDER','Who acts next'],['seq','COMBO KEYS','Deathblow keys'],['dball','ALL DEATHBLOWS','Locked too'],
+ ['SHOPS'],['advise','SHOP ADVISOR','Gains shown']];
+/* v2.0: what the app does, a line each, at the top of the start screen's list */
+var START_ABOUT=[['STATUS','Party, gears, HP and fuel live'],['EQUIP','Gear, deathblows, descriptions'],['MAP','Room maps, chests, doors, shops'],['HINTS','Next story step and guide line'],
+ ['BATTLE','Enemies, turn order, boss tips'],['SHOPS','Prices and what beats your gear'],['JOURNAL','Story progress and bestiary'],['3D','Rooms in 3D and EYE (SETTINGS)']];
 /* the first-launch screen: how to link, the main switches, START */
 function startScreen(){var h='<div class="st-top"><img class="st-logo" src="img/title.png"><div class="st-how">'
   +'<div class="row">'+T('Xenogears Link','y')+'<span class="sp"></span>'+T(VERSION,'g')+'</div>'
@@ -362,8 +366,12 @@ function startScreen(){var h='<div class="st-top"><img class="st-logo" src="img/
   +'<div class="row">'+T('1 ','y')+T('Settings, Network')+'</div>'
   +'<div class="row">'+T('2 ','y')+T('Network Commands ')+T('ON','n')+'</div>'
   +'<div class="row">'+T('3 ','y')+T('Command Port ')+T(String(CFG.port),'n')+'</div>'
-  +'<div class="row">'+T('4 ','y')+T('Run the game, tap START')+'</div></div></div>';
- var o='<div class="row">'+T('OPTIONS','c')+'<span class="sp"></span>'+T('TAP TO CHANGE','g')+'</div>';
+  +'<div class="row">'+T('4 ','y')+T('Run the game, tap START')+'</div>'
+  +'<div class="row">'+T('PC: ','c')+T('XenogearsRecomp with Link','g')+'</div></div></div>';
+ var o='<div class="row">'+T('A SECOND SCREEN FOR XENOGEARS','y')+'</div>';
+ wrap('Reads the game while you play and shows what the game keeps to itself: no button presses, nothing changed in the game.',40).forEach(function(l){o+='<div class="row">'+T(l,'g')+'</div>'});
+ START_ABOUT.forEach(function(a){o+='<div class="row">'+T(padr(a[0],8),'c')+T(a[1])+'</div>'});
+ o+='<div class="row" style="height:13rem">'+T('OPTIONS','c')+'<span class="sp"></span>'+T('TAP TO CHANGE','g')+'</div>';
  /* the room maps come from the player's own disc: say so first, with the button to build them */
  if(false)o+='<div class="st-opt">'+T('ROOM MAPS','c')+'<span class="sp"></span>'+(GEN.building?T('BUILDING '+GEN.building.done+'/'+GEN.building.total,'y'):GEN.ready?(GEN.man.v<XB.VERSION?chip('REBUILD (NEWER)',true,'genAsk()'):T('BUILT','n')):window.BUNDLED?T('IN APP (TEST)','n'):chip('BUILD FROM DISC',true,'discPick()'))+'</div>';
  if(false)o+='<div class="st-opt">'+T('Pick your Xenogears disc 1','g')+'</div><div class="st-opt" style="margin-top:-8rem">'+T('(.chd, .bin or .iso) once.','g')+'</div>';
