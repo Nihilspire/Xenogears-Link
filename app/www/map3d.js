@@ -271,12 +271,21 @@ function funnel(M,R,k,p,q){var F=M.F,P=[[p.x,p.y,p.z],[p.x,p.y,p.z]];
   if(ar(apex,right,r)<=0){if(eq(apex,right)||ar(apex,left,r)>0){right=r;ri=i2}else{out.push(left);apex=left;ai=li;left=right=apex;li=ri=ai;i2=ai;continue}}
   if(ar(apex,left,l)>=0){if(eq(apex,left)||ar(apex,right,l)<0){left=l;li=i2}else{out.push(right);apex=right;ai=ri;left=right=apex;li=ri=ai;i2=ai;continue}}}
  out.push(P[P.length-1]);return out}
-/* corners laid on the floor every RSTEP units */
+/* the point of triangle i nearest to (x, z), on its floor: [x, y, z] (v1.99.0.14: the line's end. It used the triangle's middle height,
+   which for a spot off the walkable floor, or a long sloped triangle, left the end hanging in the air: 219 units up in room 337) */
+function onTri(M,i,x,z){var F=M.F,t=F.T[i],P=[0,1,2].map(function(k){return [F.VX[t[k]],F.VY[t[k]],F.VZ[t[k]]]});
+ function bary(x,z){var a=P[0],b=P[1],c=P[2],den=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);if(!den)return null;
+  var A=((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/den,B=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/den;return [A,B,1-A-B]}
+ var w=bary(x,z);if(w&&w[0]>=-0.001&&w[1]>=-0.001&&w[2]>=-0.001)return [x,w[0]*P[0][1]+w[1]*P[1][1]+w[2]*P[2][1],z];
+ var best=null,bd=1e18;for(var e=0;e<3;e++){var a=P[e],b=P[(e+1)%3],ex=b[0]-a[0],ez=b[2]-a[2],l2=ex*ex+ez*ez,u=l2?((x-a[0])*ex+(z-a[2])*ez)/l2:0;u=Math.max(0,Math.min(1,u));
+  var px=a[0]+ex*u,pz=a[2]+ez*u,d=(px-x)*(px-x)+(pz-z)*(pz-z);if(d<bd){bd=d;best=[px,a[1]+(b[1]-a[1])*u,pz]}}return best}
+/* corners laid on the floor every RSTEP units (any floor within 40 of the line's height) */
 function layRoute(M,out){var lay=[];for(var q=0;q<out.length-1;q++){var a=out[q],b=out[q+1],dx=b[0]-a[0],dz=b[2]-a[2],n=Math.max(1,Math.ceil(Math.sqrt(dx*dx+dz*dz)/RSTEP));
-  for(var k=0;k<n;k++){var t=k/n,x=a[0]+dx*t,z=a[2]+dz*t,y=a[1]+(b[1]-a[1])*t,fy=floorNear(M,x,z,y);lay.push([x,fy!=null?fy:y,z]);if(lay.length>=RMAX-1)break}}
+  for(var k=0;k<n;k++){var t=k/n,x=a[0]+dx*t,z=a[2]+dz*t,y=a[1]+(b[1]-a[1])*t,fy=null;
+   fy=floorNear(M,x,z,y);lay.push([x,fy!=null?fy:y,z]);if(lay.length>=RMAX-1)break}}
  lay.push(out[out.length-1]);return lay}
 M3.route=function(from,to){var M=RM;if(!M)return null;var s=pickTri(M,from.x,from.z,from.y),g=pickTri(M,to.x,to.z,to.y!=null?to.y:from.y);if(s==null||g==null)return null;
- var R=aStar(M,s,g);if(!R)return null;var q={x:to.x,y:to.y!=null?to.y:M.cy[g],z:to.z};return layRoute(M,funnel(M,R,0,from,q))};
+ var R=aStar(M,s,g);if(!R)return null;var e=onTri(M,g,to.x,to.z),q={x:e[0],y:e[1],z:e[2]};return layRoute(M,funnel(M,R,0,from,q))};
 M3.routeReady=function(){return !!RM};
 function routeHide(){if(routeG)routeG.visible=false}
 /* the line and the beam share one material and are made with the room (drawing nothing), so their shader is compiled while the room
@@ -285,7 +294,7 @@ function routeObjs(){if(RT.mesh&&RT.mesh.parent===routeG)return;var geo=new T.Bu
  for(var i=0;i<RMAX-1;i++){var o=2*i;ix2.push(o,o+1,o+2,o+1,o+3,o+2)}geo.setIndex(ix2);geo.setDrawRange(0,0);
  var mt=new T.MeshBasicMaterial({color:0x55ff66,transparent:true,opacity:0.6,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,clippingPlanes:[clip]});
  RT.mesh=new T.Mesh(geo,mt);RT.mesh.renderOrder=1;RT.mesh.frustumCulled=false;routeG.add(RT.mesh);
- RT.beam=new T.Mesh(new T.CylinderGeometry(6,6,260,8,1,true),mt);RT.beam.renderOrder=5;RT.beam.visible=false;routeG.add(RT.beam)}
+ RT.beam=new T.Mesh(new T.CylinderGeometry(6,6,80,8,1,true),mt);RT.beam.renderOrder=5;RT.beam.visible=false;routeG.add(RT.beam)}
 M3.routeWarm=function(){if(routeG&&M3.ready){routeObjs();RT.beam.visible=false;RT.mesh.geometry.setDrawRange(0,0);routeG.visible=true}};
 /* to = {x, y (or null), z} or null to hide */
 M3.setRoute=function(from,to){if(!routeG)return;if(!to||!from||!M3.ready){routeHide();RT.key='';return}
@@ -295,7 +304,7 @@ M3.setRoute=function(from,to){if(!routeG)return;if(!to||!from||!M3.ready){routeH
  var s=pickTri(M,from.x,from.z,from.y),k=-1;if(s==null){routeHide();return}
  if(key===RT.key&&RT.corr){var ix=RT.idx.get(s);if(ix!=null)k=ix}
  if(k<0){var g=pickTri(M,to.x,to.z,to.y!=null?to.y:from.y),R=g==null?null:aStar(M,s,g);RT.key=key;if(!R){RT.corr=null;routeHide();return}
-  RT.corr=R;RT.idx=new Map();R.corr.forEach(function(t,i){RT.idx.set(t,i)});RT.to={x:to.x,y:to.y!=null?to.y:M.cy[g],z:to.z};k=0}
+  RT.corr=R;RT.idx=new Map();R.corr.forEach(function(t,i){RT.idx.set(t,i)});var e0=onTri(M,g,to.x,to.z);RT.to={x:e0[0],y:e0[1],z:e0[2]};k=0}
  var pts=layRoute(M,funnel(M,RT.corr,k,from,RT.to));if(pts.length<2){routeHide();return}
  routeObjs();
  var arr=RT.mesh.geometry.attributes.position.array,W2=FP?6:11,n=Math.min(pts.length,RMAX);
@@ -303,6 +312,7 @@ M3.setRoute=function(from,to){if(!routeG)return;if(!to||!from||!M3.ready){routeH
   arr[o2]=p[0]+nx;arr[o2+1]=-p[1]+4;arr[o2+2]=-(p[2]+nz);arr[o2+3]=p[0]-nx;arr[o2+4]=-p[1]+4;arr[o2+5]=-(p[2]-nz)}
  RT.mesh.geometry.attributes.position.needsUpdate=true;RT.mesh.geometry.setDrawRange(0,(n-1)*6);
  var e=pts[n-1];
- RT.beam.position.set(e[0],-e[1]+130,-e[2]);RT.beam.visible=true;routeG.visible=true};
+ /* the post marking the end: 80 tall (was 260, which read as the line shooting up into the air), and gone once the party is there */
+ var ax=e[0]-from.x,az=e[2]-from.z;RT.beam.position.set(e[0],-e[1]+40,-e[2]);RT.beam.visible=ax*ax+az*az>60*60;routeG.visible=true};
 G.M3=M3;
 })(window);
