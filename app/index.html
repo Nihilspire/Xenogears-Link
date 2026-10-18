@@ -26,6 +26,8 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 .card{flex:1;min-height:0}
 .card>.in{display:flex;gap:6rem;align-items:center;margin:-3rem -2rem;height:calc(100% + 6rem)}
 .card .col{gap:0}
+.jr .tl{position:relative;display:block;width:100%;height:5rem;border:1rem solid #8c7352;background:#100808}.jr .tl b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#9f6,#283)}.jr .tl .tk{position:absolute;top:-1rem;bottom:-1rem;width:1rem;background:#efe0b0;z-index:1}.jr .tl .dz{position:absolute;top:-2rem;bottom:-2rem;width:1rem;background:#7fd8ff;z-index:2}
+#main.scroll .card.jr>.in{align-items:stretch}
 .pt{width:48rem;height:48rem;image-rendering:pixelated;flex:none;border:1rem solid #524a31;background:#100808}
 .pt.ko{filter:grayscale(1) brightness(.5)}
 .pt.dim{opacity:.6}
@@ -78,7 +80,8 @@ input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monos
 .hdot{position:absolute;width:5rem;height:5rem;margin:-2.5rem;border-radius:50%;background:#5f5;border:1rem solid #100808;box-shadow:0 0 0 1rem #fff}
 .lgt{background:#ffd23c;border:1rem solid #100808;height:5rem}.lgf{background:#6cf;border-radius:50%;border:1rem solid #100808}
 .shd{grid-column:1/-1;display:flex;margin-top:2rem}
-.shop .in{column-gap:5rem;grid-template-columns:repeat(2,minmax(0,150rem));justify-content:space-between}
+.shop .in{column-gap:5rem;grid-template-columns:minmax(0,1fr)}
+.shop .it{gap:4rem}
 .dim{opacity:.35}.dm{opacity:.6}
 .rew{flex:1;display:flex;align-items:center}.rew>.in{flex:1;display:flex;align-items:center;margin:-6rem 2rem}
 #pop{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:4;padding:10rem}
@@ -173,12 +176,12 @@ var CFG={
  maprot:LS.get('maprot','1')==='1',plan:LS.get('plan','1')==='1',mapmir:false,hdot:LS.get('hdot','1')==='1',tre:LS.get('tre','1')==='1',gift:LS.get('gift','1')==='1',enl:LS.get('enl','1')==='1',hint:LS.get('hint','1')==='1',exits:LS.get('exits','1')==='1',places:LS.get('places','1')==='1',
  /* battle */
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',
- route:LS.get('route','1')==='1',smooth:LS.get('smooth','1')==='1',sky:LS.get('sky','1')==='1',   /* 3D map: the way to go, eased camera, sky in EYE (v1.99.0.5) */   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
+ route:LS.get('route','1')==='1',advise:LS.get('advise','1')==='1',boss:LS.get('boss','1')==='1',smooth:LS.get('smooth','1')==='1',sky:LS.get('sky','1')==='1',   /* 3D map: the way to go, eased camera, sky in EYE (v1.99.0.5) */   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1',
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.15';   /* set by build.sh */
+var VERSION='1.99.0.16';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -470,7 +473,7 @@ function inDialogue(){if(u32(A.SIG)!==4)return false;if(inEvent())return true;if
 /* is a text box open right now (the box records, or most of the taught bytes)? */
 function rawDialogue(){if(boxOpen())return true;if(!DLG||!DLG.a.length||u32(A.SIG)!==4)return false;var n=0,t=0;for(var i=0;i<DLG.a.length;i++){var v=u8(DLG.a[i]);if(v==null)continue;t++;if(v)n++}return t>0&&n*10>=t*6}
 /* ================= game state ================= */
-var tab=LS.get('tab','status'),tick=0,namesAt=0;if(['status','equip','items','map'].indexOf(tab)<0)tab='status';
+var tab=LS.get('tab','status'),tick=0,namesAt=0;if(['status','equip','items','map','journal'].indexOf(tab)<0)tab='status';
 /* is the battle program loaded? */
 function inBattle(){return u32(A.SIG)===6}
 /* a game pointer as a RAM offset, or null when it is not a pointer into RAM */
@@ -553,7 +556,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   return}
  fullKey=key;
  if(snapOn()){want(set,A.STORY,0x404);want(set,A.PTIME,4);want(set,A.GOLD,4);want(set,A.PARTY,3)}
- want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
+ if(CFG.boss&&!bossDone&&inBattle())want(set,A.FORM,0x210);want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
  if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
  if(inBattle()){want(set,A.BACT,44);for(var ba=0;ba<11;ba++){var bap=ptr(u32(A.BACT+4*ba));if(bap!=null){want(set,bap+0xAC,4);want(set,bap+0x3C,4);want(set,bap+4,4)}}want(set,A.BSLOT,11*BREC);want(set,A.BPID,3);want(set,A.BLIVE,11);want(set,A.BGONE,11);want(set,A.BTURN,1);want(set,A.BFORM,0x20);if(CFG.turns)want(set,A.BTIME,22);var bp=rd(A.BPID,3)||[];for(var bi=0;bi<3;bi++)if(bp[bi]!=null&&bp[bi]<=10){want(set,A.SKILL+bp[bi]*0x20,0x20);want(set,A.CHAR+bp[bi]*REC,REC)}}
  else{var p=rd(A.PARTY,3)||[];for(var i=0;i<3;i++){var id=p[i];if(id==null||id>10)continue;want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)}
@@ -566,6 +569,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
+  if(room&&tab==='journal'){want(set,A.SVAR,0x400);want(set,A.PTIME,4)}
   if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}if(snapOn()){want(set,A.SVAR,0x400);want(set,A.WALKB,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
@@ -682,11 +686,27 @@ function shopHave(){var o={},k,i;for(k in BAGS){var b=BAGS[k],q=rd(b[0],b[2]),id
  for(i=0;i<3;i++){if(p[i]==null||p[i]>10)continue;var c=readChar(A.CHAR+p[i]*REC),w=u8(A.CHAR+p[i]*REC+0x6A);if(!c)continue;if(w)use.weapons[w]=1;c.eq.forEach(function(e){if(e)use.equipment[e]=1});
   var g=c.gear<20?readGear(A.GEAR+c.gear*REC):null;if(g&&g.mhp){use.gear_frames[g.frame]=1;use.gear_armor[g.armor]=1;use.gear_engines[g.engine]=1;g.acc.forEach(function(e){if(e)use.gear_parts[e]=1});g.wp.forEach(function(e){if(e)use.gear_weapons[e]=1})}}
  return o}
-/* the shop screen: stock by category with prices (red = cannot pay, green name = already have one) */
+/* SHOP ADVISOR (v1.99.0.16): what each thing on sale would add over what the party of three has on now, for the member or gear
+   it suits best: weapons ATK (who can hold it from the weapon's mask), body and head armour DEF (against the piece in that slot),
+   gear frames HP (same gear only: a frame's name starts with its gear's code), gear armour ARMOR and engines output. Accessories,
+   gear weapons and parts do different things and are not compared. Returns {d: gain, w: who} or null. */
+function shopGain(kind,id){var S=window.STATS;if(!S||!S[kind]||!S[kind][id])return null;var r=S[kind][id],p=shownParty(rd(A.PARTY,3)||[]),best=null;
+ function take(d,w){if(d>0&&(!best||d>best.d))best={d:d,w:w}}
+ p.forEach(function(ci){var c=readChar(A.CHAR+ci*REC);if(!c)return;
+  if(kind==='weapons'){if(!((r[0]>>ci)&1))return;var w=u8(A.CHAR+ci*REC+0x6A),cur=w&&S.weapons[w]?S.weapons[w][2]:0;take(r[2]-cur,cname(ci))}
+  else if(kind==='equipment'){if(!r[3]||!((r[0]>>ci)&1))return;var cd=0;c.eq.forEach(function(e){var q=e&&S.equipment[e];if(q&&q[3]===r[3])cd=q[2]});take(r[2]-cd,cname(ci))}
+  else{var g=c.gear<20?readGear(A.GEAR+c.gear*REC):null;if(!g||!g.mhp)return;var gn=gname(c.gear);
+   if(kind==='gear_frames'){var fn=gearName('gear_frames',id)||'',cn=gearName('gear_frames',g.frame)||'',cf=S.gear_frames[g.frame];if(fn.slice(0,4)!==cn.slice(0,4)||!cf)return;take(r[0]-cf[0],gn)}
+   else if(kind==='gear_armor'){var ca=S.gear_armor[g.armor];take(r[2]-(ca?ca[2]:0),gn)}
+   else if(kind==='gear_engines'){var ce=S.gear_engines[g.engine];take(r[0]-(ce?ce[0]:0),gn)}}});
+ return best}
+var GAINLBL={weapons:'ATK',equipment:'DEF',gear_frames:'HP',gear_armor:'ARM',gear_engines:'OUT'};
+/* the shop screen: stock by category with prices (red = cannot pay, green name = already have one), and in green the gain over
+   what the party has on for the member or gear it suits best ("+12 ATK Fei") */
 function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='';
  SHOPCAT[sh.k].forEach(function(c,ci){var l=sh.st[ci]||[],t=window.STATS&&STATS[c[0]],rows='',bag=have[c[0]]||{},use=have.use[c[0]]||{};
-  l.forEach(function(id){var nm=gearName(c[0],id);if(!nm)return;var r=t&&t[id],pr=r?r[SHOPPRICE[c[0]]]:null,o=bag[id]||0;
-   rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+')">'+T(nm.trim(),o||use[id]?'n':'w')+T(String(pr==null?'?':pr),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
+  l.forEach(function(id){var nm=gearName(c[0],id);if(!nm)return;var r=t&&t[id],pr=r?r[SHOPPRICE[c[0]]]:null,o=bag[id]||0,gn=CFG.advise&&GAINLBL[c[0]]?shopGain(c[0],id):null;
+   rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+')">'+T(nm.trim(),o||use[id]?'n':'w')+'<span class="sp"></span>'+(gn?T('+'+gn.d+' '+GAINLBL[c[0]]+' '+gn.w.trim().slice(0,8)+'  ','n'):'')+T(pad(pr==null?'?':pr,6),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
   if(rows)h+='<div class="shd">'+T(c[1],'c')+'</div>'+rows});
  return win(h||T('NOTHING LISTED','g'),'list shop')}
 /* the main area outside battle: the card or list for the chosen tab */
@@ -696,7 +716,7 @@ function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='';
    loadPartyMembers). */
 function shownParty(p){var av=u16(A.PARTY-4),fm=u16(A.PARTY-2),m=av!=null&&fm!=null?av&fm:0xFFFF,o=[];for(var i=0;i<3;i++){var c=p[i];if(c==null||c>10)continue;if((m>>(c&0x1F))&1||!(m&0x7FF))o.push(c)}return o}
 function fieldView(){var p=rd(A.PARTY,3);if(!p)return win(T(TEST?'...':HAS_NATIVE?'WAITING FOR GAME':'NO LINK ON THIS DEVICE','g'),'card');var ids=shownParty(p);
- if(tab==='items')return itemsView();if(tab==='map')return mapView();if(!ids.length)return win(T('NO PARTY YET','g'),'card');
+ if(tab==='items')return itemsView();if(tab==='map')return mapView();if(tab==='journal')return journalView();if(!ids.length)return win(T('NO PARTY YET','g'),'card');
  return ids.map(tab==='equip'?equipCard:statusCard).join('')}
 /* ================= battle screen =================
    Enemy names. Confirmed on the handheld (v1.7): a fight's enemies fill the enemy slots in formation order, not in the order
@@ -790,14 +810,29 @@ function immuneList(s){var b=A.BSLOT+s*BREC,fl=u8(b+0x15A);if(fl==null)return []
 /* the one tag that fits after an HP bar on the battle screen (at most four letters and a +): the first status, with + when there are more (red = ailment, green = help) */
 function statusTag(s){var l=statusList(s);if(!l.length)return '';return '<span style="width:2rem;flex:none"></span>'+T(l[0].t+(l.length>1?'+':''),l[0].bad?'r':'n')+'<span style="width:2rem;flex:none"></span>'}
 /* pop-up for an enemy: rewards, drops, the status effects on it, what it is immune to, then how each element fares against it */
-function showEnemy(s,name){var q=reward(s);if(!q)return;var h='<div class="row">'+T(name||'Enemy','r')+'</div>';
+/* BOSS CARDS (v1.99.0.16): tips by enemy name (lower case, a part of the name is enough), mostly from Jack's own hint text. */
+var BOSSTIP=[['alkanshel','Charge until its barrier breaks, then use Booster and attack.'],['amphysvena','Heal right after Wave #3 Demiser drops you to 1 HP. Go easy on Booster, another fight follows.'],
+ ['opiomorph','Every hit powers her up. Charge and heal between attacks, then finish fast with Infinity mode and System Id.'],['hammer','Beat Hammer before he self-destructs to win the Trader Card.'],
+ ['deus','Charge fuel instead of hitting Deus. When his HP-halving move leaves him low, use System Id.'],['haishao','Do not attack Haishao in Mirror Stance.'],
+ ['kelvena','Take out Kelvena, the healer, first, and hit each Element with its weak element.'],['hurricane','The Ygg Cannon option deals 9999 damage.'],['vendetta','Beat Vendetta with System Id.'],
+ ['sufal','Leave one Sufal alive.'],['achtzehn','Fight Achtzehn with Maria in Seibzehn.'],['fis-6','Its four Mechanics come in partway through, so beat Fis-6 fast.']];
+function bossTip(name){var n=String(name||'').toLowerCase();for(var i=0;i<BOSSTIP.length;i++)if(n.indexOf(BOSSTIP[i][0])>=0)return BOSSTIP[i][1];return null}
+/* a fight is a boss fight when an enemy has a tip, or is not one of the room's random line-ups (a scripted fight; a room with no random battles has none) with 400 HP or more.
+   The card opens by itself once, 1.5 s into the fight (slots left over from the last fight are gone by then); tapping the enemy shows it again. */
+var bossDone=false;
+function bossCheck(list){if(!CFG.boss||bossDone||Date.now()-bstart<1500||!list.length)return;bossDone=true;var re=roomEnemies(),rn={};(re||[]).forEach(function(r){rn[r.n]=1});
+ var b=null;list.forEach(function(e){if(e.ko)return;var sc=bossTip(e.name)||(re!=null&&!rn[e.name]&&e.mhp>=400);if(sc&&(!b||e.mhp>b.mhp))b=e});
+ if(b)setTimeout(function(){if(inBattle())showEnemy(b.s,b.name,b.mhp,true)},30)}
+function showEnemy(s,name,mhp,boss){var q=reward(s);if(!q)return;var tip=bossTip(name),h='<div class="row">'+(boss?T('BOSS  ','y'):'')+T(name||'Enemy','r')+'</div>';
+ if(mhp){var ch2=u16(A.BSLOT+s*BREC+0x4C),cg=u32(A.BSLOT+s*BREC+REC+0x64)>0?u32(A.BSLOT+s*BREC+REC+0x60):ch2;h+='<div class="row">'+T('HP','c')+T(pad(cg==null?'-':cg,7))+T(' / ','g')+T(String(mhp))+'</div>'}
+ if(tip)wrap(tip,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});
  h+='<div class="row">'+T('EXP','c')+T(pad(q.exp,7))+'<span class="sp"></span>'+T(pad(q.gold,6))+T(' G','y')+'</div>';
  if(q.drops.length)q.drops.forEach(function(d){h+='<div class="row">'+T(padr(d.n,13))+'<span class="sp"></span>'+T(pad(d.p,3)+'%','n')+'</div>'});else h+='<div class="row">'+T('No drops.','g')+'</div>';
  var sl=statusList(s);if(sl.length){h+='<div class="row">'+T('STATUS','c')+'</div>';sl.forEach(function(e){h+='<div class="row">'+T(e.n,e.bad?'r':'n')+'</div>'})}
  var im=immuneList(s);if(im.length){h+='<div class="row">'+T('IMMUNE TO','c')+'</div>';wrap(im.join(', '),26).forEach(function(l){h+='<div class="row">'+T(l,'o')+'</div>'})}
  var el=elemList(s);if(el&&el.length){h+='<div class="row">'+T('ELEMENTS','c')+'</div>';
   el.forEach(function(e){h+='<div class="row">'+T(padr(e.n,6))+'<span class="sp"></span>'+(e.abs?T('ABSORBS','r'):T('x'+(e.m/10).toFixed(1),e.m>10?'n':'r'))+'</div>'})}
- popup(h,180)}
+ popup(h,tip||boss?250:180)}
 /* an enemy's picture (ENEMIES p = [file, width, height], one game pixel = 1rem) shrunk to fit a box; gear renders (g...) are smoothed */
 function sprImg(pc,w,h){var k=Math.min(1,w/pc[1],h/pc[2]);return '<img'+(pc[0].charAt(0)==='g'?' class="sm"':'')+' src="spr/'+pc[0]+'.png" style="width:'+Math.max(1,Math.round(pc[1]*k))+'rem;height:'+Math.max(1,Math.round(pc[2]*k))+'rem">'}
 /* Turn order. Every fighter has a countdown to its next turn (u16 at 0x800D2E06 + slot x 2; the ready byte at 0x800D2DE4 + slot is
@@ -885,6 +920,7 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
  var shownE=ens.filter(function(e){return !e.wait});
+ bossCheck(shownE);bestNote(shownE);
  if(shownE.some(function(e){return !enemyId[e.s]})){enemyId={};shownE.forEach(function(e,i){enemyId[e.s]=i+1})}   /* a slot without a number = a new line-up (slots left over from the last fight can show for a moment while a battle loads): number the list afresh, 1 at the top */
  var enm={};ens.forEach(function(e){enm[e.s]=e.name.replace(/[^A-Za-z0-9 \-]/g,'');if(!e.ko&&!e.wait)inFight.push(e.s)});var rk=turnRanks(inFight);
  /* room for the enemy cards = screen height less the top bar, bottom bar and window frames (71), less the timeline when shown.
@@ -1377,6 +1413,57 @@ function route2d(m,f,lvis,shown,p,to){var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==ke
   if(ar(apex,right,r)<=0){if(eq(apex,right)||ar(apex,left,r)>0){right=r;ri=i2}else{out.push(left);apex=left;ai=li;left=right=apex;li=ri=ai;i2=ai;continue}}
   if(ar(apex,left,l)>=0){if(eq(apex,left)||ar(apex,right,l)<0){left=l;li=i2}else{out.push(right);apex=right;ai=ri;left=right=apex;li=ri=ai;i2=ai;continue}}}
  out.push(ex);return out}
+/* ================= JOURNAL (v1.99.0.16) =================
+   A fourth page beside the map: PROGRESS (how far into the story, chapter by chapter, with the play time and party level when each
+   chapter began, logged by the app as it sees them), MISSABLES (chests not yet opened in places that close: Lahan before the
+   attack, everything on disc 1 outside Solaris before the point of no return at step 210, Solaris before the end of disc 1) and
+   BESTIARY (every enemy met in a fight while the app was linked, with its HP, rewards and drops). The log and the bestiary are kept
+   in this device's storage, not in the game's save, so loading an older save does not remove anything. */
+var JSUB=LS.get('jsub','prog'),JLOG=null,BEST=null,bestNow={};
+function jload(){if(JLOG==null){try{JLOG=JSON.parse(LS.get('jlog','{}'))||{}}catch(e){JLOG={}}}if(BEST==null){try{BEST=JSON.parse(LS.get('best','{}'))||{}}catch(e){BEST={}}}}
+function jsub(k){JSUB=k;LS.set('jsub',k);last={};render()}
+/* called every render in a room: a chapter not logged yet is logged with the play time and the party's average level */
+function journalTick(){if(u32(A.SIG)!==4)return;var v=u16(A.STORY),c=window.CHAPTERS;if(v==null||!c||v>353)return;jload();var ci=-1;for(var i=0;i<c.length&&c[i][0]<=v;i++)ci=i;if(ci<0||JLOG[ci])return;
+ var pt=u32(A.PTIME),p=shownParty(rd(A.PARTY,3)||[]),lv=0,n=0;p.forEach(function(id){var ch=readChar(A.CHAR+id*REC);if(ch&&ch.lv){lv+=ch.lv;n++}});if(pt==null||!n)return;
+ JLOG[ci]=[Math.floor(pt/60),Math.round(lv/n)];LS.set('jlog',JSON.stringify(JLOG))}
+/* called from the battle screen with the enemies shown: each name once per fight */
+function bestNote(list){if(!list.length||Date.now()-bstart<1500)return;jload();var ch=false,st=u16(A.STORY)|0;
+ list.forEach(function(e){if(bestNow[e.name]||!e.name||/^Enemy \d/.test(e.name))return;var q=reward(e.s);if(!q)return;bestNow[e.name]=1;var o=BEST[e.name]||(BEST[e.name]={h:0,x:q.exp,g:q.gold,d:[],s:st,n:0});
+  o.n++;o.h=Math.max(o.h,e.mhp||0);o.x=q.exp;o.g=q.gold;o.d=q.drops.map(function(d){return [d.n,d.p]});ch=true});if(ch)LS.set('best',JSON.stringify(BEST))}
+function fmtT(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)}
+function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['miss','MISSABLES'],['best','BESTIARY']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
+ var v=u16(A.STORY),c=window.CHAPTERS||[];
+ if(JSUB==='prog'){var pct=v==null?0:Math.min(100,Math.round(v*100/350)),ci=-1;for(var i=0;i<c.length&&v!=null&&c[i][0]<=v;i++)ci=i;var pt=u32(A.PTIME);
+  h+='<div class="row">'+T(v!=null&&v>=249?'DISC 2':'DISC 1','c')+T('  '+(ci>=0?c[ci][1]:'-'))+'<span class="sp"></span>'+T(pct+'%','n')+'</div>';
+  /* the story bar: 0 to 350, disc 2 begins at 249; chapters reached are notches */
+  var bar2='<div class="row"><span class="tl">';for(var k=0;k<=ci;k++)bar2+='<i class="tk" style="left:'+(c[k][0]*100/350)+'%"></i>';bar2+='<i class="dz" style="left:'+(249*100/350)+'%"></i><b style="width:'+pct+'%"></b></span></div>';h+=bar2;
+  h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(pt==null?'-':fmtT(Math.floor(pt/60)))+'</div><div class="sep"></div>';
+  for(var k2=ci;k2>=0;k2--){var lg=JLOG[k2];h+='<div class="row">'+T(padr(c[k2][1],22),k2===ci?'y':'w')+'<span class="sp"></span>'+(lg?T(fmtT(lg[0]),'g')+T('  LV','c')+T(pad(lg[1],3)):T('-','g'))+'</div>'}
+  for(var k3=ci+1;k3<Math.min(c.length,ci+4);k3++)h+='<div class="row">'+T('???','g')+'</div>'}
+ else if(JSUB==='miss'){var M=missables(v|0);h+='<div class="row">'+T(M.title,'c')+'</div>';if(M.note)wrap(M.note,36).forEach(function(l){h+='<div class="row">'+T(l,'g')+'</div>'});
+  if(!M.groups.length)h+='<div class="row">'+T(M.title?'Nothing left to find.':'-','n')+'</div>';
+  M.groups.forEach(function(gp,gi){h+='<div class="row" onclick="missPop('+gi+')">'+T(padr(gp.n,24))+'<span class="sp"></span>'+T(gp.l.length+' left','r')+'</div>'});MISSG=M.groups}
+ else{var ks=Object.keys(BEST).sort(function(a,b){return BEST[a].s-BEST[b].s||(a<b?-1:1)});h+='<div class="row">'+T('MET','c')+T(' '+ks.length)+'</div>';
+  if(!ks.length)h+='<div class="row">'+T('Fights are logged while the app is linked.','g')+'</div>';
+  ks.forEach(function(k4){var o=BEST[k4];h+='<div class="row" onclick="bestPop(\''+k4.replace(/'/g,"\\'")+'\')">'+T(padr(k4,18))+'<span class="sp"></span>'+T('HP','c')+T(pad(o.h,6))+T(' x'+o.n,'g')+'</div>'})}
+ return win('<div class="col" style="gap:0;padding:0 2rem">'+h+'</div>','card jr')}
+/* chests not yet opened in the places that close next */
+var MISSG=[];
+function missables(v){var out={title:'',note:'',groups:[]},lo,hi,tt=0;if(!window.TREASURE)return out;
+ if(v<21){lo=1;hi=14;out.title='BEFORE THE ATTACK ON LAHAN';out.note='Lahan village is lost at the attack.'}
+ else if(v<210){lo=1;hi=505;out.title='BEFORE THE POINT OF NO RETURN';out.note='Talking to Queen Zephyr ready to go (step 210) closes everything outside Solaris for the rest of disc 1.'}
+ else if(v<243){lo=509;hi=611;out.title='BEFORE LEAVING SOLARIS';out.note='Solaris closes at the end of disc 1.'}
+ else{out.title='DISC 2';out.note='Disc 2 has nothing tracked yet.';return out}
+ var G={};for(var f in TREASURE){var n=+f;if(n<lo||n>hi)continue;TREASURE[f].forEach(function(t){if(t.length>5&&t[6]===1)return;var val=u16(A.SVAR+t[0]);if(val==null||(val>>t[1]&1))return;
+   var a=areaOf(n),an=a?a.n:'Room '+n,nm=t[2].map(function(c2){return gearName(TKIND[c2>>8],c2&255)||'?'});if(t[3])nm.push(t[3]+' G');(G[an]||(G[an]={n:an,l:[],f:n})).l.push([n,nm.join(' + ')])})}
+ out.groups=Object.keys(G).map(function(k){return G[k]}).sort(function(a,b){return a.f-b.f});return out}
+function missPop(i){var gp=MISSG[i];if(!gp)return;var h='<div class="row">'+T(gp.n,'y')+'</div>';gp.l.forEach(function(e){var rn=window.ROOMS&&ROOMS[e[0]];h+='<div class="row">'+T(padr(e[1],20))+'<span class="sp"></span>'+T(rn?rn.slice(0,16):String(e[0]),'g')+'</div>'});popup(h,260)}
+function bestPop(k){jload();var o=BEST[k];if(!o)return;var h='<div class="row">'+T(k,'r')+'</div>';var pc=null;if(window.ENEMIES)ENEMIES.some(function(b){var i=b.n.indexOf(k);if(i>=0&&b.p&&b.p[i]){pc=b.p[i];return true}return false});
+ if(pc)h+='<div class="row" style="height:auto;justify-content:center">'+sprImg(pc,120,60)+'</div>';
+ h+='<div class="row">'+T('HP','c')+T(pad(o.h,6))+'<span class="sp"></span>'+T('FIGHTS','c')+T(pad(o.n,4))+'</div>';
+ h+='<div class="row">'+T('EXP','c')+T(pad(o.x,7))+'<span class="sp"></span>'+T(pad(o.g,6))+T(' G','y')+'</div>';
+ if(o.d&&o.d.length)o.d.forEach(function(d){h+='<div class="row">'+T(padr(d[0],15))+'<span class="sp"></span>'+T(pad(d[1],3)+'%','n')+'</div>'});else h+='<div class="row">'+T('No drops.','g')+'</div>';
+ var tip=bossTip(k);if(tip)wrap(tip,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});popup(h,tip?250:200)}
 /* ================= random battles =================
    Both the room program and the world map decide random battles the same way (room: 0x80079288 / 0x8008E718, world: 0x8007528C).
    There is a window of W frames of movement and N battles per window. When the window counter runs out, each of the N timers is set
@@ -1559,7 +1646,7 @@ function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LO
 var ffOn=false;
 /* draw the whole screen from what was last read */
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now();startOut={}}}
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bestNow={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var loc=!linked?'NO LINK':ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
@@ -1569,7 +1656,7 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  var g=u32(A.GOLD);put('gold',g==null?'':T(String(g))+T(' G','y'));
  put('gearbtn','<span onclick="openSet()" style="padding:3rem 0 3rem 6rem;display:flex">'+GEAR_ICON+'</span>');
  if(mv){document.getElementById('main').className='';put('main',win('<img class="ttl" src="img/title.png">'+T('FF',ffOn?'n':'w'),'btn big'+(ffOn?' on':''),'onclick="ff()"'));put('bot','');encDraw();moreHint();return}
- document.getElementById('main').className=pk||(!dl&&!bt&&!sh&&tab==='equip')?'scroll':'';
+ document.getElementById('main').className=pk||(!dl&&!bt&&!sh&&(tab==='equip'||tab==='journal'))?'scroll':'';if(!bt)journalTick();
  var shs=sh&&document.querySelector('.shop'),shy=shs?shs.scrollTop:0;   /* the shop list and the deathblow list keep their scroll place across a redraw */
  var dbs=document.querySelector('#dbl>.in'),dby=dbs?dbs.scrollTop:0,dbw=dbSel;
  put('main',ed?endingView():bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):de?discEndView():dl?'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>':bt?battleView():fieldView());
@@ -1580,7 +1667,7 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  else if(bl)b+=win(T('BATTLE ARENA','y')+'<span class="sp"></span>'+T('BATTLER','g'),'rew');
  else if(sh)b+=win(T(sh.k===4?'ITEM SHOP':'GEAR SHOP','y')+'<span class="sp"></span>'+T('GREEN','n')+T(': YOU HAVE ONE','g'),'rew');
  else if(bt)b+=battleTot?win(T('Rewards:','y')+'<span class="sp"></span>'+T('EXP','c')+T(pad(battleTot[0],7))+T(pad(battleTot[1],8))+T(' G','y'),'rew',CFG.dev?'onclick="showLog()"':''):'<span class="sp"></span>';
- else [['status','STATUS'],['equip','EQUIP'],['items','ITEMS'],['map','MAP']].forEach(function(t){b+=win(T(t[1],tab===t[0]?'y':'g'),'btn'+(tab===t[0]?' on':''),'onclick="setTab(\''+t[0]+'\')"')});
+ else [['status','STATUS'],['equip','EQUIP'],['items','ITEMS'],['map','MAP'],['journal',remSize()[0]<380?'LOG':'JOURNAL']].forEach(function(t){b+=win(T(t[1],tab===t[0]?'y':'g'),'btn'+(tab===t[0]?' on':''),'onclick="setTab(\''+t[0]+'\')"')});
  b+=win(T('FF',ffOn?'n':'w'),'btn nar'+(ffOn?' on':''),'onclick="ff()"');put('bot',b)}
 /* small arrow above the bottom bar while the EQUIP list has more below */
 function moreHint(){var m=document.getElementById('main'),e=document.getElementById('more');e.style.display=m.className==='scroll'&&m.scrollTop+m.clientHeight<m.scrollHeight-4&&!document.getElementById('app').className?'block':'none'}
@@ -1632,6 +1719,8 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+=onoff('START SCREEN','intro',CFG.intro);
  h+=setHd('BATTLE');
  h+=onoff('BATTLE COUNTDOWN','enc',CFG.enc);
+ h+=onoff('BOSS CARDS','boss',CFG.boss);
+ h+=onoff('SHOP ADVISOR','advise',CFG.advise);
  h+='<div class="opt">'+T('IN BATTLE','c')+chip('TURN ORDER',CFG.turns,"sv('turns','"+(CFG.turns?0:1)+"')")+chip('COMBO KEYS',CFG.seq,"sv('seq','"+(CFG.seq?0:1)+"')")+'</div>';
  h+='<div class="opt">'+T('DEATHBLOWS','c')+chip('LEARNED',!CFG.dball,"sv('dball','0')")+chip('SHOW ALL',CFG.dball,"sv('dball','1')")+'</div>';
  h+=setHd('MAP');
@@ -1670,7 +1759,7 @@ function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T(
  h+='<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('ENABLE',true,"event.stopPropagation();closePop();sv('"+k+"','1')")+'</div>';
  popup(h,240);document.getElementById('pop').style.zIndex=6}
 function sv(k,v){if(k==='host')v=okHost(v);if(k==='port')v=okPort(v);LS.set(k,v);if(k==='scale')v=+v;if(k==='quiet'){v=String(v)==='1';CFG.quiet=CFG.dlg=CFG.cut=v}
- if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye'||k==='xlog'||k==='route'||k==='smooth'||k==='sky')v=String(v)==='1';if(k==='route'||k==='smooth'||k==='sky'){var mc=document.getElementById('mapcv');if(mc)mc._sig=null}CFG[k]=v;
+ if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye'||k==='xlog'||k==='route'||k==='advise'||k==='boss'||k==='smooth'||k==='sky')v=String(v)==='1';if(k==='route'||k==='smooth'||k==='sky'){var mc=document.getElementById('mapcv');if(mc)mc._sig=null}CFG[k]=v;
  if((k==='x3d'||k==='xeye')&&!v){if(k==='x3d'&&map3on){map3on=false;LS.set('map3d','0')}if(map3eye){map3eye=false;LS.set('map3eye','0')}last={};render()}
  if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){if(!v)teach=null;last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
 setInterval(function(){if(Date.now()-pollAt>=CFG.poll-30)poll();if(setOpen()&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))drawSet()},CFG.poll);
