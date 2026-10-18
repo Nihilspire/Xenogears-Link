@@ -26,6 +26,7 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 .card{flex:1;min-height:0}
 .card>.in{display:flex;gap:6rem;align-items:center;margin:-3rem -2rem;height:calc(100% + 6rem)}
 .card .col{gap:0}
+.jr .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100rem,1fr));gap:4rem;padding:2rem 0}.jr .bcell{display:flex;flex-direction:column;align-items:center;gap:2rem;padding:3rem 0;border:1rem solid #312918;background:rgba(16,8,8,.5)}.jr .bpic{height:40rem;display:flex;align-items:flex-end;justify-content:center}.jr .bcell.unk img{filter:brightness(0);opacity:.75}
 .jr .tl{position:relative;display:block;width:100%;height:5rem;border:1rem solid #8c7352;background:#100808}.jr .tl b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#9f6,#283)}.jr .tl .tk{position:absolute;top:-1rem;bottom:-1rem;width:1rem;background:#efe0b0;z-index:1}.jr .tl .dz{position:absolute;top:-2rem;bottom:-2rem;width:1rem;background:#7fd8ff;z-index:2}
 #main.scroll .card.jr>.in{align-items:stretch}
 .pt{width:48rem;height:48rem;image-rendering:pixelated;flex:none;border:1rem solid #524a31;background:#100808}
@@ -181,7 +182,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0';   /* set by build.sh */
+var VERSION='2.0.0.1';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -369,7 +370,7 @@ function startScreen(){var h='<div class="st-top"><img class="st-logo" src="img/
   +'<div class="row">'+T('4 ','y')+T('Run the game, tap START')+'</div>'
   +'<div class="row">'+T('PC: ','c')+T('XenogearsRecomp with Link','g')+'</div></div></div>';
  var o='<div class="row">'+T('A SECOND SCREEN FOR XENOGEARS','y')+'</div>';
- wrap('Reads the game while you play and shows what the game keeps to itself: no button presses, nothing changed in the game.',40).forEach(function(l){o+='<div class="row">'+T(l,'g')+'</div>'});
+ wrap('A utility that hooks with the emulator to display useful information.',40).forEach(function(l){o+='<div class="row">'+T(l,'g')+'</div>'});
  START_ABOUT.forEach(function(a){o+='<div class="row">'+T(padr(a[0],8),'c')+T(a[1])+'</div>'});
  o+='<div class="row" style="height:13rem">'+T('OPTIONS','c')+'<span class="sp"></span>'+T('TAP TO CHANGE','g')+'</div>';
  /* the room maps come from the player's own disc: say so first, with the button to build them */
@@ -1527,10 +1528,14 @@ function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['
   h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(pt==null?'-':fmtT(Math.floor(pt/60)))+'</div><div class="sep"></div>';
   for(var k2=ci;k2>=0;k2--){var lg=JLOG[k2];h+='<div class="row">'+T(padr(c[k2][1],22),k2===ci?'y':'w')+'<span class="sp"></span>'+(lg?T(fmtT(lg[0]),'g')+T('  LV','c')+T(pad(lg[1],3)):T('-','g'))+'</div>'}
   for(var k3=ci+1;k3<Math.min(c.length,ci+4);k3++)h+='<div class="row">'+T('???','g')+'</div>'}
- else{var ks=Object.keys(BEST).sort(function(a,b){return BEST[a].s-BEST[b].s||(a<b?-1:1)});h+='<div class="row">'+T('MET','c')+T(' '+ks.length)+'</div>';
-  if(!ks.length)h+='<div class="row">'+T('Fights are logged while the app is linked.','g')+'</div>';
-  ks.forEach(function(k4){var o=BEST[k4];h+='<div class="row" onclick="bestPop(\''+k4.replace(/'/g,"\\'")+'\')">'+T(padr(k4,18))+'<span class="sp"></span>'+T('HP','c')+T(pad(o.h,6))+T(' x'+o.n,'g')+'</div>'})}
+ else{/* v2.0.1: a grid of every enemy in the game with its battle sprite, in the order the game's banks hold them; one not met yet is a
+     black silhouette named ??? */
+  var L=bestAll(),met=0;L.forEach(function(e){if(BEST[e.n])met++});h+='<div class="row">'+T('MET','c')+T(' '+met+' / '+L.length)+'<span class="sp"></span>'+T('TAP FOR DETAILS','g')+'</div>';
+  h+='<div class="bgrid">'+L.map(function(e){var o=BEST[e.n];return '<div class="bcell'+(o?'':' unk')+'"'+(o?' onclick="bestPop(\''+e.n.replace(/'/g,"\\'")+'\')"':'')+'><div class="bpic">'+sprImg(e.p,56,40)+'</div>'+T(o?e.n.slice(0,15):'???',o?'w':'g')+'</div>'}).join('')+'</div>'}
  return win('<div class="col" style="gap:0;padding:0 2rem">'+h+'</div>','card jr')}
+/* every enemy name with a picture, once, in bank order (names that are not enemies, allies and placeholders left out) */
+var BALL=null;
+function bestAll(){if(BALL)return BALL;BALL=[];var seen={};if(window.ENEMIES)ENEMIES.forEach(function(b){b.n.forEach(function(n,i){if(!n||n.length<3||!/^[A-Z]/.test(n)||!okName(n)||ALLY[n]||seen[n]||!(b.p&&b.p[i]))return;seen[n]=1;BALL.push({n:n,p:b.p[i]})})});return BALL}
 function bestPop(k){jload();var o=BEST[k];if(!o)return;var h='<div class="row">'+T(k,'r')+'</div>';var pc=null;if(window.ENEMIES)ENEMIES.some(function(b){var i=b.n.indexOf(k);if(i>=0&&b.p&&b.p[i]){pc=b.p[i];return true}return false});
  if(pc)h+='<div class="row" style="height:auto;justify-content:center">'+sprImg(pc,120,60)+'</div>';
  h+='<div class="row">'+T('HP','c')+T(pad(o.h,6))+'<span class="sp"></span>'+T('FIGHTS','c')+T(pad(o.n,4))+'</div>';
