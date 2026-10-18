@@ -178,7 +178,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.14';   /* set by build.sh */
+var VERSION='1.99.0.15';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -1320,9 +1320,63 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
    g.fillStyle='rgba(16,8,8,.9)';g.fillRect(lx-tw/2,ly-11*dpr,tw,9*dpr);g.fillStyle=lb.k?'#efefef':'#9a9a9a';g.fillText(lb.t,lx,ly-4*dpr)}
  if(!on3&&CFG.exits&&entry&&entry.f===f&&entry.d){var ax=SX(entry.x,entry.z),ay=SY(entry.x,entry.z),ed=DIR(entry.x,entry.z,entry.d[0],entry.d[1]),dx=ed[0],dy=ed[1],l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;var L=7*dpr,Wd=4.5*dpr;
    g.beginPath();g.moveTo(ax+dx*L,ay+dy*L);g.lineTo(ax-dy*Wd,ay+dx*Wd);g.lineTo(ax-dx*L*.3,ay-dy*L*.3);g.lineTo(ax+dy*Wd,ay-dx*Wd);g.closePath();g.fillStyle='#e33';g.fill();g.strokeStyle='#fff';g.lineWidth=dpr;g.stroke()}
+ /* v1.99.0.15: the guide line on the flat map too, walked over this map's own triangles (route2d) */
+ if(!on3&&CFG.route&&p){var rt2=routeTo(f,p),L2=rt2?route2d(m,f,lvis,shown,p,rt2):null;if(L2&&L2.length>1){g.beginPath();L2.forEach(function(q,j){var sq=PP(q[0],q[1]);if(j)g.lineTo(sq[0],sq[1]);else g.moveTo(sq[0],sq[1])});
+   g.lineJoin='round';g.lineCap='round';g.strokeStyle='rgba(16,8,8,.55)';g.lineWidth=5*dpr;g.stroke();g.strokeStyle='rgba(85,255,102,.85)';g.lineWidth=2.6*dpr;g.stroke();
+   var le=PP(L2[L2.length-1][0],L2[L2.length-1][1]);g.beginPath();g.arc(le[0],le[1],2.6*dpr,0,6.2832);g.fillStyle='#5f5';g.fill()}}
  /* the story hint's spot, when this is the room the next step is set in: a green ring */
  if(!on3&&hn&&CFG.hdot)hintSpots(f).forEach(function(r){var qx=SX(r[0],r[1]),qy=SY(r[0],r[1]);g.beginPath();g.arc(qx,qy,5*dpr,0,6.2832);g.strokeStyle='#ffffff';g.lineWidth=3*dpr;g.stroke();g.strokeStyle='#5f5';g.lineWidth=1.5*dpr;g.stroke();g.beginPath();g.arc(qx,qy,1.6*dpr,0,6.2832);g.fillStyle='#5f5';g.fill()});
  if(p&&!(on3&&M3.isFP())){var mp=on3?M3.project(p.x,py3,p.z,W,H):PP(p.x,p.z);marker(g,mp[0],mp[1],heading?DIR(p.x,p.z,heading[0],heading[1]):null,dpr)}}
+/* ROUTE ON THE FLAT MAP (v1.99.0.15): the same idea as the 3D line (map3d.js) on the map's own triangles: walkable ones (not tone 2) on every
+   walk layer (a way can pass over or under a layer the map is not showing), joined where two share an edge (by its corners' x/z, so steps between walk layers join too), A* between centroids,
+   then the funnel to pull the line tight through the shared edges. Start: the triangle under the party on its own layer if possible. */
+var R2={key:'',G:null};
+function route2d(m,f,lvis,shown,p,to){var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==key){R2.key=key;R2.G=null}
+ if(!R2.G){var n=m.nt,ok=new Uint8Array(n),cx=new Float32Array(n),cz=new Float32Array(n),adj=[],E={},i,k;
+  for(i=0;i<n;i++){adj.push([]);ok[i]=(m.fl[i]&3)!==2?1:0;var a=m.tr[i*3],b=m.tr[i*3+1],c=m.tr[i*3+2];cx[i]=(m.vx[a]+m.vx[b]+m.vx[c])/3;cz[i]=(m.vz[a]+m.vz[b]+m.vz[c])/3;
+   if(!ok[i])continue;for(k=0;k<3;k++){var u=m.tr[i*3+k],v=m.tr[i*3+(k+1)%3],ku=Math.round(m.vx[u])+','+Math.round(m.vz[u]),kv=Math.round(m.vx[v])+','+Math.round(m.vz[v]),ek=ku<kv?ku+'|'+kv:kv+'|'+ku;
+    (E[ek]||(E[ek]=[])).forEach(function(o){if(o[0]===i)return;adj[i].push(o[0],u,v);adj[o[0]].push(i,o[1],o[2])});E[ek].push([i,u,v])}}
+  /* seams: an edge with no neighbour that lies along an edge of a triangle just outside it (another walk layer whose corners differ,
+     e.g. the steps in Bledavik's streets): joined too. Checked with a point 3 units outside the edge's middle and a parallel edge
+     within 4 units of it, so the ground under a bridge is not joined to the bridge's side. */
+  var GC=200,grid={};for(i=0;i<n;i++){if(!ok[i])continue;var xs=[0,1,2].map(function(t){return m.vx[m.tr[i*3+t]]}),zs=[0,1,2].map(function(t){return m.vz[m.tr[i*3+t]]});
+   for(var gx=Math.floor(Math.min.apply(0,xs)/GC);gx<=Math.floor(Math.max.apply(0,xs)/GC);gx++)for(var gz=Math.floor(Math.min.apply(0,zs)/GC);gz<=Math.floor(Math.max.apply(0,zs)/GC);gz++)(grid[gx+','+gz]||(grid[gx+','+gz]=[])).push(i)}
+  var linked={};function inT(t,x,z){var a=m.tr[t*3],b=m.tr[t*3+1],c=m.tr[t*3+2],ax=m.vx[a],az=m.vz[a],bx=m.vx[b],bz=m.vz[b],qx=m.vx[c],qz=m.vz[c],d=(bz-qz)*(ax-qx)+(qx-bx)*(az-qz);if(!d)return false;
+   var A=((bz-qz)*(x-qx)+(qx-bx)*(z-qz))/d,B=((qz-az)*(x-qx)+(ax-qx)*(z-qz))/d;return A>=-0.02&&B>=-0.02&&1-A-B>=-0.02}
+  for(var ek2 in E){if(E[ek2].length!==1)continue;var o=E[ek2][0],t0=o[0],u0=o[1],v0=o[2],ax0=m.vx[u0],az0=m.vz[u0],bx0=m.vx[v0],bz0=m.vz[v0],ex0=bx0-ax0,ez0=bz0-az0,el=Math.hypot(ex0,ez0);if(el<1)continue;
+   var mx=(ax0+bx0)/2,mz=(az0+bz0)/2,nx=-ez0/el,nz=ex0/el;if((cx[t0]-mx)*nx+(cz[t0]-mz)*nz>0){nx=-nx;nz=-nz}var qx0=mx+nx*3,qz0=mz+nz*3,L=grid[Math.floor(qx0/GC)+','+Math.floor(qz0/GC)]||[];
+   L.forEach(function(t){if(t===t0||linked[t0+'/'+t]||!inT(t,qx0,qz0))return;var hit=false;for(var k2=0;k2<3&&!hit;k2++){var p0=m.tr[t*3+k2],p1=m.tr[t*3+(k2+1)%3],fx=m.vx[p1]-m.vx[p0],fz=m.vz[p1]-m.vz[p0],fl2=Math.hypot(fx,fz);if(fl2<1)continue;
+     if(Math.abs(ex0*fz-ez0*fx)/(el*fl2)>0.05)continue;if(Math.abs((mx-m.vx[p0])*fz-(mz-m.vz[p0])*fx)/fl2<4)hit=true}
+    if(!hit)return;linked[t0+'/'+t]=linked[t+'/'+t0]=1;adj[t0].push(t,u0,v0);adj[t].push(t0,u0,v0)})}
+  R2.G={ok:ok,cx:cx,cz:cz,adj:adj}}
+ var G=R2.G,pl=playerLayer();
+ function inTri(i,x,z){var a=m.tr[i*3],b=m.tr[i*3+1],c=m.tr[i*3+2],ax=m.vx[a],az=m.vz[a],bx=m.vx[b],bz=m.vz[b],qx=m.vx[c],qz=m.vz[c],d=(bz-qz)*(ax-qx)+(qx-bx)*(az-qz);if(!d)return false;
+  var A=((bz-qz)*(x-qx)+(qx-bx)*(z-qz))/d,B=((qz-az)*(x-qx)+(ax-qx)*(z-qz))/d;return A>=-0.02&&B>=-0.02&&1-A-B>=-0.02}
+ function pick(x,z,lay){var best=-1,i;for(i=0;i<m.nt;i++){if(!G.ok[i]||!inTri(i,x,z))continue;if(best<0||lay!=null&&((m.fl[i]>>5)&3)===lay)best=i}if(best>=0)return best;
+  var bd=400;for(i=0;i<m.nt;i++){if(!G.ok[i])continue;var d=Math.hypot(G.cx[i]-x,G.cz[i]-z);if(d<bd){bd=d;best=i}}return best<0?null:best}
+ var s=pick(p.x,p.z,pl),tk=Math.round(to.x)+','+Math.round(to.z);if(s==null)return null;
+ /* the last corridor is kept while the party stays on it (one A* per new target or detour, not per step) */
+ var C=R2.C,k0=-1;if(C&&C.tk===tk&&C.key===key){k0=C.corr.indexOf(s)}
+ if(k0<0){var g=pick(to.x,to.z,null);if(g==null)return null;
+  var gs={},came={},ca={},cb={},hk=[],hv=[],done={},it=0;
+  function push(k,v){hk.push(k);hv.push(v);var i=hk.length-1;while(i>0){var pp=(i-1)>>1;if(hk[pp]<=hk[i])break;var t=hk[pp];hk[pp]=hk[i];hk[i]=t;t=hv[pp];hv[pp]=hv[i];hv[i]=t;i=pp}}
+  function pop(){var v=hv[0],lk=hk.pop(),lv=hv.pop();if(hk.length){hk[0]=lk;hv[0]=lv;var i=0,N=hk.length;for(;;){var l=2*i+1,r=l+1,mm=i;if(l<N&&hk[l]<hk[mm])mm=l;if(r<N&&hk[r]<hk[mm])mm=r;if(mm===i)break;var t=hk[mm];hk[mm]=hk[i];hk[i]=t;t=hv[mm];hv[mm]=hv[i];hv[i]=t;i=mm}}return v}
+  gs[s]=0;came[s]=-1;push(0,s);
+  while(hk.length&&it++<30000){var c=pop();if(c===g)break;if(done[c])continue;done[c]=1;var A=G.adj[c];
+   for(var q=0;q<A.length;q+=3){var nb=A[q],ng=gs[c]+Math.hypot(G.cx[nb]-G.cx[c],G.cz[nb]-G.cz[c]);if(gs[nb]!=null&&gs[nb]<=ng)continue;gs[nb]=ng;came[nb]=c;ca[nb]=A[q+1];cb[nb]=A[q+2];push(ng+Math.hypot(G.cx[g]-G.cx[nb],G.cz[g]-G.cz[nb]),nb)}}
+  if(came[g]==null){R2.C=null;return null}var corr=[g],por=[],cur=g;while(cur!==s){por.push([ca[cur],cb[cur]]);cur=came[cur];corr.push(cur)}corr.reverse();por.reverse();
+  R2.C=C={tk:tk,key:key,corr:corr,por:por,g:g};k0=0}
+ var corr=C.corr.slice(k0),por=C.por.slice(k0),g=C.g;
+ /* the end: the target if it is on the goal triangle, else the goal triangle's middle */
+ var ex=inTri(g,to.x,to.z)?[to.x,to.z]:[G.cx[g],G.cz[g]];
+ /* funnel */
+ var P2=[[p.x,p.z],[p.x,p.z]];for(var j=0;j<por.length;j++){var t=corr[j],dx=G.cx[corr[j+1]]-G.cx[t],dz=G.cz[corr[j+1]]-G.cz[t],A2=[m.vx[por[j][0]],m.vz[por[j][0]]],B2=[m.vx[por[j][1]],m.vz[por[j][1]]],sa=dx*(A2[1]-G.cz[t])-dz*(A2[0]-G.cx[t]);P2.push(sa>0?A2:B2,sa>0?B2:A2)}
+ P2.push(ex,ex);function ar(a,b,c){return (c[0]-a[0])*(b[1]-a[1])-(b[0]-a[0])*(c[1]-a[1])}function eq(a,b){return Math.abs(a[0]-b[0])<0.01&&Math.abs(a[1]-b[1])<0.01}
+ var out=[P2[0]],apex=P2[0],left=P2[0],right=P2[1],ai=0,li=0,ri=0,N=P2.length/2;
+ for(var i2=1;i2<N;i2++){var l=P2[2*i2],r=P2[2*i2+1];
+  if(ar(apex,right,r)<=0){if(eq(apex,right)||ar(apex,left,r)>0){right=r;ri=i2}else{out.push(left);apex=left;ai=li;left=right=apex;li=ri=ai;i2=ai;continue}}
+  if(ar(apex,left,l)>=0){if(eq(apex,left)||ar(apex,right,l)<0){left=l;li=i2}else{out.push(right);apex=right;ai=ri;left=right=apex;li=ri=ai;i2=ai;continue}}}
+ out.push(ex);return out}
 /* ================= random battles =================
    Both the room program and the world map decide random battles the same way (room: 0x80079288 / 0x8008E718, world: 0x8007528C).
    There is a window of W frames of movement and N battles per window. When the window counter runs out, each of the N timers is set
@@ -1587,10 +1641,11 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+=setHd('HINTS');
  h+=onoff('STORY HINT','hint',CFG.hint);
  h+='<div class="opt">'+T('HINT MAPS','c')+chip('GREEN SPOTS',CFG.hdot,"sv('hdot','1')")+chip('PICTURE ONLY',!CFG.hdot,"sv('hdot','0')")+'</div>';
+ h+=onoff('GUIDE LINE','route',CFG.route);
  h+=setHd('EXPERIMENTAL');
  h+='<div class="opt">'+T('3D MAP','c')+chip('ON',CFG.x3d,CFG.x3d?'':"expAsk('x3d')")+chip('OFF',!CFG.x3d,"sv('x3d','0')")+'</div>';
  if(CFG.x3d)h+='<div class="opt">'+T('EYE MODE','c')+chip('ON',CFG.xeye,CFG.xeye?'':"expAsk('xeye')")+chip('OFF',!CFG.xeye,"sv('xeye','0')")+'</div>';
- if(CFG.x3d){h+=onoff('ROUTE','route',CFG.route);h+=onoff('SMOOTH 3D','smooth',CFG.smooth);if(CFG.xeye)h+=onoff('SKY IN EYE','sky',CFG.sky)}
+ if(CFG.x3d){h+=onoff('SMOOTH 3D','smooth',CFG.smooth);if(CFG.xeye)h+=onoff('SKY IN EYE','sky',CFG.sky)}
  h+=setHd('DEVELOPER');
  /* everything below is for setting up and debugging the link; hidden unless DEV OPTIONS is switched on */
  h+='<div class="opt">'+T('DEV OPTIONS','c')+chip('SHOW',CFG.dev,"sv('dev','1')")+chip('HIDE',!CFG.dev,"sv('dev','0')")+'</div>';
