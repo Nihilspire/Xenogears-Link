@@ -181,7 +181,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.20';   /* set by build.sh */
+var VERSION='1.99.0.21';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -761,7 +761,7 @@ function enemyNames(sl){var fb=rd(A.BFORM,0x20),key=sl.map(function(s){return s?
     var ks=Object.keys(seen);if(ks.length===1){n=ks[0];if(!st)st=sst;if(!pic)pic=sp}}}
   out.push({n:n,st:st,p:pic})}
  return bankCache[key]=out}
-var battleTot=null,hpSeen={},enemyId={};   /* battleTot: [experience, gold] of the fight for the Rewards box; hpSeen: the most HP seen on each enemy this fight; enemyId: slot -> the enemy's number this fight (1, 2, 3... down the list; see battleView) */
+var battleTot=null,hpSeen={},enemyId={},slotMem={};   /* battleTot: [experience, gold] of the fight for the Rewards box; hpSeen: the most HP seen on each enemy this fight; enemyId: slot -> the enemy's number this fight (1, 2, 3... down the list; see battleView) */
 /* fight log: every change the game makes to a fighter's HP, KO word (+0x7C) or removal byte, kept after the fight for SET */
 var blog=[],blast={},bstart=0;
 /* add a line to the fight log when a slot's HP or state changed (dev) */
@@ -984,6 +984,9 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  for(s=3;s<11;s++){var b=A.BSLOT+s*BREC,hp=u16(b+0x4C),mhp=u16(b+0x4E),ghp=u32(b+REC+0x60),gm=u32(b+REC+0x64);if(hp==null){fp.push(null);continue}
   fp.push({m:mhp,g:gm,x:u32(b+0x14C)||0,gd:u16(b+0x156)||0,d:hx(rd(b+0x150,6)),st:hx(rd(b+0x58,8)),on:!anyLive||!!live[s]});if(gm>0){hp=ghp;mhp=gm}all.push({s:s,hp:hp,mhp:mhp,gear:gm>0,st:u16(b+0x7C),rm:u8(A.BGONE+s)})}
  var names=enemyNames(fp);
+ /* v1.99.0.21: an enemy keeps the name and picture it had earlier in the fight when its slot stops matching any record (the Rankar
+    Dragon in Blackmoon Forest becomes a gear-sized fighter once Citan brings Weltall: new HP and stats, no record fits, "Enemy 1") */
+ names=names.map(function(nm,i){var k=i+3;if(nm&&nm.n){slotMem[k]=nm;return nm}var m=slotMem[k];return m&&fp[i]?{n:m.n,st:nm&&nm.st||0,p:nm&&nm.p||m.p,hide:nm&&nm.hide}:nm});
  /* only slots the game marks as in the fight; if that marker reads empty for every slot, fall back to anything with HP */
  all.forEach(function(e){if(!e.mhp)return;if(anyLive&&!live[e.s])return;var nm=names[e.s-3];if(nm.hide||ALLY[nm.n])return;fixFoe(nm,e,ptyIds);e.name=nm.n||('Enemy '+(e.s-2));
   /* full HP = the enemy's starting HP: from its bank record when known, and never less than the most HP seen on it this fight */
@@ -1708,7 +1711,7 @@ function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LO
 var ffOn=false;
 /* draw the whole screen from what was last read */
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bestNow={}}}
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bestNow={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  if(linked)track();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var loc=!linked?'NO LINK':ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
