@@ -181,7 +181,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.16';   /* set by build.sh */
+var VERSION='1.99.0.17';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -810,13 +810,91 @@ function immuneList(s){var b=A.BSLOT+s*BREC,fl=u8(b+0x15A);if(fl==null)return []
 /* the one tag that fits after an HP bar on the battle screen (at most four letters and a +): the first status, with + when there are more (red = ailment, green = help) */
 function statusTag(s){var l=statusList(s);if(!l.length)return '';return '<span style="width:2rem;flex:none"></span>'+T(l[0].t+(l.length>1?'+':''),l[0].bad?'r':'n')+'<span style="width:2rem;flex:none"></span>'}
 /* pop-up for an enemy: rewards, drops, the status effects on it, what it is immune to, then how each element fares against it */
-/* BOSS CARDS (v1.99.0.16): tips by enemy name (lower case, a part of the name is enough), mostly from Jack's own hint text. */
-var BOSSTIP=[['alkanshel','Charge until its barrier breaks, then use Booster and attack.'],['amphysvena','Heal right after Wave #3 Demiser drops you to 1 HP. Go easy on Booster, another fight follows.'],
- ['opiomorph','Every hit powers her up. Charge and heal between attacks, then finish fast with Infinity mode and System Id.'],['hammer','Beat Hammer before he self-destructs to win the Trader Card.'],
- ['deus','Charge fuel instead of hitting Deus. When his HP-halving move leaves him low, use System Id.'],['haishao','Do not attack Haishao in Mirror Stance.'],
- ['kelvena','Take out Kelvena, the healer, first, and hit each Element with its weak element.'],['hurricane','The Ygg Cannon option deals 9999 damage.'],['vendetta','Beat Vendetta with System Id.'],
- ['sufal','Leave one Sufal alive.'],['achtzehn','Fight Achtzehn with Maria in Seibzehn.'],['fis-6','Its four Mechanics come in partway through, so beat Fis-6 fast.']];
-function bossTip(name){var n=String(name||'').toLowerCase();for(var i=0;i<BOSSTIP.length;i++)if(n.indexOf(BOSSTIP[i][0])>=0)return BOSSTIP[i][1];return null}
+/* BOSS CARDS (v1.99.0.16; tips v1.99.0.17): one short tip per boss, by the enemy's exact name (any case), boiled down from
+   LightRanma's Xenogears Boss Strategy FAQ (v1.8, 1999, sent by Jack 18 Oct) and Jack's own hint text. Where one name is fought
+   more than once with different advice, [name, tip, from step, to step] picks by the story step. */
+var BOSSTIP=[
+ ['Rankar Dragon','Fei barely scratches it alone. Heal and hold on until Citan brings Weltall, then use 30-fuel attacks.'],
+ ['Rankar R','Easy: 30-fuel attacks and Level 1 combos.'],
+ ['Wyrm','Shrugs off normal hits. Build to Level 1 with 10-fuel attacks and combo, or use Guided Shot about three times.'],
+ ['Calamity','Its missiles hit for about 500 near the end. Best frames, engines and armor first, Wild Smile, then 30-fuel attacks and combos.'],
+ ['Swordknight','Hits hard, so take it out first. 30-fuel attacks and combos, Booster and a Frame HP if needed.'],
+ ['Swordknight R','Hits Weltall hard, take it out quickly. Booster, and a Frame HP if HP runs low.'],
+ ['Aegisknight','Very high defense. 30-fuel attacks and Level 1 combos, two combos usually do it.'],
+ ['Aegisknight R','30-fuel attacks and Level 1 combos.'],
+ ['Wandknight','Power Beam hits for about 300. Bring one down with an Attack Level 2 combo, then finish the other.'],
+ ['Wandknight R','Easy with Rico: 30-fuel attacks and Level 1 combos.'],
+ ['Clawknight','Hits fairly hard. Booster, 30-fuel attacks and Level 1 combos, keep fuel for a Frame HP.'],
+ ['Clawknight R','Hits hard. Booster, 30-fuel attacks and Level 1 combos, keep fuel for a Frame HP.'],
+ ['Schpariel','Open with Wild Smile. Ground Breaker hits for 250-300 and Electric lowers defense.'],
+ ['Gonzalez','He goes berserk only after a deathblow. Inner Healing if Fei gets low.'],
+ ['Big Joe','The crowd heals him and throws cans. Charge to 28 AP and finish him in one combo.'],
+ ['Scud','Heals himself 200 HP. A 28 AP combo or three Guided Shots win. Poison Guard stops his poison.'],
+ ['Dan','SuperBeam hits for 80-90 but is rare, heal right after. Deathblows do the rest.'],
+ ['Wiseman','You cannot hit him and he never attacks. Wait a few turns.',0,100],
+ ['Wiseman','Win or lose, it does not matter. A 28 AP combo can win it.',101,999],
+ ['Ramsus','Never attack him in Mirror Stance. Defend or heal until it ends, then a 28 AP combo.',0,100],
+ ['Ramsus','Never attack on Mirror Predict or Counter: charge or heal until he uses Nereid Cyclone on his own. Booster.',101,170],
+ ['Ramsus','Miang heals him, so burst him: three Level 2 or 3 combos in a row. Wyvern hits one gear for about 1500.',171,999],
+ ['Dominia','When the Hecht mounts its big cannon, beat her fast: Super Aerod hits both gears for 1000-1500.',0,140],
+ ['Dominia','Kill her quickly. Use Booster, she is very agile. 10-fuel attacks land better.',141,280],
+ ['Dominia','Save her for last. She gets much stronger as the others fall.',281,999],
+ ['Haishao','Do not attack on Mirror Predict or Counter: charge or heal until he uses Nereid Cyclone unprovoked. Booster.'],
+ ['Miang','She heals Ramsus. Focus on him.'],
+ ["Miang's Gear",'You cannot hit her. Focus on Ramsus.'],
+ ['Dora','Use Booster. Blow the head cover off with Weltall so the others can hurt it. Combos make it drop captured allies.'],
+ ['Main Gun','Side cannons are weak. Keep your HP and fuel: another fight follows.'],
+ ['Leonardo','Deathblows or a full AP combo. Inner Healing if needed.'],
+ ['Heinrich','Charge the AP bar and let loose a full combo.'],
+ ['Vargas','Strong hits bring strong counters. Build AP with weak attacks, then let loose the combo.'],
+ ['Suzarn','Halves HP and drains EP. Keep healing (Rosesol, then Inner Healing) while charging to 28 AP.'],
+ ['Rico','Cannot be won. Rico ends it at once.'],
+ ['Redrum','Murder kills outright (Zetasol), Gel confuses (Cool Shades), Bloody Rain heals him. Charge everyone to 28 AP and combo.'],
+ ['Bloody','Revive anyone hit by Murder with a Zetasol. Charge to 28 AP and combo, Billy especially.'],
+ ['Fis-6','Booster. Kill the Mechanics as soon as they arrive, they repair 500 HP. Watch for a 550-damage attack.'],
+ ['Fis-6Mechanic','Kill these first: each repair gives Fis-6 500 HP.'],
+ ['Bladegash','Very agile, Booster is a must. 10-fuel attacks land better than 30. With Marinebasher, Flare Rod on Vierge.'],
+ ['Giant Wels','High defense: Billy\'s 20-fuel attack works. Each Ether spell makes it stronger but lowers its defense.'],
+ ['Tolone','Hits hardest: take her first. Billy\'s Holy Light keeps the party up.',0,200],
+ ['Tolone','Earth deathblows (Chikei, Rumble Earth, Terra Charge, Land Break). Third, after Kelvena and Seraphita.',201,999],
+ ['Seraphita','Fewer HP than Tolone. Billy\'s Holy Light and Rosesols keep you going.',0,200],
+ ['Seraphita','Steals EP. Water deathblows (Suikei, Crystal Water, Aqua Frost, Tornado), second after Kelvena.',201,999],
+ ['Kelvena','The healer: first. Fire deathblows (Kakei, Haze of Fire, Thermo Thump, Prominence).'],
+ ['Alkanshel','Invincible until Jessie breaks the barrier, so charge until then. Mass Limit halves HP. Fuel runs tight.'],
+ ['Seibzehn','Easy. Finish it with Level 1 combos once it starts healing.'],
+ ['Solaris Guard','Use Vierge: Aerods clear the Guards, then fuel attacks on the Littlefoots.'],
+ ['Littlefoot','Clear the Solaris Guards with Vierge\'s Aerods first.'],
+ ['White Knight','Weak. Fit Silver Ar for the generator fights and finish these after the big gear.'],
+ ['Citadel','Sonic Boom hits for about 3500. Silver Ar stops Gel Breath. Booster, Citadel first, Knights last. Stier suits it.'],
+ ['Avalanche','The hardest generator fight. Weltall with Booster, Avalanche first, keep a Frame HP for its Sonic attack.'],
+ ['Achtzehn','Chu-Chu first, then Maria in Seibzehn: 30-fuel attacks and Level 1 combos.'],
+ ['Neo Etone','Seal hits one gear for 2500-3000. Otherwise easy.'],
+ ['Shakhan','Do not attack while he is on the Gate Generator (he heals 1000 and storms). Charge then, attack when he detaches.'],
+ ['Marinebasher','Tidal Wave hits for 2000-4000: kill it first. The Flare Rod on Vierge makes it quick.'],
+ ['Skyghene','Take it out first. Booster.'],
+ ['Grandgrowl','After Skyghene: 30-fuel attacks and Level 1 combos.'],
+ ['Crescens','30-fuel attacks often miss: use 10-fuel attacks and Level 1 combos with Booster.'],
+ ['Executioner','Kill her first: a party-wide attack and an instant kill.'],
+ ['Grahf','Beat the Executioner first, then your strongest deathblows.',0,300],
+ ['Vendetta','System Id and three Infinity combos. Blaze Pose hits for about 3000.'],
+ ['Ft. Hurricane','The Ygg Cannon option deals 9999 damage.'],
+ ['Sufal Mass','Kill exactly three Sufals, then non-elemental deathblows on the Mass (elemental ones heal it). Be quick.'],
+ ['Sufal','Leave one Sufal alive. Kill three, then the Mass.'],
+ ['Hammer','Booster and System Id. When he turns red he is about to self-destruct: finish him that turn for the Trader Card, or escape.'],
+ ['Deus','Do not hit him (he heals 16,000). Charge and heal while his attacks hurt himself, then finish with System Id.',0,300],
+ ['Deus','Beat the four supports first. Anti-Angel Systems stop his biggest attack. Z Chargers and Frame HPs help.',301,999],
+ ['Amphysvena','Wave #3 Demiser drops everyone to 1 HP: heal right after it. Go easy on Booster, another fight follows.'],
+ ['Opiomorph','Every hit raises her defense, and Wave #4 hurts by the damage taken. Charge and heal, finish fast with System Id.'],
+ ['Id','Bring Billy: Holy Light every turn, Zetasol if he falls. Mix up deathblows if Id starts dodging.',0,300],
+ ['Id','Turn on Booster and hit him with your best attacks.',301,999],
+ ['True Weltall','Xenogears reaches Infinity easily. Booster, 30-fuel attacks and combos, keep HP above 3000.'],
+ ['Harlute','Heavenly Anointment weakens everyone and hits for about 6000. Booster and fuel attacks.'],
+ ['Marlute','Tank Guards stop its fuel drain. No combos here: 30-fuel attacks, and heal and charge.'],
+ ['Metatron','Strong all-gear attacks. Booster and combos with gears you will not need against Deus.'],
+ ['Sundel','The gear it marks must not attack it, or the party takes about 6000. The others keep hitting.'],
+ ['Urobolus','Keep HP above 7000. Booster, then Level 1 combos (about 6000 each) or Infinity combos.'],
+ ['Vierge','Aerods hit for about 300. 20-fuel attacks hit more often. Combo as soon as you can.']];
+function bossTip(name){var n=String(name||'').toLowerCase(),st=u16(A.STORY)|0;for(var i=0;i<BOSSTIP.length;i++){var b=BOSSTIP[i];if(b[0].toLowerCase()===n&&(b[2]==null||st>=b[2]&&st<=b[3]))return b[1]}return null}
 /* a fight is a boss fight when an enemy has a tip, or is not one of the room's random line-ups (a scripted fight; a room with no random battles has none) with 400 HP or more.
    The card opens by itself once, 1.5 s into the fight (slots left over from the last fight are gone by then); tapping the enemy shows it again. */
 var bossDone=false;

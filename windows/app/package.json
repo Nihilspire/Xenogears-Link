@@ -1,7 +1,7 @@
 {
   "name": "xenogears-link",
   "productName": "Xenogears Link",
-  "version": "1.99.16",
+  "version": "1.99.17",
   "description": "Second-screen companion for Xenogears (PS1, USA) reading RetroArch over UDP network commands",
   "main": "main.js",
   "author": "Jack",
