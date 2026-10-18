@@ -181,7 +181,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='1.99.0.19';   /* set by build.sh */
+var VERSION='1.99.0.20';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -569,7 +569,6 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
-  if(room&&tab==='journal'){want(set,A.SVAR,0x400);want(set,A.PTIME,4)}
   if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}if(snapOn()){want(set,A.SVAR,0x400);want(set,A.WALKB,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
@@ -1492,13 +1491,11 @@ function route2d(m,f,lvis,shown,p,to){var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==ke
   if(ar(apex,right,r)<=0){if(eq(apex,right)||ar(apex,left,r)>0){right=r;ri=i2}else{out.push(left);apex=left;ai=li;left=right=apex;li=ri=ai;i2=ai;continue}}
   if(ar(apex,left,l)>=0){if(eq(apex,left)||ar(apex,right,l)<0){left=l;li=i2}else{out.push(right);apex=right;ai=ri;left=right=apex;li=ri=ai;i2=ai;continue}}}
  out.push(ex);return out}
-/* ================= JOURNAL (v1.99.0.16) =================
-   A fourth page beside the map: PROGRESS (how far into the story, chapter by chapter, with the play time and party level when each
-   chapter began, logged by the app as it sees them), MISSABLES (chests not yet opened in places that close: Lahan before the
-   attack, everything on disc 1 outside Solaris before the point of no return at step 210, Solaris before the end of disc 1) and
-   BESTIARY (every enemy met in a fight while the app was linked, with its HP, rewards and drops). The log and the bestiary are kept
+/* ================= JOURNAL (v1.99.0.16; MISSABLES page removed in v1.99.0.20, Jack 18 Oct: too much play-testing to get right) =================
+   A page beside the map: PROGRESS (how far into the story, chapter by chapter, with the play time and party level when each
+   chapter began, logged by the app as it sees them) and BESTIARY (every enemy met in a fight while the app was linked, with its HP, rewards and drops). The log and the bestiary are kept
    in this device's storage, not in the game's save, so loading an older save does not remove anything. */
-var JSUB=LS.get('jsub','prog'),JLOG=null,BEST=null,bestNow={};
+var JSUB=LS.get('jsub','prog')==='best'?'best':'prog',JLOG=null,BEST=null,bestNow={};
 function jload(){if(JLOG==null){try{JLOG=JSON.parse(LS.get('jlog','{}'))||{}}catch(e){JLOG={}}}if(BEST==null){try{BEST=JSON.parse(LS.get('best','{}'))||{}}catch(e){BEST={}}}}
 function jsub(k){JSUB=k;LS.set('jsub',k);last={};render()}
 /* called every render in a room: a chapter not logged yet is logged with the play time and the party's average level */
@@ -1510,7 +1507,7 @@ function bestNote(list){if(!list.length||Date.now()-bstart<1500)return;jload();v
  list.forEach(function(e){if(bestNow[e.name]||!e.name||/^Enemy \d/.test(e.name))return;var q=reward(e.s);if(!q)return;bestNow[e.name]=1;var o=BEST[e.name]||(BEST[e.name]={h:0,x:q.exp,g:q.gold,d:[],s:st,n:0});
   o.n++;o.h=Math.max(o.h,e.mhp||0);o.x=q.exp;o.g=q.gold;o.d=q.drops.map(function(d){return [d.n,d.p]});ch=true});if(ch)LS.set('best',JSON.stringify(BEST))}
 function fmtT(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)}
-function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['miss','MISSABLES'],['best','BESTIARY']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
+function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['best','BESTIARY']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
  var v=u16(A.STORY),c=window.CHAPTERS||[];
  if(JSUB==='prog'){var pct=v==null?0:Math.min(100,Math.round(v*100/350)),ci=-1;for(var i=0;i<c.length&&v!=null&&c[i][0]<=v;i++)ci=i;var pt=u32(A.PTIME);
   h+='<div class="row">'+T(v!=null&&v>=249?'DISC 2':'DISC 1','c')+T('  '+(ci>=0?c[ci][1]:'-'))+'<span class="sp"></span>'+T(pct+'%','n')+'</div>';
@@ -1519,24 +1516,10 @@ function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['
   h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(pt==null?'-':fmtT(Math.floor(pt/60)))+'</div><div class="sep"></div>';
   for(var k2=ci;k2>=0;k2--){var lg=JLOG[k2];h+='<div class="row">'+T(padr(c[k2][1],22),k2===ci?'y':'w')+'<span class="sp"></span>'+(lg?T(fmtT(lg[0]),'g')+T('  LV','c')+T(pad(lg[1],3)):T('-','g'))+'</div>'}
   for(var k3=ci+1;k3<Math.min(c.length,ci+4);k3++)h+='<div class="row">'+T('???','g')+'</div>'}
- else if(JSUB==='miss'){var M=missables(v|0);h+='<div class="row">'+T(M.title,'c')+'</div>';if(M.note)wrap(M.note,36).forEach(function(l){h+='<div class="row">'+T(l,'g')+'</div>'});
-  if(!M.groups.length)h+='<div class="row">'+T(M.title?'Nothing left to find.':'-','n')+'</div>';
-  M.groups.forEach(function(gp,gi){h+='<div class="row" onclick="missPop('+gi+')">'+T(padr(gp.n,24))+'<span class="sp"></span>'+T(gp.l.length+' left','r')+'</div>'});MISSG=M.groups}
  else{var ks=Object.keys(BEST).sort(function(a,b){return BEST[a].s-BEST[b].s||(a<b?-1:1)});h+='<div class="row">'+T('MET','c')+T(' '+ks.length)+'</div>';
   if(!ks.length)h+='<div class="row">'+T('Fights are logged while the app is linked.','g')+'</div>';
   ks.forEach(function(k4){var o=BEST[k4];h+='<div class="row" onclick="bestPop(\''+k4.replace(/'/g,"\\'")+'\')">'+T(padr(k4,18))+'<span class="sp"></span>'+T('HP','c')+T(pad(o.h,6))+T(' x'+o.n,'g')+'</div>'})}
  return win('<div class="col" style="gap:0;padding:0 2rem">'+h+'</div>','card jr')}
-/* chests not yet opened in the places that close next */
-var MISSG=[];
-function missables(v){var out={title:'',note:'',groups:[]},lo,hi,tt=0;if(!window.TREASURE)return out;
- if(v<21){lo=1;hi=14;out.title='BEFORE THE ATTACK ON LAHAN';out.note='Lahan village is lost at the attack.'}
- else if(v<210){lo=1;hi=505;out.title='BEFORE THE POINT OF NO RETURN';out.note='Talking to Queen Zephyr ready to go (step 210) closes everything outside Solaris for the rest of disc 1.'}
- else if(v<243){lo=509;hi=611;out.title='BEFORE LEAVING SOLARIS';out.note='Solaris closes at the end of disc 1.'}
- else{out.title='DISC 2';out.note='Disc 2 has nothing tracked yet.';return out}
- var G={};for(var f in TREASURE){var n=+f;if(n<lo||n>hi)continue;TREASURE[f].forEach(function(t){if(t.length>5&&t[6]===1)return;var val=u16(A.SVAR+t[0]);if(val==null||(val>>t[1]&1))return;
-   var a=areaOf(n),an=a?a.n:'Room '+n,nm=t[2].map(function(c2){return gearName(TKIND[c2>>8],c2&255)||'?'});if(t[3])nm.push(t[3]+' G');(G[an]||(G[an]={n:an,l:[],f:n})).l.push([n,nm.join(' + ')])})}
- out.groups=Object.keys(G).map(function(k){return G[k]}).sort(function(a,b){return a.f-b.f});return out}
-function missPop(i){var gp=MISSG[i];if(!gp)return;var h='<div class="row">'+T(gp.n,'y')+'</div>';gp.l.forEach(function(e){var rn=window.ROOMS&&ROOMS[e[0]];h+='<div class="row">'+T(padr(e[1],20))+'<span class="sp"></span>'+T(rn?rn.slice(0,16):String(e[0]),'g')+'</div>'});popup(h,260)}
 function bestPop(k){jload();var o=BEST[k];if(!o)return;var h='<div class="row">'+T(k,'r')+'</div>';var pc=null;if(window.ENEMIES)ENEMIES.some(function(b){var i=b.n.indexOf(k);if(i>=0&&b.p&&b.p[i]){pc=b.p[i];return true}return false});
  if(pc)h+='<div class="row" style="height:auto;justify-content:center">'+sprImg(pc,120,60)+'</div>';
  h+='<div class="row">'+T('HP','c')+T(pad(o.h,6))+'<span class="sp"></span>'+T('FIGHTS','c')+T(pad(o.n,4))+'</div>';

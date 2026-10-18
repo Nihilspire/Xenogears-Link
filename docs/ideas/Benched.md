@@ -9,3 +9,8 @@ Mockup: three screenshots (list, list with progress bars, unlock pop-up), drawn 
 - Saves have no ID, so unlocks live in the app (localStorage), never re-lock, and only unlock while linked; a "check now" pass
   could grant what the current save already qualifies for.
 - List behind a button on the Status tab; pop-up window at the top of any screen.
+
+## Missables page (removed from the Journal 18 Oct 2026, Jack: needs too much play-testing)
+Was in 1.99.0.16-1.99.0.19: chests not yet opened (TREASURE flags, gifts left out) in places assumed to close: Lahan rooms 1-14
+before step 21, rooms 1-505 before the point of no return (step 210), Solaris rooms 509-611 before step 243; grouped by area, tap
+for items and rooms. The closing points were guesses and need checking in play. Code: git show 1.99.0.19 (journalView, missables, missPop).
