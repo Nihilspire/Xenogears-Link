@@ -1,11 +1,13 @@
 // Viewer data from the app's own tables (run: node v3d/mkdata.js). Names, chapters, hints, exits, treasure, cubes and shops.
 global.window={};
-['rooms','areas','chapters','hints','hsplit','exits','treasure','marks','tables','gearparts'].forEach(f=>require(__dirname+'/../../app/www/'+f+'.js'));
+['rooms','areas','chapters','hints','hsplit','exits','treasure','missables','marks','tables','gearparts'].forEach(f=>require(__dirname+'/../../app/www/'+f+'.js'));
 const W=window,fs=require('fs');
 const FAQ=JSON.parse(fs.readFileSync(__dirname+'/data/faq_room_names.json','utf8'));
 const TK=['items','weapons','equipment','gear_weapons','gear_parts'];
 function nm(c){const k=TK[c>>8],id=c&255,t=(W.GEARTBL&&W.GEARTBL[k])||W.TABLES[k],v=t&&t[id];return v&&v!=='/'?v:['Item','Weapon','Equip','Gear weapon','Gear part'][c>>8]+' '+id}
-const TRE={};for(const f in W.TREASURE)TRE[f]=W.TREASURE[f].map(t=>{const n=t[2].map(nm);if(t[3])n.push(t[3]+' G');return [n.join(' + '),t.length>5?t[4]:null,t.length>5?t[5]:null,(t.length<6||t[6]===1)?1:0,t[0],t[1],t.length>7?t[7]:null]});
+// [name, x, z, gift, var, bit, y, lost when (missables.js) or null]; the missables' own pickups follow the room's treasure
+const MS=W.MISS||{tag:{},extra:{}};const TRE={};for(const f in W.TREASURE)TRE[f]=W.TREASURE[f].map(t=>{const n=t[2].map(nm);if(t[3])n.push(t[3]+' G');return [n.join(' + '),t.length>5?t[4]:null,t.length>5?t[5]:null,(t.length<6||t[6]===1)?1:0,t[0],t[1],t.length>7?t[7]:null,MS.tag[f+':'+t[0]+':'+t[1]]||null]});
+for(const f in MS.extra)TRE[f]=(TRE[f]||[]).concat(MS.extra[f].map(e=>[e[2],e[3],e[4],e[6]?1:0,e[0],e[1],null,e[5]]));
 // hint rooms per step, the same list the app's pop-up uses: [[room, [[x, z]...]]...]
 const HR={};for(const k in W.HINTS){let L;if(W.HPATH[k])L=W.HPATH[k].map(q=>[q[0],q[1]]);else{const pre=W.HPRE[k]||[],rows=W.HINTS[k];L=pre.map(q=>[q[0],q[1]]).concat(rows.slice(0,Math.max(1,3-pre.length)).map(r=>[r[0],r.length>3?[[r[2],r[3]]]:[]]))}
  const o=[];L.forEach(([f,s])=>{if(o.length&&o[o.length-1][0]===f)o[o.length-1][1]=o[o.length-1][1].concat(s);else o.push([f,s.slice()])});HR[k]=o}
