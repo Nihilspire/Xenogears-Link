@@ -47,3 +47,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.7
 
 - **Walk-away talk keeps the screen.** Only text shown while the game has locked you (cutscenes and story talks) switches the app to its quiet title screen. Ordinary chatter you can walk away from (townsfolk, shopkeepers) now leaves the map and tabs up.
+
+## 2.0.0.8
+
+- **Disc 1 and THE END screens redone.** The logo with the play time and gold (THE END splits the time by disc), a tile each for treasure, missables, bestiary and deathblows with counts, bars and percentages, and the party as portrait cards with levels. Disc 1 counts cover disc 1 rooms only. The screens now scroll, work in portrait, and Citan is no longer listed twice on the disc 1 screen.

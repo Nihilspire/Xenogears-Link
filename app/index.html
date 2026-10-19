@@ -25,6 +25,11 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 #main.scroll .card>.in{height:auto;padding:2rem 0}
 .card{flex:1;min-height:0}
 .card>.in{display:flex;gap:6rem;align-items:center;margin:-3rem -2rem;height:calc(100% + 6rem)}
+.endw{display:flex;flex-direction:column;gap:5rem;padding:4rem;min-width:0}
+.endhd{display:flex;gap:10rem;align-items:center;flex-wrap:wrap}.endlogo{height:44rem;image-rendering:auto;flex:none}
+.endbig .t{transform:scale(1.5);transform-origin:left center;margin-bottom:5rem}
+.endg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3rem}.endt .col{gap:2rem}
+.endp{display:grid;grid-template-columns:repeat(auto-fit,minmax(100rem,1fr));gap:3rem}.endc .pt.sm{width:30rem;height:30rem}.endc .col{gap:0}
 .card .col{gap:0}
 .jr .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100rem,1fr));gap:4rem;padding:2rem 0}.jr .bcell{display:flex;flex-direction:column;align-items:center;gap:2rem;padding:3rem 0;border:1rem solid #312918;background:rgba(16,8,8,.5)}.jr .bpic{height:40rem;display:flex;align-items:flex-end;justify-content:center}.jr .bcell.unk img{filter:brightness(0);opacity:.75}
 .jr .tl{position:relative;display:block;width:100%;height:5rem;border:1rem solid #8c7352;background:#100808}.jr .tl b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#9f6,#283)}.jr .tl .tk{position:absolute;top:-1rem;bottom:-1rem;width:1rem;background:#efe0b0;z-index:1}.jr .tl .dz{position:absolute;top:-2rem;bottom:-2rem;width:1rem;background:#7fd8ff;z-index:2}
@@ -184,7 +189,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.7';   /* set by build.sh */
+var VERSION='2.0.0.8';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -547,19 +552,31 @@ function inMovie(){return u32(A.SIG)===8}   /* program 6, the movie player: over
    (steps 330-340, Grahf's sacrifice to Zeboim) is in room 41. The field program stays loaded (word 4), so the live bank is read. */
 var ENDSTEP=350,ENDROOM=41;
 function endingOpen(){var s=u16(A.STORY),f=u16(A.FIELD);return u32(A.SIG)===4&&f!=null&&(f&0x7FF)===ENDROOM&&s!=null&&s>=ENDSTEP&&s<1000}
-function endingView(){var pt=u32(A.PTIME),g=u32(A.GOLD),av=u16(A.PARTY-4)||0,sec=pt==null?null:Math.floor(pt/60),h='',tt=0,tg=0,db=0,dbt=0;
- if(window.TREASURE)for(var f in TREASURE){if(+f>=720)continue;TREASURE[f].forEach(function(t){var v=u16(A.SVAR+t[0]);tt++;if(v!=null&&(v>>t[1]&1))tg++})}
- var cards='',seenN={};for(var id=10;id>=0;id--){if(!((av>>id)&1))continue;var c=readChar(A.CHAR+id*REC);if(!c||seenN[cname(id)])continue;seenN[cname(id)]=1;var m=u16(A.SKILL+id*0x20+4)||0,n=0;for(var k=0;k<16;k++)if(m>>k&1)n++;
-  var tot=window.DBLOW&&DBLOW[id]&&DBLOW[id].n?DBLOW[id].n.length:0;db+=Math.min(n,tot||n);dbt+=tot;cards='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>'+cards}   /* the game keeps two Citan records: the later one is listed */
- var d1=+LS.get('d1time','0')||0,ft=function(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)+':'+p2(x%60)};
- h+='<div class="row">'+T('THE END','y')+'</div><div class="sep"></div>';
- h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(sec==null?'-':ft(sec))+'</div>';
- if(d1)h+='<div class="row">'+T('  DISC 1','g')+'<span class="sp"></span>'+T(ft(d1),'g')+'</div>'+(sec!=null&&sec>d1?'<div class="row">'+T('  DISC 2','g')+'<span class="sp"></span>'+T(ft(sec-d1),'g')+'</div>':'');
- h+='<div class="row">'+T('GOLD','c')+'<span class="sp"></span>'+T(g==null?'-':String(g))+T(' G','y')+'</div>';
- h+='<div class="row">'+T('TREASURE FOUND','c')+'<span class="sp"></span>'+T(tg+' / '+tt,tg===tt?'n':'w')+'</div>';
- if(dbt)h+='<div class="row">'+T('DEATHBLOWS','c')+'<span class="sp"></span>'+T(db+' / '+dbt,db===dbt?'n':'w')+'</div>';
- h+='<div class="row">'+T('Thank you for playing.','g')+'</div>';
- return win('<div class="col" style="padding:0 6rem">'+h+'</div><div class="col" style="padding:0 6rem"><div class="row">'+T('PARTY','y')+'</div><div class="sep"></div>'+cards+'</div>','card')}
+function endingView(){return endScreen(0)}
+/* DISC 1 COMPLETE (the save before changing disc, room 612) and THE END (room 41, step 350), v2.0.0.8: the logo and the play time
+   (THE END also splits it by disc), a tile each for treasure, missables, the bestiary, deathblows and gold with a bar, and the party
+   as portrait cards. Counts cover disc 1's rooms (below 612) on the disc 1 screen and every room at the end. */
+function endScreen(d1){var pt=u32(A.PTIME),g=u32(A.GOLD),av=u16(A.PARTY-4)||0,sec=pt==null?null:Math.floor(pt/60),lim=d1?612:720;
+ if(d1&&sec)LS.set('d1time',String(sec));   /* kept for THE END's disc 1 / disc 2 times */
+ var ft=function(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)+':'+p2(x%60)},tt=0,tg=0,mt=0,mg=0,db=0,dbt=0;
+ function flag(v,b){var x=u16(A.SVAR+v);return x!=null&&(x>>b&1)===1}
+ if(window.TREASURE)for(var f in TREASURE){if(+f>=lim)continue;TREASURE[f].forEach(function(t){tt++;if(flag(t[0],t[1]))tg++})}
+ if(window.MISS){for(var key in MISS.tag){var q=key.split(':');if(+q[0]>=lim)continue;mt++;if(flag(+q[1],+q[2]))mg++}
+  for(var xf in MISS.extra){if(+xf>=lim)continue;MISS.extra[xf].forEach(function(e){if(e[0]<0)return;mt++;if(flag(e[0],e[1]))mg++})}}
+ jload();var all=bestAll(),bm=0;all.forEach(function(e){if(BEST[e.n])bm++});
+ var ids=[],seenN={};for(var id=10;id>=0;id--){if(!((av>>id)&1)||seenN[cname(id)])continue;var c=readChar(A.CHAR+id*REC);if(!c)continue;seenN[cname(id)]=1;ids.unshift([id,c])}   /* the game keeps two Citan records: the later one is listed */
+ ids.forEach(function(q){var m=u16(A.SKILL+q[0]*0x20+4)||0,n=0;for(var k=0;k<16;k++)if(m>>k&1)n++;var tot=window.DBLOW&&DBLOW[q[0]]&&DBLOW[q[0]].n?DBLOW[q[0]].n.length:0;db+=Math.min(n,tot||n);dbt+=tot});
+ var h='<div class="endhd"><img class="endlogo" src="img/title.png"><div class="col"><div class="row endbig">'+T(d1?'DISC 1 COMPLETE':'THE END','y')+'</div>';
+ h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(sec==null?'-':ft(sec),'w')+'</div>';
+ var d1t=+LS.get('d1time','0')||0;if(!d1&&d1t&&sec!=null&&sec>d1t)h+='<div class="row">'+T('DISC 1','g')+'<span class="sp"></span>'+T(ft(d1t),'g')+'</div><div class="row">'+T('DISC 2','g')+'<span class="sp"></span>'+T(ft(sec-d1t),'g')+'</div>';
+ h+='<div class="row">'+T('GOLD','c')+'<span class="sp"></span>'+T(g==null?'-':String(g),'w')+T(' G','y')+'</div></div></div>';
+ function tile(lab,v,m,note){var full=m&&v>=m;return win('<div class="col"><div class="row">'+T(lab,'c')+'<span class="sp"></span>'+T(v+'/'+m,full?'n':'w')+'</div><div class="row">'+bar(full?'hp':'ep',v,m,'f')+T(pad(Math.round(v*100/m),3)+'%',full?'n':'g')+'</div></div>','card endt')}
+ var tl=tile('TREASURE',tg,tt)+tile('MISSABLE',mg,mt)+tile('BESTIARY',bm,all.length)+(dbt?tile('DEATHBLOW',db,dbt):'');
+ h+='<div class="endg">'+tl+'</div>';
+ h+='<div class="row">'+T('PARTY','y')+'</div><div class="endp">';
+ ids.forEach(function(q){h+=win(portrait(q[0],'sm')+'<div class="col"><div class="row">'+T(cname(q[0]),'y')+'</div><div class="row">'+T('LV ','c')+T(String(q[1].lv),'w')+'</div></div>','card endc')});
+ h+='</div><div class="row">'+T(d1?'Change to disc 2 when the game asks.':'Thank you for playing.','g')+'</div>';
+ return '<div class="endw">'+h+'</div>'}
 /* choose what to read this poll. A light poll (map moving) reads only position and camera; a full poll reads everything the current screen shows */
 function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
  if(CFG.fast&&mapLive()&&moving()&&tick%5&&key===fullKey&&!setOpen()){   /* light poll: only what moves on the map */
@@ -667,17 +684,7 @@ var SHOPPRICE={items:0,weapons:1,equipment:1,gear_frames:2,gear_armor:0,gear_eng
 function discEndOpen(){return u32(A.SIG)===4&&u32(A.MENU)===6}
 /* DISC 1 COMPLETE: play time, gold, every member who has joined with their level, and the treasure found on disc 1 (rooms below 612,
    read from the live script variables, chests and one-time pickups alike) */
-function discEndView(){var pt=u32(A.PTIME),g=u32(A.GOLD),av=u16(A.PARTY-4)||0,h='';if(pt!=null&&pt>0)LS.set('d1time',String(Math.floor(pt/60)));   /* kept for THE END's disc 1 / disc 2 times */
- var tt=0,tg=0;if(window.TREASURE)for(var f in TREASURE){if(+f>=612)continue;TREASURE[f].forEach(function(t){var v=u16(A.SVAR+t[0]);tt++;if(v!=null&&(v>>t[1]&1))tg++})}
- var sec=pt==null?null:Math.floor(pt/60);
- h+='<div class="row">'+T('DISC 1 COMPLETE','y')+'</div><div class="sep"></div>';
- h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(sec==null?'-':Math.floor(sec/3600)+':'+p2(Math.floor(sec/60)%60)+':'+p2(sec%60))+'</div>';
- h+='<div class="row">'+T('GOLD','c')+'<span class="sp"></span>'+T(g==null?'-':String(g))+T(' G','y')+'</div>';
- h+='<div class="row">'+T('TREASURE FOUND','c')+'<span class="sp"></span>'+T(tg+' / '+tt,tg===tt?'n':'w')+'</div>';
- var cards='';for(var id=0;id<=10;id++){if(!((av>>id)&1))continue;var c=readChar(A.CHAR+id*REC);if(!c)continue;
-  cards+='<div class="row">'+T(padr(cname(id),10),'y')+'<span class="sp"></span>'+T('LV','c')+T(pad(c.lv,3))+'</div>'}
- h+='<div class="row">'+T('Next: disc 2.','g')+'</div>';
- return win('<div class="col" style="padding:0 6rem">'+h+'</div><div class="col" style="padding:0 6rem"><div class="row">'+T('PARTY','y')+'</div><div class="sep"></div>'+cards+'</div>','card')}
+function discEndView(){return endScreen(1)}
 /* the game's party screen (screen 1, opened by FE56 / FECF): returns the IDs on offer (joined & FrMask, 0x801C5600) or null */
 function partyPickOpen(){if(u32(A.SIG)!==4||u32(A.MENU)!==1)return null;var av=u16(A.PARTY-4),fm=u16(A.PARTY-2);if(av==null||fm==null)return null;
  var m=av&fm&0x7FF,o=[];for(var i=0;i<=10;i++)if((m>>i)&1)o.push(i);return o.length?o:null}
@@ -1859,7 +1866,7 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  var g=u32(A.GOLD);put('gold',g==null?'':T(String(g))+T(' G','y'));
  put('gearbtn','<span onclick="openSet()" style="padding:3rem 0 3rem 6rem;display:flex">'+GEAR_ICON+'</span>');
  if(mv){document.getElementById('main').className='';put('main',win('<img class="ttl" src="img/title.png">'+T('FF',ffOn?'n':'w'),'btn big'+(ffOn?' on':''),'onclick="ff()"'));put('bot','');encDraw();moreHint();return}
- document.getElementById('main').className=pk||(!dl&&!bt&&!sh&&(tab==='equip'||tab==='journal'))?'scroll':'';if(!bt)journalTick();
+ document.getElementById('main').className=pk||ed||de||(!dl&&!bt&&!sh&&(tab==='equip'||tab==='journal'))?'scroll':'';if(!bt)journalTick();
  var shs=sh&&document.querySelector('.shop'),shy=shs?shs.scrollTop:0;   /* the shop list and the deathblow list keep their scroll place across a redraw */
  var dbs=document.querySelector('#dbl>.in'),dby=dbs?dbs.scrollTop:0,dbw=dbSel;
  put('main',ed?endingView():bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):de?discEndView():dl?(rpsView()||speedView()||'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>'):bt?battleView():(speedView()||fieldView()));
