@@ -192,7 +192,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.10';   /* set by build.sh */
+var VERSION='2.0.0.11';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -897,6 +897,7 @@ var BOSSTIP=[
  ['Neo Etone','Seal hits one gear for 2500-3000. Otherwise easy.'],
  ['Shakhan','Do not attack while he is on the Gate Generator (he heals 1000 and storms). Charge then, attack when he detaches.'],
  ['Marinebasher','Tidal Wave hits for 2000-4000: kill it first. The Flare Rod on Vierge makes it quick.'],
+ ['Brigandier','Just hit him.'],
  ['Skyghene','Take it out first. Booster.'],
  ['Grandgrowl','After Skyghene: 30-fuel attacks and Level 1 combos.'],
  ['Crescens','30-fuel attacks often miss: use 10-fuel attacks and Level 1 combos with Booster.'],
@@ -922,11 +923,11 @@ var BOSSTIP=[
  ['Vierge','Aerods hit for about 300. 20-fuel attacks hit more often. Combo as soon as you can.']];
 function bossTip(name){var n=String(name||'').toLowerCase(),st=u16(A.STORY)|0;for(var i=0;i<BOSSTIP.length;i++){var b=BOSSTIP[i];if(b[0].toLowerCase()===n&&(b[2]==null||st>=b[2]&&st<=b[3]))return b[1]}return null}
 /* a fight is a boss fight when an enemy has a tip, or is not one of the room's random line-ups (a scripted fight; a room with no random battles has none) with 400 HP or more.
-   The card opens by itself once, 1.5 s into the fight (slots left over from the last fight are gone by then); tapping the enemy shows it again. */
-var bossDone=false;
+   Worked out once, 1.5 s into the fight (slots left over from the last fight are gone by then); the boss's row shows TIP and tapping any enemy shows its card. */
+var bossDone=false,bossName=null;
 function bossCheck(list){if(!CFG.boss||bossDone||Date.now()-bstart<1500||!list.length)return;bossDone=true;var re=roomEnemies(),rn={};(re||[]).forEach(function(r){rn[r.n]=1});
  var b=null;list.forEach(function(e){if(e.ko)return;var sc=bossTip(e.name)||(re!=null&&!rn[e.name]&&e.mhp>=400);if(sc&&(!b||e.mhp>b.mhp))b=e});
- if(b)setTimeout(function(){if(inBattle())showEnemy(b.s,b.name,b.mhp,true)},30)}
+ bossName=b?b.name:null}   /* v2.0.0.11: the card no longer opens by itself (Jack, 19 Oct): the boss's row says TIP, tap it */
 function showEnemy(s,name,mhp,boss){var q=reward(s);if(!q)return;var tip=bossTip(name),h='<div class="row">'+(boss?T('BOSS  ','y'):'')+T(name||'Enemy','r')+'</div>';
  if(mhp){var ch2=u16(A.BSLOT+s*BREC+0x4C),cg=u32(A.BSLOT+s*BREC+REC+0x64)>0?u32(A.BSLOT+s*BREC+REC+0x60):ch2;h+='<div class="row">'+T('HP','c')+T(pad(cg==null?'-':cg,7))+T(' / ','g')+T(String(mhp))+'</div>'}
  if(tip)wrap(tip,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});
@@ -1037,8 +1038,8 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  if(ch<18){ch=Math.max(16,Math.min(18,Math.floor(room/n)));tight=true}
  shownE.forEach(function(e){var pc=names[e.s-3].p,im='',etag=e.ko?'':statusTag(e.s);   /* with a tag the HP number is not padded, so the bar keeps some width */
   if(pc)im=sprImg(pc,28,ch-1);
-  en+='<div class="ec'+(e.ko?' dim':'')+'" style="height:'+ch+'rem" onclick="showEnemy('+e.s+',\''+enm[e.s]+'\')"><span class="es">'+im+'</span><div class="col">'
-   +'<div class="row">'+T(e.name,'r')+'</div><div class="row">'+idTag(rk,e.s)+bar('en',e.hp,e.mhp,'f')+etag+T(etag?String(e.hp):pad(e.hp,5),hpCol(e.hp,e.mhp))+'</div></div></div>'});
+  en+='<div class="ec'+(e.ko?' dim':'')+'" style="height:'+ch+'rem" onclick="showEnemy('+e.s+',\''+enm[e.s]+'\','+(e.mhp|0)+','+(e.name===bossName?1:0)+')"><span class="es">'+im+'</span><div class="col">'
+   +'<div class="row">'+T(e.name,'r')+(CFG.boss&&bossTip(e.name)?'<span class="sp"></span>'+T('TIP','y'):'')+'</div><div class="row">'+idTag(rk,e.s)+bar('en',e.hp,e.mhp,'f')+etag+T(etag?String(e.hp):pad(e.hp,5),hpCol(e.hp,e.mhp))+'</div></div></div>'});
  battleTot=ens.length?[tx,tg]:null;
  var left=win(en||T('NO ENEMY DATA','g'),tight?'tight':'','id="enemies"'),pr='',ids=[],act=actingSlot(),selGear=-1;
  if(act>=0&&act!==lastAct)dbSel=act;lastAct=act;
@@ -1904,7 +1905,7 @@ function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/
 var ffOn=false;
 /* draw the whole screen from what was last read */
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bestNow={}}}
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  recapTick(linked,sig);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var hfl=linked&&!bt&&CFG.follow&&Date.now()-HF.flash<2500&&hintNext(),loc=!linked?'NO LINK':hfl?'HINT '+((hintSavedPage(hfl)||0)+1)+'/'+hintPages(hfl):ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */

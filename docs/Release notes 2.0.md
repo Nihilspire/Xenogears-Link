@@ -60,3 +60,9 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 
 - **App tour.** The first time the app links to the game it walks you round the screen in ten short cards (chapter name and hints, play time, settings, each tab, FF, and what happens in fights and cutscenes), framing each part in gold. Replay it from SETTINGS > GENERAL > APP TOUR.
 - **Welcome back.** When you link again after 8 hours or more, one card shows how long you were away, the chapter, where you are, play time, your party and the next hint, with SHOW THE HINT.
+
+## 2.0.0.11
+
+- **Boss cards only open when tapped.** The boss's row shows TIP; tap any enemy for its card (HP, tip, rewards, drops).
+- Brigandier (Bart's first fight): tip "Just hit him."
+- Brigandier's picture fixed (two long hanging cables shrank the gear to a sliver); Marlute's picture is drawn from above (it is a flat model and showed as a line).

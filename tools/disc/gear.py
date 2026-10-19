@@ -106,6 +106,20 @@ def texel(V,tp,cl,u,v):
         w=V[(by+v)&511,(bx+(u>>1))&1023];i=(w>>((u&1)*8))&255
     else: return V[(by+v)&511,(bx+u)&1023]
     return V[cy,(cx+i)&1023]
+def trim_thin(tris,V,view='-x',yaw=40,frac=0.12,size=400):
+    """drop thin strands that stick out above or below a model (Brigandier's two hanging cables, Oct 2026): render it once, and
+    from the top and the bottom drop image rows with fewer opaque pixels than frac of the fullest row; then keep the triangles that
+    reach the rows left (yaw only turns the model about the vertical axis, so a row is a height)"""
+    im=render(tris,V,view,size=size,yaw=yaw)
+    A=np.array(im)[:,:,3]>0;cnt=A.sum(1);mx=cnt.max();rows=np.nonzero(cnt>=frac*mx)[0]
+    if not len(rows): return tris
+    P=np.array([p for t in tris for p in t[0]])
+    if yaw:
+        a=math.radians(yaw);c,s_=math.cos(a),math.sin(a);H=np.concatenate([P[:,0]*c+P[:,2]*s_]);H2=-P[:,0]*s_+P[:,2]*c
+    Y=P[:,1];Hh=(-(-P[:,0]*math.sin(math.radians(yaw))+P[:,2]*math.cos(math.radians(yaw))))
+    span=max(np.ptp(Hh),np.ptp(Y),1);sc=(size-2)/span
+    y0=Y.min()+(rows[0]-1)/sc;y1=Y.min()+(rows[-1]+1)/sc
+    return [t for t in tris if any(y0<=p[1]<=y1 for p in t[0])]
 def render(tris,V,view='x',size=160,flip=False,yaw=0,pitch=0):
     if not tris: return None
     pts=np.array([p for t in tris for p in t[0]])
