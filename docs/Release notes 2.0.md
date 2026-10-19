@@ -35,3 +35,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
   - Windows writes Documents\Xenogears Link\Exit log\exit log.jsonl (FOLDER opens it).
   - Android writes Android/data/com.dualscreen.xenogears/files/Room log/room log.jsonl; SHARE sends it.
   - VIEW checks the last 14 against the app's door data: OUT = distance from where you left to the door, IN = distance from where you arrived to the door back. Green is close, orange is a bit off, red (or NONE) means the door data is wrong or missing.
+
+## 2.0.0.5
+
+- **RPS helper** (SETTINGS > DEV OPTIONS, off by default): while you talk to the rock-paper-scissors man in Lahan, the screen shows his hand (rolled just before the hand menu opens) and the pick that beats it, your wins in a row out of 5, and when the badge is ready. If the winning pick would be the same hand four times running (a forced loss in his script) it tells you to draw instead.
