@@ -55,3 +55,8 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.9
 
 - **15 hidden pickups now have a spot on the map**, among them the 120 G "secret stash" outside Citan's house, the Thames Speed prizes and the Shevat rocks. These are invisible objects that the game places with a command the treasure scan did not read before; they also get their floor height for the 3D map.
+
+## 2.0.0.10
+
+- **App tour.** The first time the app links to the game it walks you round the screen in ten short cards (chapter name and hints, play time, settings, each tab, FF, and what happens in fights and cutscenes), framing each part in gold. Replay it from SETTINGS > GENERAL > APP TOUR.
+- **Welcome back.** When you link again after 8 hours or more, one card shows how long you were away, the chapter, where you are, play time, your party and the next hint, with SHOW THE HINT.

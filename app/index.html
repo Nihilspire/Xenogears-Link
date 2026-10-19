@@ -92,6 +92,8 @@ input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monos
 .rew{flex:1;display:flex;align-items:center}.rew>.in{flex:1;display:flex;align-items:center;margin:-6rem 2rem}
 #pop{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:4;padding:10rem}
 #pop.show{display:flex}
+#tourhi{position:absolute;display:none;z-index:6;pointer-events:none;border:2rem solid #ffd23c;box-shadow:0 0 0 9999px rgba(0,0,0,.55),0 0 8rem #ffd23c}
+#tour{position:absolute;left:8rem;right:8rem;display:none;z-index:7;justify-content:center}#tour .win{max-width:330rem;width:100%}#tour .in{display:flex;flex-direction:column;gap:3rem;padding:2rem 4rem}
 .ttl{width:204rem;height:144rem;opacity:.5;display:block}.btn.big .ttl{width:136rem;height:96rem}
 #boot{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8rem;
  background:radial-gradient(ellipse at 50% 30%,#1a1a3a 0%,#0b0b1c 55%,#050509 100%)}
@@ -132,6 +134,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
  <div id="boot"></div>
  <div id="pop" onclick="closePop()"></div>
  <div id="set"><div class="win"><div class="in" id="setin"></div></div></div>
+ <div id="tourhi"></div><div id="tour"></div>
 </div>
 <script src="tables.js"></script>
 <script src="enemies.js"></script>
@@ -189,7 +192,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.9';   /* set by build.sh */
+var VERSION='2.0.0.10';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -1851,6 +1854,51 @@ function speedView(){if(!CFG.speed||u32(A.SIG)!==4||(u16(A.FIELD)&0x7FF)!==321)r
  if(ent===8){var k=g(0x194)|0;o+='<div class="row">'+T('WINS IN A ROW','c')+'<span class="sp"></span>'+T((k&7)+'/5','w')+(k&8?T('  EMER JR GOT','n'):'')+'</div>'}
  o+='<div class="row">'+T('Lit cards play now: L / R pile.','g')+'</div>';
  return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">'+win('<div style="display:flex;flex-direction:column;gap:3rem;width:100%">'+o+'</div>','card')+'</div>'}
+/* ================= first-run tour and welcome back (v2.0.0.10) =================
+   TOUR: after the first link (or SETTINGS > APP TOUR) a short walk round the screen: a card with BACK / NEXT, and a gold frame round
+   the part it talks about (the rest dimmed). The frame follows the part's place every quarter second, as the page redraws often.
+   WELCOME BACK: when the game is linked after 8 hours or more away, one card with the chapter, where you are, the play time, the
+   party and the next hint. LS 'seen' is the last time the game was linked, written every half minute. */
+var TOUR=[[null,null,'TWO SCREENS','This screen follows your game live. Keep it beside the emulator and glance over as you play.'],
+ ['#loc',null,'CHAPTER','The chapter you are in. Tap it for the story hint: where the story goes on next, room by room.'],
+ ['#clock',null,'PLAY TIME AND GOLD','Read straight from the game, always up to date.'],
+ ['#gearbtn',null,'SETTINGS','Size, every switch, the 3D map, and the developer tools.'],
+ ['#bot .btn:nth-child(1)','status','STATUS','Your party: HP, EP, Gears and fuel. Tap a card for its deathblows.'],
+ ['#bot .btn:nth-child(2)','equip','EQUIP AND ITEMS','What everyone wears and what you carry. Tap anything to read about it.'],
+ ['#main','map','MAP','The room you are in: chests, gifts, doors, shops and the green guide line to the next hint. The side buttons list treasure and enemies.'],
+ ['#bot .btn:nth-child(5)','journal','JOURNAL','Your progress by chapter, and the bestiary of every enemy you have met.'],
+ ['#bot .btn:last-child',null,'FF','Fast-forward the emulator (RetroArch).'],
+ [null,null,'BY ITSELF','In a fight this screen shows the enemies, turn order and boss tips. In shops it compares gear. Cutscenes dim it. Enjoy the game.']];
+var tourAt=-1,tourT=0,tourTab=null;
+function tourGo(i){if(i<0)i=0;if(i>=TOUR.length){tourEnd();return}if(tourAt<0)tourTab=tab;tourAt=i;var st=TOUR[i];closePop();if(st[1]&&tab!==st[1])setTab(st[1]);
+ var h='<div class="row">'+T(st[2],'y')+'<span class="sp"></span>'+T((i+1)+'/'+TOUR.length,'g')+'</div><div class="sep"></div>';
+ wrap(st[3],Math.max(22,Math.min(34,Math.floor((remSize()[0]-40)/10)))).forEach(function(l){h+='<div class="row">'+T(l,'w')+'</div>'});
+ h+='<div class="row" style="height:16rem">'+(i>0?chip('< BACK',false,'tourGo('+(i-1)+')'):chip('SKIP',false,'tourEnd()'))+'<span class="sp"></span>'+chip(i<TOUR.length-1?'NEXT >':'DONE',true,'tourGo('+(i+1)+')')+'</div>';
+ var t=document.getElementById('tour');t.innerHTML=win(h);t.style.display='flex';clearInterval(tourT);tourPlace();tourT=setInterval(tourPlace,250)}
+function tourPlace(){var st=TOUR[tourAt],hi=document.getElementById('tourhi'),t=document.getElementById('tour'),app=document.getElementById('app').getBoundingClientRect(),el=st&&st[0]?document.querySelector(st[0]):null;
+ if(!st){hi.style.display='none';return}
+ if(!el){hi.style.display='none';t.style.top='';t.style.bottom='';t.style.top='30%';return}
+ var r=el.getBoundingClientRect(),sc=app.width/document.getElementById('app').offsetWidth||1;
+ hi.style.display='block';hi.style.left=(r.left-app.left)/sc-3+'px';hi.style.top=(r.top-app.top)/sc-3+'px';hi.style.width=r.width/sc+6+'px';hi.style.height=r.height/sc+6+'px';
+ var mid=(r.top+r.height/2-app.top)/app.height;   /* the card goes to the half of the screen the framed part is not in */
+ if(st[0]==='#main'){t.style.top='';t.style.bottom='8%'}else if(mid<0.5){t.style.bottom='';t.style.top='40%'}else{t.style.top='';t.style.bottom='30%'}}
+function tourEnd(){tourAt=-1;clearInterval(tourT);document.getElementById('tour').style.display='none';document.getElementById('tourhi').style.display='none';LS.set('tourDone','1');if(tourTab&&tourTab!==tab)setTab(tourTab)}
+var RECAP={done:false,seenAt:0};
+function recapTick(linked,sig){if(!booted||!linked||(sig!==4&&sig!==5))return;var now=Date.now();
+ if(!RECAP.done){RECAP.done=true;var last=+LS.get('seen','0')||0;
+  if(LS.get('tourDone','0')!=='1'){setTimeout(function(){if(tourAt<0)tourGo(0)},800)}
+  else if(last&&now-last>=8*3600*1000)setTimeout(function(){recapShow(now-last)},800)}
+ if(now-RECAP.seenAt>30000){RECAP.seenAt=now;LS.set('seen',String(now))}}
+function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/3600000),days=Math.floor(hrs/24),sig=u32(A.SIG);
+ var h='<div class="row">'+T('WELCOME BACK','y')+'<span class="sp"></span>'+T('AWAY '+(days?days+(days===1?' DAY':' DAYS'):hrs+' HOURS'),'g')+'</div><div class="sep"></div>';
+ var ch=chapter();if(ch)h+='<div class="row">'+T('CHAPTER','c')+'<span class="sp"></span>'+T(ch,'w')+'</div>';
+ var f=sig===4?u16(A.FIELD):null;f=f==null?null:f&0x7FF;var ar=areaOf(f),rn=f!=null&&window.ROOMS&&ROOMS[f];
+ h+='<div class="row">'+T('YOU ARE IN','c')+'<span class="sp"></span>'+T(sig===5?'World map':((ar?ar.n:'')+(rn?(ar?': ':'')+rn:'')).slice(0,30)||'-','w')+'</div>';
+ var pt=u32(A.PTIME),sec=pt==null?null:Math.floor(pt/60);if(sec!=null)h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(Math.floor(sec/3600)+':'+p2(Math.floor(sec/60)%60),'w')+'</div>';
+ var pp=shownParty(rd(A.PARTY,3)||[]);if(pp.length)h+='<div class="row">'+T('PARTY','c')+'<span class="sp"></span>'+T(pp.map(function(id){var c=readChar(A.CHAR+id*REC);return cname(id)+(c?' '+c.lv:'')}).join('  '),'w')+'</div>';
+ var hn=hintNext();if(hn&&hn.note){var nt=hn.note.charAt(0)==='?'?hn.note.slice(1):hn.note,pr=hintParts(nt)[0]||'';h+='<div class="row">'+T('NEXT','c')+'</div>';wrap(pr,44).slice(0,3).forEach(function(l){h+='<div class="row">'+T(l,'g')+'</div>'})}
+ h+='<div class="row" style="height:16rem"><span class="sp"></span>'+(hn?chip('SHOW THE HINT',false,'event.stopPropagation();showHint()'):'')+chip('OK',true,'closePop()')+'</div>';
+ popup(h,240)}
 /* ================= the screen =================
    One pass decides the mode (movie, dialogue or scene, battle, field) and writes the three parts of the page. */
 var ffOn=false;
@@ -1858,7 +1906,7 @@ var ffOn=false;
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
  document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bestNow={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
- if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
+ recapTick(linked,sig);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var hfl=linked&&!bt&&CFG.follow&&Date.now()-HF.flash<2500&&hintNext(),loc=!linked?'NO LINK':hfl?'HINT '+((hintSavedPage(hfl)||0)+1)+'/'+hintPages(hfl):ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
  var rg=linked&&!bt&&!bl&&!ed&&anyRiding(),rgt=rg?' '+T('GEAR','n'):'';   /* someone is in a Gear outside battle */
  put('loc',hfl?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'n')+'</span>':(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
@@ -1927,6 +1975,7 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+=setHd('GENERAL');
  h+='<div class="opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(s){return chip(String(s),CFG.scale===s,"sv('scale',"+s+")")}).join('')+'</div>';
  h+=onoff('START SCREEN','intro',CFG.intro);
+ h+='<div class="opt">'+T('APP TOUR','c')+chip('SHOW ME AROUND',false,'closeSet();tourGo(0)')+'</div>';
  h+=setHd('BATTLE');
  h+=onoff('BATTLE COUNTDOWN','enc',CFG.enc);
  h+=onoff('BOSS CARDS','boss',CFG.boss);
