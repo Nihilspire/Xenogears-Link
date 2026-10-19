@@ -79,7 +79,7 @@ input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monos
 .hone{display:flex;gap:10rem;align-items:center;margin:3rem 0}.hpic.big{width:132rem;height:132rem}.hside{display:flex;flex-direction:column;min-width:0}
 
 .hdot{position:absolute;width:5rem;height:5rem;margin:-2.5rem;border-radius:50%;background:#5f5;border:1rem solid #100808;box-shadow:0 0 0 1rem #fff}
-.lgt{background:#ffd23c;border:1rem solid #100808;height:5rem}.lgf{background:#6cf;border-radius:50%;border:1rem solid #100808}
+.lgt{background:#ffd23c;border:1rem solid #100808;height:5rem}.lgf{background:#6cf;border-radius:50%;border:1rem solid #100808}.lgm{border-radius:50%;border:1.5rem solid #ff9a3c;background:transparent}
 .shd{grid-column:1/-1;display:flex;margin-top:2rem}
 .shop .in{column-gap:5rem;grid-template-columns:minmax(0,1fr)}
 .shop .it{gap:4rem}
@@ -140,6 +140,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
 <script src="stats.js"></script>
 <script src="world.js"></script>
 <script src="treasure.js"></script>
+<script src="missables.js"></script>
 <script src="marks.js"></script>
 <script src="shops.js"></script>
 <script src="hsplit.js"></script><script src="hints.js"></script>
@@ -183,7 +184,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.2';   /* set by build.sh */
+var VERSION='2.0.0.3';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -578,7 +579,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   var room=u32(A.SIG)===4;   /* everything from here to the end of plan() lives in the room program's memory and is only read in a room */
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
-  if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2)}
+  if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2);var trx=trf==null?null:window.MISS&&MISS.extra[trf&0x7FF];if(trx)trx.forEach(function(e){if(e[0]<0){want(set,A.IQTY,150);want(set,A.IID,150)}else want(set,A.SVAR+e[0],2)})}
   if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}if(snapOn()){want(set,A.SVAR,0x400);want(set,A.WALKB,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
    if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
@@ -1346,7 +1347,8 @@ function mapView(){if(u32(A.SIG)===5){var wl=worldList(),wb='',wp='';
  if(f!=null&&window.LEVELS&&LEVELS[f]&&CFG.plan&&mapsReady()&&!map3on){var lvc=mapLevel(f);btn+='<div class="mbtn'+(lvlPick[f]!=null?' on':'')+'" onclick="lvlTap('+f+')"><span class="mic">'+T('LV','c')+'</span>'+T(lvlName(f,lvc),lvlPick[f]!=null?'y':'w')+'</div>'}   /* lit = picked by hand */
  if(mk){btn+='<div class="mbtn'+(mapSide==='x'?' on':'')+'" onclick="sideTap(\'x\')"><span class="mic">'+MARK_ICON+'</span>'+T(String(mk.length),'w')+'</div>'}
  if(mapSide==='x'&&mk){pan='<div class="row">'+T('PLACES','y')+'</div>';var mc={s:0,i:0,g:0};mk.forEach(function(e){mc[e[2]]++});[['s','Memory Cube'],['i','Item Shop'],['g','Gear Shop']].forEach(function(q){if(mc[q[0]])pan+='<div class="row"><span class="lg lg'+q[0]+'"></span>'+T(q[1],q[0]==='s'?'r':'o')+'<span class="sp"></span>'+T(mc[q[0]]>1?'    x'+mc[q[0]]:'  HERE','n')+'</div>'})}
- if(mapSide==='t'&&tl){pan='<div class="row"><span class="lg lgt"></span>'+T('TREASURE','y')+'</div>';if(tl.some(function(t){return t.gift&&t.x!=null}))pan+='<div class="row"><span class="lg lgf"></span>'+T('GIFT SPOT','c')+'</div>';tl.forEach(function(t){var n=t.n.length>20?t.n.slice(0,19)+'.':t.n;pan+='<div class="row">'+T(n,t.got?'g':'w')+'<span class="sp"></span>'+T(t.got==null?'   ?':t.got?' GOT':t.gift?'GIFT':'HERE',t.got?'n':t.got==null?'g':t.gift?'c':'y')+'</div>'})}
+ if(mapSide==='t'&&tl){pan='<div class="row"><span class="lg lgt"></span>'+T('TREASURE','y')+'</div>';if(tl.some(function(t){return t.gift&&t.x!=null}))pan+='<div class="row"><span class="lg lgf"></span>'+T('GIFT SPOT','c')+'</div>';if(tl.some(function(t){return t.miss&&t.got===false}))pan+='<div class="row"><span class="lg lgm"></span>'+T('MISSABLE','o')+'</div>';tl.forEach(function(t){var n=t.n.length>20?t.n.slice(0,19)+'.':t.n;pan+='<div class="row">'+T(n,t.got?'g':t.miss?'o':'w')+'<span class="sp"></span>'+T(t.got==null?'   ?':t.got?' GOT':t.gift?'GIFT':'HERE',t.got?'n':t.got==null?'g':t.gift?'c':'y')+'</div>';
+   if(t.miss&&!t.got){var mw=t.miss.length>21?t.miss.slice(0,20)+'.':t.miss;pan+='<div class="row">'+T(' LOST: ','o')+T(mw,'g')+'</div>'}})}
  if(mapSide==='e'&&en&&en.length){pan='<div class="row">'+T('ENEMIES','y')+(anyRiding()?'<span class="sp"></span>'+T('IN GEARS','n'):'')+'</div>';en.forEach(function(e){pan+='<div class="erow"><span class="mic">'+(e.p?sprImg(e.p,22,15):'')+'</span>'+T(e.n,'r')+'</div>'})}
  var rn=f!=null&&window.ROOMS&&ROOMS[f],hd=a?a.n:'',pp=CFG.dev&&f!=null?playerPos():null;   /* DEV: x, z under the room number, for placing hint spots */
  if(rn){var mx=Math.max(14,Math.floor((remSize()[0]-46)/7)-('ROOM '+f).length-2);hd=(a?a.s+': ':'')+rn;if(hd.length>mx)hd=rn;if(hd.length>mx)hd=hd.slice(0,mx-2)+'..'}   /* room name when one is known, shortened to fit beside the number */
@@ -1435,6 +1437,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  if(trl&&!(on3&&M3.isFP()))trl.forEach(function(t){if(t.x==null)return;var tq=YP(t.x,t.z,t.y),tx=tq[0],ty=tq[1],q=3.2*dpr;if(tx<-1e4)return;
    g.lineWidth=dpr;
    /* a gift (handed over by a person or an event at this spot) is a blue dot, a ring once taken; chests are the yellow boxes */
+   if(t.miss&&t.got===false){g.beginPath();g.arc(tx,ty,q*1.9,0,6.2832);g.strokeStyle='#ff9a3c';g.lineWidth=dpr*1.5;g.stroke();g.lineWidth=dpr}
    if(t.gift){g.beginPath();g.arc(tx,ty,q*.8,0,6.2832);if(t.got){g.strokeStyle='#9a9a9a';g.stroke()}else{g.fillStyle='#6cf';g.fill();g.strokeStyle='#100808';g.lineWidth=dpr*1.5;g.stroke()}return}
    if(t.got){g.strokeStyle='rgba(16,8,8,.8)';g.strokeRect(tx-q,ty-q*.8,q*2,q*1.6);g.strokeStyle='#9a9a9a';g.strokeRect(tx-q+dpr,ty-q*.8+dpr,q*2-2*dpr,q*1.6-2*dpr)}
    else{g.fillStyle='#100808';g.fillRect(tx-q-dpr,ty-q*.8-dpr,q*2+2*dpr,q*1.6+2*dpr);g.fillStyle='#ffd23c';g.fillRect(tx-q,ty-q*.8,q*2,q*1.6);g.fillStyle='#8a5a10';g.fillRect(tx-q,ty-dpr*.5,q*2,dpr)}});
@@ -1599,9 +1602,15 @@ function encDraw(){var el=document.getElementById('enc'),e=CFG.enc&&!inBattle()?
    over by a person or an event rather than found in a chest; where the script gives its place it is drawn as a blue dot. Not yet checked on the handheld. */
 var TKIND=['items','weapons','equipment','gear_weapons','gear_parts'];
 /* the room's treasure with a got / not got mark each, or null */
-function treList(f){if(!CFG.tre||f==null||!window.TREASURE)return null;var l=TREASURE[f];if(!l)return null;if(!CFG.gift)l=l.filter(function(t){return t.length>5&&t[6]!==1});if(!l.length)return null;
- return l.map(function(t){var v=u16(A.SVAR+t[0]),nm=t[2].map(function(c){return gearName(TKIND[c>>8],c&255)||['Item','Weapon','Equip','Gear weapon','Gear part'][c>>8]+' '+(c&255)});if(t[3])nm.push(t[3]+' G');
-  return{n:nm.join(' + '),got:v==null?null:(v>>t[1]&1)===1,x:t.length>5?t[4]:null,z:t.length>5?t[5]:null,y:t.length>7?t[7]:null,gift:t.length<6||t[6]===1}})}
+/* missables (v2.0.0.3, missables.js): treasure entries tagged with when they are lost, plus pickups the treasure scan misses (Midori's
+   Ring, the Spider, the Shevat secret room). A missable not yet taken has an orange ring on the map and its loss point under its name. */
+function treRaw(f){var l=window.TREASURE&&TREASURE[f]||[],x=window.MISS&&MISS.extra[f]||[];return x.length?l.concat(x.map(function(e){return [e[0],e[1],[],0,e[3],e[4],e[6],null,e[2],e[5]]})):l}
+function haveItem(c){var q=rd(A.IQTY,150),ids=rd(A.IID,150);if(!q||!ids)return null;for(var i=0;i<150;i++)if(ids[i]===c&&q[i]>0)return true;return false}
+function treList(f){if(!CFG.tre||f==null||!window.TREASURE)return null;var l=treRaw(f);if(!l.length)return null;if(!CFG.gift)l=l.filter(function(t){return t.length>5&&t[6]!==1});if(!l.length)return null;
+ return l.map(function(t){var nm=t[8]?[t[8]]:t[2].map(function(c){return gearName(TKIND[c>>8],c&255)||['Item','Weapon','Equip','Gear weapon','Gear part'][c>>8]+' '+(c&255)});if(t[3])nm.push(t[3]+' G');
+  var got;if(t[0]<0)got=haveItem(t[1]);else{var v=u16(A.SVAR+t[0]);got=v==null?null:(v>>t[1]&1)===1}
+  var ms=t[9]||window.MISS&&MISS.tag[f+':'+t[0]+':'+t[1]]||null;
+  return{n:nm.join(' + '),got:got,x:t.length>5&&t[4]!=null?t[4]:null,z:t.length>5?t[5]:null,y:t.length>7?t[7]:null,gift:t.length<6||t[6]===1,miss:ms}})}
 /* ================= description pop-up ================= */
 function gearName(k,id){var t=(window.GEARTBL&&GEARTBL[k])||TABLES[k];var v=t&&t[id];return v&&v!=='/'?v:null}
 /* description text for id of kind k ("" when there is none) */

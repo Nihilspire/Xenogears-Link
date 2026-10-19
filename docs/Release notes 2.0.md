@@ -23,3 +23,8 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
   - A page picked by hand is kept until you change room.
 - The top bar flashes HINT 3/7 for a moment when the page moves.
 - The room map has a small < 3/7 > in the corner to change the page without opening the hint.
+
+## 2.0.0.3
+
+- **Missables on the map.** 58 pickups that can be lost for good are marked: an orange ring on the map while not yet taken, the name in orange in the treasure list, and a LOST: line saying when it goes (for example "Leaving Lahan").
+- New pickups the treasure list did not have: Midori's Ring (Outside Citan's house), the Spider (Mountain Path) and the Shevat secret room (Power Crisis, Yamato Belt and 12 more).
