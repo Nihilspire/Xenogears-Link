@@ -39,3 +39,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.5
 
 - **RPS helper** (SETTINGS > DEV OPTIONS, off by default): while you talk to the rock-paper-scissors man in Lahan, the screen shows his hand (rolled just before the hand menu opens) and the pick that beats it, your wins in a row out of 5, and when the badge is ready. If the winning pick would be the same hand four times running (a forced loss in his script) it tells you to draw instead.
+
+## 2.0.0.6
+
+- **Speed helper** (SETTINGS > DEV OPTIONS, off by default): during a game of Speed (Kanna in the Snowfield hideout, or the Thames players) the screen shows the two pile cards, your hand with the cards that can be played now lit and marked L or R, your next 6 cards and how many are left, the same for your opponent, and against Kanna your wins in a row out of 5 (five gives the Elly Jr. Doll).

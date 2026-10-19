@@ -182,9 +182,9 @@ var CFG={
  route:LS.get('route','1')==='1',follow:LS.get('follow','1')==='1',advise:LS.get('advise','1')==='1',boss:LS.get('boss','1')==='1',smooth:LS.get('smooth','1')==='1',sky:LS.get('sky','1')==='1',   /* 3D map: the way to go, eased camera, sky in EYE (v1.99.0.5) */   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1',
  /* DEV, Windows: log where each room change happens (exit log) */
- xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1'};
+ xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.5';   /* set by build.sh */
+var VERSION='2.0.0.6';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -580,6 +580,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(u32(A.SIG)===5){if(CFG.enc||setOpen()){want(set,A.WENCW,4);want(set,A.WENCN,4);want(set,A.WENCC,4);want(set,A.WENCS,32);want(set,A.WENCON,4)}}
   else if(room&&(CFG.enc||setOpen()||tab==='map')){want(set,A.ENC,0x4C);if(tab==='map'||setOpen())want(set,A.FORM,0x210)}   /* the countdown bar, and the MAP tab's enemy list */
   if(CFG.tre&&room){var trf=u16(A.FIELD),trl=trf==null?null:window.TREASURE&&TREASURE[trf&0x7FF];if(trl)for(var tri=0;tri<trl.length;tri++)want(set,A.SVAR+trl[tri][0],2);var trx=trf==null?null:window.MISS&&MISS.extra[trf&0x7FF];if(trx)trx.forEach(function(e){if(e[0]<0){want(set,A.IQTY,150);want(set,A.IID,150)}else want(set,A.SVAR+e[0],2)})}
+  if(room&&CFG.speed&&(u16(A.FIELD)&0x7FF)===321){want(set,A.SVAR+2,2);want(set,A.SVAR+0x194,2);want(set,A.SVAR+0x412,0x18);want(set,A.SVAR+0x4B6,0x6C)}
   if(room&&CFG.rps&&(u16(A.FIELD)&0x7FF)===7){want(set,A.SVAR+0x408,12);want(set,A.SVAR+0x2CE,2);want(set,A.SVAR+0x2DE,2)}
   if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}if(snapOn()){want(set,A.SVAR,0x400);want(set,A.WALKB,4)}
    for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
@@ -1813,6 +1814,33 @@ function rpsView(){if(!CFG.rps||u32(A.SIG)!==4||(u16(A.FIELD)&0x7FF)!==7)return 
  if(bd!=null&&(bd>>15&1))o+='<div class="row">'+T('RPS BADGE: GOT','n')+'</div>';else if(rd2>29)o+='<div class="row">'+T('BADGE READY: TALK TO HIM AGAIN','y')+'</div>';
  o+='<div class="row">'+T('Read it once the hand menu is up.','g')+'</div>';
  return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">'+win('<div style="display:flex;flex-direction:column;gap:3rem;width:100%">'+o+'</div>','card')+'</div>'}
+/* SPEED HELPER (v2.0.0.6, DEV OPTIONS, off unless switched on): the card game Speed (Thames, and Kanna in the Snowfield hideout for
+   the Emer Jr. and Elly Jr. dolls) is the script of room 321, the Game Table (see the RAM map). Both decks are shuffled and dealt in
+   full before play: yours (deck A) is script variables 0x4B8-0x4EA, 26 cards, the next one at index 0x4B6; the opponent's (deck B)
+   0x4EE-0x520, index 0x4EC. Hands: yours 0x422-0x428, the opponent's 0x41A-0x420 (the computer player, actor 13, reads only those).
+   The two piles' top cards are 0x414 and 0x418. A card is suit << 13 | 1 << (rank - 1): rank 1 A ... 13 K. Kanna's streak is saved
+   variable 0x194 bits 0-2 (five in a row gives the Elly Jr. Doll), bit 3 = Emer Jr. Doll given. Variable 2 (how the room was
+   entered) names the opponent: 0-3 Thames, 8 Kanna. */
+function spdRank(v){v=v&0x1FFF;if(!v)return 0;for(var r=1;r<=13;r++)if(v===1<<(r-1))return r;return 0}
+function spdName(r){return r===1?'A':r===11?'J':r===12?'Q':r===13?'K':r?String(r):'-'}
+function spdNext(a,b){return a&&b&&(Math.abs(a-b)===1||Math.abs(a-b)===12)}
+function speedView(){if(!CFG.speed||u32(A.SIG)!==4||(u16(A.FIELD)&0x7FF)!==321)return null;var B=A.SVAR,g=function(v){return u16(B+v)};
+ var pa=spdRank(g(0x414)),pb=spdRank(g(0x418)),ia=g(0x4B6),ib=g(0x4EC);if(ia==null||ib==null||ia>26||ib>26)return null;
+ var mine=[0x422,0x424,0x426,0x428].map(function(v){return spdRank(g(v))}),his=[0x41A,0x41C,0x41E,0x420].map(function(v){return spdRank(g(v))});
+ if(!pa&&!pb&&!mine.some(Boolean))return null;   /* not dealt yet */
+ var ent=g(2),who=ent===8?'KANNA':'OPPONENT',o='';
+ function card(r,hot,col){return T(pad(spdName(r),3),r?(hot?col:'w'):'g')}
+ function next(base,idx,n){var s='';for(var k=idx;k<Math.min(26,idx+n);k++)s+=pad(spdName(spdRank(g(base+2*k))),3);return s||' -'}
+ function sides(r){return (spdNext(r,pa)?'L':' ')+(spdNext(r,pb)?'R':' ')}
+ o+='<div class="row">'+T('SPEED HELPER','y')+'<span class="sp"></span>'+T('VS '+who,'g')+'</div><div class="sep"></div>';
+ o+='<div class="row">'+T('PILES','c')+'<span class="sp"></span>'+T('L','g')+T(pad(spdName(pa),3),'y')+T('    R','g')+T(pad(spdName(pb),3),'y')+'</div>';
+ o+='<div class="row">'+T('YOUR HAND','c')+'<span class="sp"></span>';mine.forEach(function(r){var a=sides(r);o+=card(r,a!=='  ','n')+T(a,'n')});o+='</div>';
+ o+='<div class="row">'+T('YOUR NEXT','c')+'<span class="sp"></span>'+T(next(0x4B8,ia,6),'w')+T(pad(26-ia,4)+' LEFT','g')+'</div>';
+ o+='<div class="row">'+T(who+' HAND','c')+'<span class="sp"></span>';his.forEach(function(r){var a=sides(r);o+=card(r,a!=='  ','r')+T(a,'r')});o+='</div>';
+ o+='<div class="row">'+T(who+' NEXT','c')+'<span class="sp"></span>'+T(next(0x4EE,ib,6),'w')+T(pad(26-ib,4)+' LEFT','g')+'</div>';
+ if(ent===8){var k=g(0x194)|0;o+='<div class="row">'+T('WINS IN A ROW','c')+'<span class="sp"></span>'+T((k&7)+'/5','w')+(k&8?T('  EMER JR GOT','n'):'')+'</div>'}
+ o+='<div class="row">'+T('Lit cards play now: L / R pile.','g')+'</div>';
+ return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">'+win('<div style="display:flex;flex-direction:column;gap:3rem;width:100%">'+o+'</div>','card')+'</div>'}
 /* ================= the screen =================
    One pass decides the mode (movie, dialogue or scene, battle, field) and writes the three parts of the page. */
 var ffOn=false;
@@ -1831,7 +1859,7 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  document.getElementById('main').className=pk||(!dl&&!bt&&!sh&&(tab==='equip'||tab==='journal'))?'scroll':'';if(!bt)journalTick();
  var shs=sh&&document.querySelector('.shop'),shy=shs?shs.scrollTop:0;   /* the shop list and the deathblow list keep their scroll place across a redraw */
  var dbs=document.querySelector('#dbl>.in'),dby=dbs?dbs.scrollTop:0,dbw=dbSel;
- put('main',ed?endingView():bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):de?discEndView():dl?(rpsView()||'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>'):bt?battleView():fieldView());
+ put('main',ed?endingView():bl?battlerView():sh?shopView(sh):pk?partyPickView(pk):de?discEndView():dl?(rpsView()||speedView()||'<div class="ttlwrap"><img class="ttl" src="img/title.png" onclick="openSet()"></div>'):bt?battleView():(speedView()||fieldView()));
  if(bt&&dby&&dbw===dbSel){dbs=document.querySelector('#dbl>.in');if(dbs)dbs.scrollTop=dby}if(shy){shs=document.querySelector('.shop');if(shs)shs.scrollTop=shy}
  if(!ed&&!dl&&!bt&&!bl&&!sh&&tab==='map')drawMap();encDraw();moreHint();
  /* bottom bar: nothing in dialogue, the shop's name in a shop, the rewards in a fight, otherwise the four tabs; FF is always there */
@@ -1917,6 +1945,7 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+='<div class="opt">'+T('STATUS DOT','c')+chip('SHOW',CFG.dot,"sv('dot','1')")+chip('HIDE',!CFG.dot,"sv('dot','0')")+'</div>';
  h+=onoff('FAST MAP','fast',CFG.fast);
  h+=onoff('RPS HELPER','rps',CFG.rps);
+ h+=onoff('SPEED HELPER','speed',CFG.speed);
  if(window.Native&&Native.snapSave){h+='<div class="opt">'+T('STORY SNAPSHOT','c')+chip('SAVE NOW',false,'snapTake()')+chip('FOLDER',false,'Native.snapOpen()')+'</div>';
   h+='<div class="opt">'+T('NOTE','c')+'<input id="isn" style="width:200rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="snapNote=this.value" placeholder="what just happened" value="'+snapNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>';if(snapMsg)h+='<div class="opt">'+T(snapMsg.slice(0,44),'g')+'</div>'}
  if(dumpOn()){h+='<div class="opt">'+T('RAM DUMP','c')+chip(DUMP?'READING...':'SAVE NOW',false,DUMP?'':'dumpStart()')+chip('FOLDER',false,'Native.ramOpen()')+'</div>';if(dumpMsg)h+='<div class="opt">'+T(dumpMsg.slice(0,44),dumpMsg.indexOf('NOT')===0?'r':'g')+'</div>'}
@@ -1933,7 +1962,7 @@ function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T(
  h+='<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('ENABLE',true,"event.stopPropagation();closePop();sv('"+k+"','1')")+'</div>';
  popup(h,240);document.getElementById('pop').style.zIndex=6}
 function sv(k,v){if(k==='host')v=okHost(v);if(k==='port')v=okPort(v);LS.set(k,v);if(k==='scale')v=+v;if(k==='quiet'){v=String(v)==='1';CFG.quiet=CFG.dlg=CFG.cut=v}
- if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye'||k==='xlog'||k==='route'||k==='follow'||k==='rps'||k==='advise'||k==='boss'||k==='smooth'||k==='sky')v=String(v)==='1';if(k==='route'||k==='smooth'||k==='sky'){var mc=document.getElementById('mapcv');if(mc)mc._sig=null}CFG[k]=v;
+ if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye'||k==='xlog'||k==='route'||k==='follow'||k==='rps'||k==='speed'||k==='advise'||k==='boss'||k==='smooth'||k==='sky')v=String(v)==='1';if(k==='route'||k==='smooth'||k==='sky'){var mc=document.getElementById('mapcv');if(mc)mc._sig=null}CFG[k]=v;
  if((k==='x3d'||k==='xeye')&&!v){if(k==='x3d'&&map3on){map3on=false;LS.set('map3d','0')}if(map3eye){map3eye=false;LS.set('map3eye','0')}last={};render()}
  if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){if(!v)teach=null;last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
 setInterval(function(){if(Date.now()-pollAt>=CFG.poll-30)poll();if(setOpen()&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))drawSet()},CFG.poll);
