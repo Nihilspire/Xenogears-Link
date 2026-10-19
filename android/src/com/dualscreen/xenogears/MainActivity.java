@@ -217,6 +217,26 @@ public class MainActivity extends Activity {
             } catch (Exception e) { return ""; }
         }
         @JavascriptInterface public void genClear() { del(MainActivity.this.genDir()); }
+
+        /* ---- room log (DEV): one line of JSON per room change, in the app's own files folder
+           (Android/data/com.dualscreen.xenogears/files/Room log/room log.jsonl, reachable over USB); SHARE sends the text ---- */
+        private File roomLog() { File d = new File(getExternalFilesDir(null) != null ? getExternalFilesDir(null) : getFilesDir(), "Room log"); d.mkdirs(); return new File(d, "room log.jsonl"); }
+        @JavascriptInterface public String exitLog(String line) {
+            try { FileOutputStream o = new FileOutputStream(roomLog(), true); try { o.write((line + "\r\n").getBytes("UTF-8")); } finally { o.close(); } return "ok"; }
+            catch (Exception e) { return "ERR:" + e.getMessage(); }
+        }
+        @JavascriptInterface public void exitLogShare() {
+            runOnUiThread(new Runnable() { public void run() {
+                try {
+                    File f = roomLog(); byte[] d = new byte[(int) Math.min(f.length(), 900000)]; FileInputStream in = new FileInputStream(f);
+                    try { int p = 0; while (p < d.length) { int n = in.read(d, p, d.length - p); if (n <= 0) break; p += n; } } finally { in.close(); }
+                    Intent i = new Intent(Intent.ACTION_SEND); i.setType("text/plain");
+                    i.putExtra(Intent.EXTRA_SUBJECT, "room log.jsonl"); i.putExtra(Intent.EXTRA_TEXT, new String(d, "UTF-8"));
+                    startActivity(Intent.createChooser(i, "Share the room log"));
+                } catch (Exception e) { }
+            }});
+        }
+        @JavascriptInterface public void exitLogClear() { roomLog().delete(); }
         private void del(File f) { File[] k = f.listFiles(); if (k != null) for (File c : k) { if (c.isDirectory()) del(c); c.delete(); } }
     }
 }

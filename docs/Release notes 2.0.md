@@ -28,3 +28,10 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 
 - **Missables on the map.** 58 pickups that can be lost for good are marked: an orange ring on the map while not yet taken, the name in orange in the treasure list, and a LOST: line saying when it goes (for example "Leaving Lahan").
 - New pickups the treasure list did not have: Midori's Ring (Outside Citan's house), the Spider (Mountain Path) and the Shevat secret room (Power Crisis, Yamato Belt and 12 more).
+
+## 2.0.0.4
+
+- **Room log** (SETTINGS > DEV OPTIONS, was the Windows exit log): like the PC recomp's room exporter, every room change records where you left the old room and where you arrived in the new one, with height and floor layer.
+  - Windows writes Documents\Xenogears Link\Exit log\exit log.jsonl (FOLDER opens it).
+  - Android writes Android/data/com.dualscreen.xenogears/files/Room log/room log.jsonl; SHARE sends it.
+  - VIEW checks the last 14 against the app's door data: OUT = distance from where you left to the door, IN = distance from where you arrived to the door back. Green is close, orange is a bit off, red (or NONE) means the door data is wrong or missing.

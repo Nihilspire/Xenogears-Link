@@ -184,7 +184,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.3';   /* set by build.sh */
+var VERSION='2.0.0.4';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -1202,10 +1202,11 @@ function track(){var sig=u32(A.SIG);if(sig!==4){if(sig===5&&lastField>=0)xlogRoo
   if(pd!==entry.pd){entry.pd=pd;entry.ok=0;entry.bx=null}else entry.ok++;
   var jump=mapLast&&mapLast.f===f&&((p.x-mapLast.x)*(p.x-mapLast.x)+(p.z-mapLast.z)*(p.z-mapLast.z))>=120*120;if(jump)entry.j=1;
   if(entry.ok>=2&&(entry.j||Date.now()-entry.t>=1000)){
-   if(entry.bx==null){entry.bx=p.x;entry.bz=p.z}
+   if(entry.bx==null){entry.bx=p.x;entry.bz=p.z;entry.by=p.y;entry.bl=playerLayer()}
    else{var ex=p.x-entry.bx,ez=p.z-entry.bz,ed=ex*ex+ez*ez;
-    if(ed>=120*120){entry.bx=p.x;entry.bz=p.z}
-    else if(ed>=16){entry.x=entry.bx;entry.z=entry.bz;entry.d=[ex,ez]}}}}
+    if(ed>=120*120){entry.bx=p.x;entry.bz=p.z;entry.by=p.y;entry.bl=playerLayer()}
+    else if(ed>=16){entry.x=entry.bx;entry.z=entry.bz;entry.d=[ex,ez];rlogIn(f,entry)}}}}
+ rlogTick(f);
  if(mapLast&&mapLast.f===f){var dx=p.x-mapLast.x,dz=p.z-mapLast.z,d=dx*dx+dz*dz;if(d>0&&d<400*400)heading=[dx,dz];if(d>0&&d<400*400)xlogMoved=Date.now()}
  layerMark(f,playerLayer());
  mapLast={f:f,x:p.x,z:p.z,y:p.y,l:playerLayer()}}
@@ -1231,11 +1232,37 @@ function dumpCheck(){var d=DUMP,pct=Math.floor(d.n*100/0x2000);
  var info=JSON.stringify({app:'Xenogears Link '+VERSION,saved:stamp,program:sig,room:room,step:step,playTime:Math.floor(pt/3600)+':'+pad(Math.floor(pt/60)%60)+':'+pad(pt%60),
   note:'main RAM 0x80000000-0x801FFFFF, read in '+((Date.now()-d.t0)/1000).toFixed(1)+' s'},null,1);
  var r=Native.ramSave(base,XB.b64(d.buf),info);dumpMsg=String(r).slice(0,4)==='ERR:'?'NOT SAVED: '+String(r).slice(4,40).toUpperCase():'SAVED '+base.toUpperCase();if(setOpen()){lastSet='';drawSet()}}
-function xlogOn(){return CFG.xlog&&!!(window.Native&&Native.exitLog)}
-function xlogRoom(from,to){if(!xlogOn()||!mapLast||mapLast.f!==from||from===to||Date.now()-xlogMoved>2000)return;
- var r=Native.exitLog(JSON.stringify({from:from,to:to,x:mapLast.x,z:mapLast.z,y:mapLast.y,layer:mapLast.l==null?null:mapLast.l,step:u16(A.STORY),t:new Date().toISOString(),v:VERSION}));
- if(String(r).slice(0,4)!=='ERR:'){xlogN++;xlogLast=Date.now();if(setOpen())drawSet()}}
-function xlogUndo(){if(xlogOn()&&xlogLast&&Date.now()-xlogLast<6000){Native.exitLog('{"undo":1}');xlogN=Math.max(0,xlogN-1);xlogLast=0}}
+/* ROOM LOG (v2.0.0.4, DEV; was the exit log): like the PC recomp's room exporter, each room change is kept as one line of JSON with
+   where the party left the old room and where it arrived in the new one:
+   {from, to, x, z, y, layer (the last spot in the room left; null when the change came from a scene, not a walk),
+    ix, iz, iy, il (the arrival: the spot the party first walks from, the same spot as the way-in arrow; null if it never walked),
+    step, t, v}
+   Windows writes Documents\Xenogears Link\Exit log\exit log.jsonl, Android Android/data/com.dualscreen.xenogears/files/Room log/
+   room log.jsonl (SHARE sends it); the last 200 also stay in the app, where ROOM LOG > VIEW checks each one against exits.js: the way
+   out of the old room to the new one nearest the exit spot, and the way out of the new room back to the old one nearest the arrival.
+   The room viewer's Import edits and tools/app/import_exit_log.js read the same lines. */
+var RLOG=[],RLP=null;
+function xlogOn(){return CFG.xlog}
+function rlogWrite(o){RLOG.push(o);if(RLOG.length>200)RLOG.shift();
+ if(window.Native&&Native.exitLog){var r=Native.exitLog(JSON.stringify(o));if(String(r).slice(0,4)==='ERR:')return}
+ xlogN++;xlogLast=Date.now();if(setOpen())drawSet()}
+function rlogFlush(){if(!RLP)return;var o=RLP;RLP=null;rlogWrite(o)}
+function xlogRoom(from,to){if(!xlogOn()||from===to)return;rlogFlush();
+ var walk=mapLast&&mapLast.f===from&&Date.now()-xlogMoved<=2000;
+ RLP={from:from,to:to,x:walk?mapLast.x:null,z:walk?mapLast.z:null,y:walk?mapLast.y:null,layer:walk&&mapLast.l!=null?mapLast.l:null,ix:null,iz:null,iy:null,il:null,step:u16(A.STORY),t:new Date().toISOString(),v:VERSION,at:Date.now()};
+ if(to<0){delete RLP.at;rlogFlush()}}
+function rlogIn(f,e){if(!RLP||RLP.to!==f)return;RLP.ix=e.x;RLP.iz=e.z;RLP.iy=e.by==null?null:e.by;RLP.il=e.bl==null?null:e.bl;delete RLP.at;rlogFlush()}
+/* no walk within 20 s of arriving: keep the line with the spot the party was put on, or none */
+function rlogTick(f){if(RLP&&RLP.at&&Date.now()-RLP.at>20000){if(entry&&entry.f===RLP.to&&entry.bx!=null){RLP.ix=entry.bx;RLP.iz=entry.bz;RLP.iy=entry.by==null?null:entry.by;RLP.il=entry.bl==null?null:entry.bl}delete RLP.at;rlogFlush()}}
+function xlogUndo(){if(RLP){RLP=null;return}if(xlogOn()&&xlogLast&&Date.now()-xlogLast<6000){RLOG.pop();if(window.Native&&Native.exitLog)Native.exitLog('{"undo":1}');xlogN=Math.max(0,xlogN-1);xlogLast=0}}
+/* the check: distance from a spot to the nearest way out of room r leading to room d (null when exits.js has none with a place) */
+function rlogNear(r,d,x,z){if(x==null)return null;var E=window.EXITS&&EXITS[r]||[],b=null;E.forEach(function(e){if(e[2]!==d||e[0]==null)return;var v=Math.hypot(e[0]-x,e[1]-z);if(b==null||v<b)b=v});return b==null?-1:Math.round(b)}
+function rlogView(){var h='<div class="row">'+T('ROOM LOG','y')+'<span class="sp"></span>'+T(RLOG.length+' THIS RUN','g')+'</div><div class="row">'+T('OUT: TO THE DOOR. IN: TO THE DOOR BACK.','g')+'</div><div class="sep"></div>';
+ if(!RLOG.length)h+='<div class="row">'+T('Walk through a door to start.','g')+'</div>';
+ RLOG.slice(-14).reverse().forEach(function(o){var a=rlogNear(o.from,o.to,o.x,o.z),b=o.to<0?null:rlogNear(o.to,o.from,o.ix,o.iz);
+  function cell(v,lim){return v==null?T('   -','g'):v<0?T(' NONE','r'):T(pad(v,5),v<=lim?'n':v<=lim*2?'o':'r')}
+  h+='<div class="row">'+T(pad(o.from,3)+' -'+(o.to<0?' WLD':pad(o.to,4)),'w')+T(' OUT','g')+cell(a,150)+T(' IN','g')+cell(b,250)+'</div>'});
+ popup(h,230)}
 /* Exits and the way in. EXITS (exits.js, from the room scripts) gives each exit's place and destination room. entry = the spot the
    party first walked from in this room and the direction it went (the red arrow, as on a Zelda map); nothing until it moves. visited = rooms
    the app has seen the party in (kept in localStorage); a room is also counted as known when it lies in an area the story has
@@ -1876,7 +1903,7 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  if(window.Native&&Native.snapSave){h+='<div class="opt">'+T('STORY SNAPSHOT','c')+chip('SAVE NOW',false,'snapTake()')+chip('FOLDER',false,'Native.snapOpen()')+'</div>';
   h+='<div class="opt">'+T('NOTE','c')+'<input id="isn" style="width:200rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="snapNote=this.value" placeholder="what just happened" value="'+snapNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>';if(snapMsg)h+='<div class="opt">'+T(snapMsg.slice(0,44),'g')+'</div>'}
  if(dumpOn()){h+='<div class="opt">'+T('RAM DUMP','c')+chip(DUMP?'READING...':'SAVE NOW',false,DUMP?'':'dumpStart()')+chip('FOLDER',false,'Native.ramOpen()')+'</div>';if(dumpMsg)h+='<div class="opt">'+T(dumpMsg.slice(0,44),dumpMsg.indexOf('NOT')===0?'r':'g')+'</div>'}
- if(window.Native&&Native.exitLog)h+='<div class="opt">'+T('EXIT LOG','c')+chip('ON',CFG.xlog,"sv('xlog','1')")+chip('OFF',!CFG.xlog,"sv('xlog','0')")+chip('FOLDER',false,'Native.exitLogOpen()')+T(xlogN+' THIS RUN','g')+'</div>';
+ h+='<div class="opt">'+T('ROOM LOG','c')+chip('ON',CFG.xlog,"sv('xlog','1')")+chip('OFF',!CFG.xlog,"sv('xlog','0')")+chip('VIEW',false,'closeSet();rlogView()')+(window.Native&&Native.exitLogOpen?chip('FOLDER',false,'Native.exitLogOpen()'):'')+(window.Native&&Native.exitLogShare?chip('SHARE',false,'Native.exitLogShare()'):'')+T(xlogN+' THIS RUN','g')+'</div>';
  h+='<div class="opt">'+T('FIGHT LOG','c')+chip('SHOW',false,'showLog()')+T(blog.length?blog.length+' LINES':'EMPTY','g')+'</div>';
  if(teach){if(teach.msg)h+='<div class="opt">'+T(teach.msg,'y')+'</div>';else{var ts=TEACH_STEPS[teach.step];
   h+='<div class="opt">'+T('STEP '+(teach.step+1)+'/4','y')+'</div><div class="opt">'+T(ts[0])+'</div><div class="opt">'+T(ts[1])+'</div><div class="opt">'+(teach.busy?T('Reading...','c'):chip('TAP HERE NOW',true,'teachTap()'))+'</div>'}}
