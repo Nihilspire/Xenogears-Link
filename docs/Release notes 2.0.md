@@ -13,3 +13,13 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 - **Story hints**: Jack's edited hint sheet (62 steps), the hint pop-up keeps the last page read, step 38/39 workshop page, step 219 room.
 - **Maps**: doors, chests, gifts, saves and shops at their floor height in 3D; six more entrances; 73 room names added or corrected.
 - **3D map and EYE (experimental)**: smooth camera, sky and backdrops, lighter route line on the handheld.
+
+## 2.0.0.2
+
+- **Follow the path** (SETTINGS > HINTS, on by default): the story hint moves to its next page by itself, so the guide line points on to the next room without opening the hint.
+  - A page with no green spot is done when you walk into its room.
+  - A page with a spot is done after a talk or scene near the spot, or when you have been at the spot and leave the room.
+  - Walking into a room that one of the next three pages names jumps straight to that page.
+  - A page picked by hand is kept until you change room.
+- The top bar flashes HINT 3/7 for a moment when the page moves.
+- The room map has a small < 3/7 > in the corner to change the page without opening the hint.
