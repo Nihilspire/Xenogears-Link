@@ -8,6 +8,7 @@ def actor_pos(f,acts):
             for p,k,arg in surv.ins(o,b,code):
                 if k=='19' and len(arg)>=5 and arg[4]&0xC0==0xC0: out[own[0]]=[chest.s16(arg),chest.s16(arg,2)]; break
                 if k=='1D' and len(arg)>=6: out[own[0]]=[chest.s16(arg),chest.s16(arg,2)]; break
+                if k=='FE1C' and len(arg)>=7 and arg[6]==0xE0 and abs(chest.s16(arg))<5000: out[own[0]]=[chest.s16(arg),chest.s16(arg,2)]; break   # FE1C x, z, y (Noah OPX_1C); added 19 Oct 2026
                 if k=='1B' and len(arg)>=6 and arg[len(arg)-1]&0xC0==0xC0: out[own[0]]=[chest.s16(arg),chest.s16(arg,2)]; break
     # no place in the set-up routine: the room's object placement table, then the trigger zone the give sits behind
     E=exits.ents(f); Z=exits.zones(f)

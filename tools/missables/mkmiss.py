@@ -32,7 +32,7 @@ for r,c,w in L:
 extra={
  17:[[708,3,"Midori's Ring",-121,-959,'1st Citan visit',1]],          # actor 30: 'Found Midori's Ring', flag 0x2C4 bit 3; spot = the room's otherwise unused trigger zone 1, behind the house
  15:[[-1,87,'Spider',-642,1476,'Leaving mtn path',1]],              # actor 16 gives item 87 with no flag
- 428:[[716,10,'Power Crisis + Yamato Belt + 12 more',None,None,'Shevat falls',1]], # actor 12, flag 0x2CC bit 10 (three rocks on the platform)
+ 428:[[716,10,'Power Crisis + Yamato Belt + 12 more',-167,20,'Shevat falls',1]], # actor 12, flag 0x2CC bit 10 (three rocks on the platform); spot from its FE1C (x, z, y)
 }
 open('/home/claude/xenogears-link/app/www/missables.js','w').write('/* missable pickups: see tools/missables/mkmiss.py */\nwindow.MISS='+json.dumps({'tag':tag,'extra':extra},separators=(',',':'))+';\n')
 print(len(tag),'tagged; not found:',miss)

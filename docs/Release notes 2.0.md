@@ -51,3 +51,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.8
 
 - **Disc 1 and THE END screens redone.** The logo with the play time and gold (THE END splits the time by disc), a tile each for treasure, missables, bestiary and deathblows with counts, bars and percentages, and the party as portrait cards with levels. Disc 1 counts cover disc 1 rooms only. The screens now scroll, work in portrait, and Citan is no longer listed twice on the disc 1 screen.
+
+## 2.0.0.9
+
+- **15 hidden pickups now have a spot on the map**, among them the 120 G "secret stash" outside Citan's house, the Thames Speed prizes and the Shevat rocks. These are invisible objects that the game places with a command the treasure scan did not read before; they also get their floor height for the 3D map.
