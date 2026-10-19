@@ -184,7 +184,7 @@ var CFG={
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
-var VERSION='2.0.0.6';   /* set by build.sh */
+var VERSION='2.0.0.7';   /* set by build.sh */
 var HAS_NATIVE=!!window.Native;
 var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
 /* ================= room maps built from the player's own disc =================
@@ -480,7 +480,10 @@ function rawEvent(){return u32(A.SIG)===4&&u8(A.EVT)===1}
 /* in a scripted scene (lock held for 0.6 s, and hiding is switched on)? */
 function inEvent(){if(!CFG.cut||!rawEvent()){evtSince=0;return false}var now=Date.now();if(!evtSince)evtSince=now;return now-evtSince>=600}
 /* should the screen go quiet: scene, text box open, or within the return delay after one */
-function inDialogue(){if(u32(A.SIG)!==4)return false;if(inEvent())return true;if(!CFG.dlg)return false;var now=Date.now();if(rawDialogue()){dlgSeen=now;return true}return now-dlgSeen<CFG.grace}
+/* v2.0.0.7: only text shown while the player is locked (a cutscene, or a story talk that runs FE54) goes quiet. Walk-away talk
+   (townsfolk, shopkeepers: a box with the menu still unlocked, which closes when its speaker goes off screen) keeps the screen
+   as it is; see "Dialogue: walk-away talk vs cutscenes" in the RAM map. */
+function inDialogue(){if(u32(A.SIG)!==4)return false;if(inEvent())return true;if(!CFG.dlg)return false;var now=Date.now();if(rawDialogue()&&rawEvent()){dlgSeen=now;return true}return now-dlgSeen<CFG.grace}
 /* is a text box open right now (the box records, or most of the taught bytes)? */
 function rawDialogue(){if(boxOpen())return true;if(!DLG||!DLG.a.length||u32(A.SIG)!==4)return false;var n=0,t=0;for(var i=0;i<DLG.a.length;i++){var v=u8(DLG.a[i]);if(v==null)continue;t++;if(v)n++}return t>0&&n*10>=t*6}
 /* ================= game state ================= */

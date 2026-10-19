@@ -43,3 +43,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.6
 
 - **Speed helper** (SETTINGS > DEV OPTIONS, off by default): during a game of Speed (Kanna in the Snowfield hideout, or the Thames players) the screen shows the two pile cards, your hand with the cards that can be played now lit and marked L or R, your next 6 cards and how many are left, the same for your opponent, and against Kanna your wins in a row out of 5 (five gives the Elly Jr. Doll).
+
+## 2.0.0.7
+
+- **Walk-away talk keeps the screen.** Only text shown while the game has locked you (cutscenes and story talks) switches the app to its quiet title screen. Ordinary chatter you can walk away from (townsfolk, shopkeepers) now leaves the map and tabs up.
