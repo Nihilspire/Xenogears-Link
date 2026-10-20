@@ -85,4 +85,4 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.15
 
 - **Guide line fix: a tapped door no longer follows you into the next room.** The app remembered a tapped door by its place in the room's list, so in the next room the line went to whichever door had that place (Jack: in Lahan it pointed at the RPS Maniac's house instead of the Mountain Path). A tapped door now only counts in the room it was tapped in.
-- **Lahan to the Mountain Path:** Lahan (rooms 1 and 2) had no door to the Mountain Path in the data, so the line had nowhere to go for "Climb the Mountain Path" and "Head back down". Added at the north end where you arrive from the path.
+- **Lahan to the Mountain Path:** Lahan (rooms 1 and 2) had no door to the Mountain Path in the data, so the line had nowhere to go for "Climb the Mountain Path" and "Head back down". Added at the spot where you arrive from the path.
