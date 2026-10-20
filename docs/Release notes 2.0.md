@@ -66,3 +66,8 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 - **Boss cards only open when tapped.** The boss's row shows TIP; tap any enemy for its card (HP, tip, rewards, drops).
 - Brigandier (Bart's first fight): tip "Just hit him."
 - Brigandier's picture fixed (two long hanging cables shrank the gear to a sliver); Marlute's picture is drawn from above (it is a flat model and showed as a line).
+
+## 2.0.0.12
+
+- **The tour and welcome-back card wait for play.** They used to open as soon as the app linked, which could be the title screen or a dimmed cutscene. Now they wait until you are free to walk on the map or world map (no talk, cutscene, battle, shop or menu) for 3 seconds.
+- Hint step 57 (Bart's Hideout): follow Maison, visit the planning room, then talk to Bart at the dock, with a spot in each of the three rooms.

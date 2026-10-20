@@ -1884,11 +1884,14 @@ function tourPlace(){var st=TOUR[tourAt],hi=document.getElementById('tourhi'),t=
  var mid=(r.top+r.height/2-app.top)/app.height;   /* the card goes to the half of the screen the framed part is not in */
  if(st[0]==='#main'){t.style.top='';t.style.bottom='8%'}else if(mid<0.5){t.style.bottom='';t.style.top='40%'}else{t.style.top='';t.style.bottom='30%'}}
 function tourEnd(){tourAt=-1;clearInterval(tourT);document.getElementById('tour').style.display='none';document.getElementById('tourhi').style.display='none';LS.set('tourDone','1');if(tourTab&&tourTab!==tab)setTab(tourTab)}
-var RECAP={done:false,seenAt:0};
-function recapTick(linked,sig){if(!booted||!linked||(sig!==4&&sig!==5))return;var now=Date.now();
- if(!RECAP.done){RECAP.done=true;var last=+LS.get('seen','0')||0;
-  if(LS.get('tourDone','0')!=='1'){setTimeout(function(){if(tourAt<0)tourGo(0)},800)}
-  else if(last&&now-last>=8*3600*1000)setTimeout(function(){recapShow(now-last)},800)}
+var RECAP={done:false,seenAt:0,okSince:0};
+/* the tour and the welcome-back card wait for real play: the plain map or world map, no talk, cutscene, battle or menu, held for 3 s.
+   So they never land on the title screen, the opening movie or a dimmed scene. */
+function recapTick(linked,sig,md){if(!booted||!linked||(sig!==4&&sig!==5))return;var now=Date.now();
+ if(!RECAP.done){if(md!=='f'||setOpen()||rawEvent()){RECAP.okSince=0;return}if(!RECAP.okSince)RECAP.okSince=now;if(now-RECAP.okSince<3000)return;
+  RECAP.done=true;var last=+LS.get('seen','0')||0;
+  if(LS.get('tourDone','0')!=='1'){setTimeout(function(){if(tourAt<0&&lastMd==='f')tourGo(0);else if(tourAt<0)RECAP.done=false},800)}
+  else if(last&&now-last>=8*3600*1000)setTimeout(function(){if(lastMd==='f')recapShow(now-last);else RECAP.done=false},800)}
  if(now-RECAP.seenAt>30000){RECAP.seenAt=now;LS.set('seen',String(now))}}
 function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/3600000),days=Math.floor(hrs/24),sig=u32(A.SIG);
  var h='<div class="row">'+T('WELCOME BACK','y')+'<span class="sp"></span>'+T('AWAY '+(days?days+(days===1?' DAY':' DAYS'):hrs+' HOURS'),'g')+'</div><div class="sep"></div>';
@@ -1907,7 +1910,7 @@ var ffOn=false;
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
  document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
- recapTick(linked,sig);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
+ recapTick(linked,sig,md);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var hfl=linked&&!bt&&CFG.follow&&Date.now()-HF.flash<2500&&hintNext(),loc=!linked?'NO LINK':hfl?'HINT '+((hintSavedPage(hfl)||0)+1)+'/'+hintPages(hfl):ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
  var rg=linked&&!bt&&!bl&&!ed&&anyRiding(),rgt=rg?' '+T('GEAR','n'):'';   /* someone is in a Gear outside battle */
  put('loc',hfl?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'n')+'</span>':(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
