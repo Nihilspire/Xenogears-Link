@@ -23,6 +23,12 @@ const WP={a:[],b:[]};[['a',[0,1,2,3,4,5,6,7,11,12,13,14]],['b',[8,15,16]]].forEa
 let ARR={};try{ARR=JSON.parse(fs.readFileSync(process.env.XG_EXITCHECK||'/tmp/claude-0/exitcheck.json','utf8')).ARR||{}}catch(e){console.log('no arrival spots')}
 let REVIEW={look:[],far:[],noY:[],noYm:[]};try{REVIEW.look=JSON.parse(fs.readFileSync(__dirname+'/data/review_1.99.0.3.json','utf8'));const r=JSON.parse(fs.readFileSync(__dirname+'/data/exit_review.json','utf8'));REVIEW.far=r.far;REVIEW.noY=r.noY;REVIEW.noYm=r.noYm||[]}catch(e){console.log('no review lists')}
 let VIDX={};try{VIDX=JSON.parse(fs.readFileSync(__dirname+'/data/var_index.json','utf8'))}catch(e){console.log('no var index')}
-const XD={VIDX:VIDX,HPATH:W.HPATH||{},REVIEW:REVIEW,ARR:ARR,HSPLIT:W.HSPLIT||{},WPLACES:WP,ROOMS:W.ROOMS,AREAS:W.AREAS,CHAPTERS:W.CHAPTERS,HNOTE:W.HNOTE,HINTS:HINTS,HROOMS:HR,FAQ:FAQ,EXITS:W.EXITS,TRE:TRE,MARKS:W.MARKS};
+// hint spot check (tools/sheets/spotcheck.py): [step, page, room, x, z, verdict, actor, actor x, actor z, distance, first line]
+let SPOTCHK=[];try{SPOTCHK=JSON.parse(fs.readFileSync(__dirname+'/data/spotcheck.json','utf8')).map(r=>{const np=(r.near_pos||'').split(',').map(Number);return [r.step,r.page,r.room,r.x,r.z,r.verdict,r.near_actor==null?null:r.near_actor,np.length===2?np[0]:null,np.length===2?np[1]:null,r.near_d==null?null:r.near_d,(r.says||'').replace(/[\/|]/g,' ').replace(/!/g,'').replace(/\s+/g,' ').trim()]})}catch(e){console.log('no spot check')}
+// doors with a place on one side only: the room is entered from 'from' at (x, z) but has no door back to it; cutscene rooms left out
+const MISSDOOR=[];for(const a in ARR)for(const b in ARR[a]){const f=+a,d=+b;if(d<=0||d>=720)continue;const ea=W.EXITS[f]||[];if(ea.some(e=>e[2]===d&&e[0]!=null))continue;if(!(W.EXITS[d]||[]).some(e=>e[2]===f))continue;
+ if(/Cutscene/.test((W.ROOMS[f]||'')+(W.ROOMS[d]||'')))continue;const p=ARR[a][b][0];MISSDOOR.push([f,d,p[0],p[1]])}
+MISSDOOR.sort((x,y)=>x[0]-y[0]||x[1]-y[1]);
+const XD={SPOTCHK:SPOTCHK,MISSDOOR:MISSDOOR,VIDX:VIDX,HPATH:W.HPATH||{},REVIEW:REVIEW,ARR:ARR,HSPLIT:W.HSPLIT||{},WPLACES:WP,ROOMS:W.ROOMS,AREAS:W.AREAS,CHAPTERS:W.CHAPTERS,HNOTE:W.HNOTE,HINTS:HINTS,HROOMS:HR,FAQ:FAQ,EXITS:W.EXITS,TRE:TRE,MARKS:W.MARKS};
 fs.writeFileSync(__dirname+'/data.js','window.XD='+JSON.stringify(XD)+';\n');
 console.log(Object.keys(XD).map(k=>k+':'+Object.keys(XD[k]).length).join(' '),fs.statSync(__dirname+'/data.js').size);
