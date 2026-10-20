@@ -1,6 +1,8 @@
 # Benched ideas
 
 ## Achievements (benched 17 Oct 2026, Jack: revisit once bug testing is solid)
+20 Oct 2026: 100 mocked up with icons in `achievements/` (`ach.py` = the list with what each reads and R/P/N status,
+`icons.py` = 16x16 pixel art, `atlas.py` = 72 px icon sheet in list order from pixel art, enemy sprites and portraits).
 Mockup: three screenshots (list, list with progress bars, unlock pop-up), drawn in the app with the game font by
 `achievements_mock.py` (playwright, test page in /home/claude/npc/t). Plan if picked up:
 - 30-40 achievements: story steps/rooms, Disc 1 end and THE END, treasure flags (all / per area), deathblows, levels, gold,
