@@ -93,9 +93,6 @@ input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monos
 #pop{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:4;padding:10rem}
 #pop.show{display:flex}
 #tourhi{position:absolute;display:none;z-index:6;pointer-events:none;border:2rem solid #ffd23c;box-shadow:0 0 0 9999px rgba(0,0,0,.55),0 0 8rem #ffd23c}
-#achpop{position:absolute;left:8rem;right:8rem;top:26rem;display:none;z-index:8;justify-content:center;pointer-events:none}#achpop .win{max-width:330rem;width:100%}#achpop .in{display:flex;flex-direction:column;align-items:flex-start;padding:2rem 4rem}
-.aic{width:36rem;height:36rem;flex:none;background:url(img/ach.png) no-repeat;background-size:360rem 360rem;image-rendering:pixelated}.aic.lk{filter:grayscale(1) brightness(.5)}.aic.hid{filter:brightness(0) opacity(.6)}
-.arow{display:flex;align-items:center;gap:6rem;padding:2rem 0}.arow>.col{flex:1;min-width:0;gap:0}
 #tour{position:absolute;left:8rem;right:8rem;display:none;z-index:7;justify-content:center}#tour .win{max-width:330rem;width:100%}#tour .in{display:flex;flex-direction:column;gap:3rem;padding:2rem 4rem}
 .ttl{width:204rem;height:144rem;opacity:.5;display:block}.btn.big .ttl{width:136rem;height:96rem}
 #boot{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8rem;
@@ -137,7 +134,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
  <div id="boot"></div>
  <div id="pop" onclick="closePop()"></div>
  <div id="set"><div class="win"><div class="in" id="setin"></div></div></div>
- <div id="tourhi"></div><div id="tour"></div><div id="achpop"></div>
+ <div id="tourhi"></div><div id="tour"></div>
 </div>
 <script src="tables.js"></script>
 <script src="enemies.js"></script>
@@ -152,7 +149,6 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
 <script src="world.js"></script>
 <script src="treasure.js"></script>
 <script src="missables.js"></script>
-<script src="achieve.js"></script>
 <script src="marks.js"></script>
 <script src="shops.js"></script>
 <script src="hsplit.js"></script><script src="hints.js"></script>
@@ -192,7 +188,7 @@ var CFG={
  /* battle */
  x3d:LS.get('x3d','0')==='1',xeye:LS.get('xeye','0')==='1',
  route:LS.get('route','1')==='1',follow:LS.get('follow','1')==='1',advise:LS.get('advise','1')==='1',boss:LS.get('boss','1')==='1',smooth:LS.get('smooth','1')==='1',sky:LS.get('sky','1')==='1',   /* 3D map: the way to go, eased camera, sky in EYE (v1.99.0.5) */   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
- enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1',ach:LS.get('ach','1')==='1',
+ enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1',
  /* DEV, Windows: log where each room change happens (exit log) */
  xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
 if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
@@ -370,7 +366,7 @@ function bootStep(){if(booted)return;
 var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['hdot','HINT SPOTS','Green spots'],['route','GUIDE LINE','Path to spot'],['follow','FOLLOW PATH','Pages move on'],
  ['MAP'],['plan','MAP ART','Room pictures'],['maprot','MAP TURNS','Up is camera'],['tre','TREASURE','Chests, taken'],['gift','GIFT SPOTS','Items given'],['places','PLACES','Cubes, shops'],['enl','ENEMY LIST','Room enemies'],['exits','EXITS','Doors, way in'],
  ['BATTLE'],['enc','BATTLE COUNTDOWN','Next fight bar'],['boss','BOSS CARDS','Boss tips'],['turns','TURN ORDER','Who acts next'],['seq','COMBO KEYS','Deathblow keys'],['dball','ALL DEATHBLOWS','Locked too'],
- ['SHOPS'],['advise','SHOP ADVISOR','Gains shown'],['JOURNAL'],['ach','ACHIEVEMENTS','Unlock cards']];
+ ['SHOPS'],['advise','SHOP ADVISOR','Gains shown']];
 /* v2.0: what the app does, a line each, at the top of the start screen's list */
 var START_ABOUT=[['STATUS','Party, gears, HP and fuel live'],['EQUIP','Gear, deathblows, descriptions'],['MAP','Room maps, chests, doors, shops'],['HINTS','Next story step and guide line'],
  ['BATTLE','Enemies, turn order, boss tips'],['SHOPS','Prices and what beats your gear'],['JOURNAL','Story progress and bestiary'],['3D','Rooms in 3D and EYE (SETTINGS)']];
@@ -592,7 +588,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   else{var pd=playerData();if(pd==null)wantPlayer(set);else{want(set,pd+0x10,2);want(set,pd+0x20,12);want(set,pd+0x104,8)}   /* the pointers to the player's block only change with the room; full polls refresh them */
    want(set,A.CAMEYE,32);if(CFG.enc)want(set,A.ENC,0x4C);wantPeople(set,false)}
   return}
- fullKey=key;achWant(set);
+ fullKey=key;
  if(snapOn()){want(set,A.STORY,0x404);want(set,A.PTIME,4);want(set,A.GOLD,4);want(set,A.PARTY,3)}
  if(CFG.boss&&!bossDone&&inBattle())want(set,A.FORM,0x210);want(set,A.MODE,4);if(u32(A.SIG)===7){want(set,A.BTLP-0x48,0x58);want(set,A.BTLE-0x48,0x58);want(set,A.BTLIX,8)}want(set,A.CLK_S,0x74);want(set,A.SIG,4);want(set,A.GOLD,16);want(set,A.STORY,2);want(set,A.RIDE,3);if(CFG.hint)hintFlagWant(set);want(set,A.PARTY-4,7);want(set,A.FIELD,2);
  if(Date.now()-namesAt>3000||!rd(A.NAMES,620)){namesAt=Date.now();want(set,A.NAMES,620)}
@@ -1028,7 +1024,6 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  /* v1.99.0.10: a fight always has someone out, so when the flag would leave nobody (Jack, 17 Oct, PC recomp: five Shakhan Guards in
     Fei, Bart and Elly's fight all flagged from the start, the list empty until they died) the flag is ignored for this fight */
  if(ens.length&&ens.every(function(e){return e.wait||e.hp===0})&&ens.some(function(e){return e.hp>0}))ens.forEach(function(e){if(e.hp>0)e.wait=false});
- achBattle(ens);
  var tx=0,tg=0;ens.forEach(function(e){var q=e.wait?null:reward(e.s);if(q){tx+=q.exp;tg+=q.gold}});
  /* enemy cards: the enemy's own battle sprite (idle frame, from the bank's sprite pack) beside its name; one game pixel = 1rem, shrunk to fit */
  var inFight=[];for(s=0;s<3;s++){var tp=u8(A.BPID+s),tb=A.BSLOT+s*BREC;if(tp==null||tp>10)continue;var tin=(u8(tb+0x15A)&0x80)!==0;if(tin?u32(tb+REC+0x60)>0:u16(tb+0x4C)>0)inFight.push(s)}
@@ -1559,7 +1554,7 @@ function route2d(m,f,lvis,shown,p,to){var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==ke
    A page beside the map: PROGRESS (how far into the story, chapter by chapter, with the play time and party level when each
    chapter began, logged by the app as it sees them) and BESTIARY (every enemy met in a fight while the app was linked, with its HP, rewards and drops). The log and the bestiary are kept
    in this device's storage, not in the game's save, so loading an older save does not remove anything. */
-var JSUB=['best','ach'].indexOf(LS.get('jsub','prog'))>=0?LS.get('jsub','prog'):'prog',JLOG=null,BEST=null,bestNow={};
+var JSUB=LS.get('jsub','prog')==='best'?'best':'prog',JLOG=null,BEST=null,bestNow={};
 function jload(){if(JLOG==null){try{JLOG=JSON.parse(LS.get('jlog','{}'))||{}}catch(e){JLOG={}}}if(BEST==null){try{BEST=JSON.parse(LS.get('best','{}'))||{}}catch(e){BEST={}}}}
 function jsub(k){JSUB=k;LS.set('jsub',k);last={};render()}
 /* called every render in a room: a chapter not logged yet is logged with the play time and the party's average level */
@@ -1571,7 +1566,7 @@ function bestNote(list){if(!list.length||Date.now()-bstart<1500)return;jload();v
  list.forEach(function(e){if(bestNow[e.name]||!e.name||/^Enemy \d/.test(e.name))return;var q=reward(e.s);if(!q)return;bestNow[e.name]=1;var o=BEST[e.name]||(BEST[e.name]={h:0,x:q.exp,g:q.gold,d:[],s:st,n:0});
   o.n++;o.h=Math.max(o.h,e.mhp||0);o.x=q.exp;o.g=q.gold;o.d=q.drops.map(function(d){return [d.n,d.p]});ch=true});if(ch)LS.set('best',JSON.stringify(BEST))}
 function fmtT(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)}
-function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['best','BESTIARY'],['ach','ACHIEVEMENTS']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
+function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['best','BESTIARY']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
  var v=u16(A.STORY),c=window.CHAPTERS||[];
  if(JSUB==='prog'){var pct=v==null?0:Math.min(100,Math.round(v*100/350)),ci=-1;for(var i=0;i<c.length&&v!=null&&c[i][0]<=v;i++)ci=i;var pt=u32(A.PTIME);
   h+='<div class="row">'+T(v!=null&&v>=249?'DISC 2':'DISC 1','c')+T('  '+(ci>=0?c[ci][1]:'-'))+'<span class="sp"></span>'+T(pct+'%','n')+'</div>';
@@ -1580,85 +1575,11 @@ function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['
   h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(pt==null?'-':fmtT(Math.floor(pt/60)))+'</div><div class="sep"></div>';
   for(var k2=ci;k2>=0;k2--){var lg=JLOG[k2];h+='<div class="row">'+T(padr(c[k2][1],22),k2===ci?'y':'w')+'<span class="sp"></span>'+(lg?T(fmtT(lg[0]),'g')+T('  LV','c')+T(pad(lg[1],3)):T('-','g'))+'</div>'}
   for(var k3=ci+1;k3<Math.min(c.length,ci+4);k3++)h+='<div class="row">'+T('???','g')+'</div>'}
- else if(JSUB==='ach')h+=achView();
  else{/* v2.0.1: a grid of every enemy in the game with its battle sprite, in the order the game's banks hold them; one not met yet is a
      black silhouette named ??? */
   var L=bestAll(),met=0;L.forEach(function(e){if(BEST[e.n])met++});h+='<div class="row">'+T('MET','c')+T(' '+met+' / '+L.length)+'<span class="sp"></span>'+T('TAP FOR DETAILS','g')+'</div>';
   h+='<div class="bgrid">'+L.map(function(e){var o=BEST[e.n];return '<div class="bcell'+(o?'':' unk')+'"'+(o?' onclick="bestPop(\''+e.n.replace(/'/g,"\\'")+'\')"':'')+'><div class="bpic">'+sprImg(e.p,56,40)+'</div>'+T(o?e.n.slice(0,15):'???',o?'w':'g')+'</div>'}).join('')+'</div>'}
  return win('<div class="col" style="gap:0;padding:0 2rem">'+h+'</div>','card jr')}
-/* ================= ACHIEVEMENTS (v2.0.1 test) =================
-   100 in achieve.js (ACH_LIST), icons in img/ach.png. Every 5 s on the field or world map the app reads the story step, party,
-   all 11 character and skill records, gold and play time (in a room also the script variables and the bag) and awards what is
-   newly true. Unlocks are kept by name in LS 'ach' as the play time they were earned at; they never re-lock. Boss wins and the
-   biggest hit come from the battle screen: a fight counts as won when every enemy shown ended on 0 HP. The first check after
-   installing awards what the save already has, silently, with one card saying how many. */
-var ACHS={got:null,wins:null,hit:0,due:0,planR:-1,room:false,q:[],popT:0,showing:false,fight:null,prog:{}};
-function achLoad(){if(ACHS.got)return;try{ACHS.got=JSON.parse(LS.get('ach','{}'))||{}}catch(e){ACHS.got={}}try{ACHS.wins=JSON.parse(LS.get('achWins','{}'))||{}}catch(e){ACHS.wins={}}ACHS.hit=+LS.get('achHit','0')||0}
-function achWant(set){if(!CFG.ach||!window.ACH_LIST)return;var now=Date.now(),sig=u32(A.SIG);if(now<ACHS.due||(sig!==4&&sig!==5))return;
- ACHS.due=now+5000;ACHS.planR=replies;ACHS.room=sig===4;
- want(set,A.STORY,2);want(set,A.PARTY-4,4);want(set,A.CHAR,11*REC);want(set,A.SKILL,11*0x20);want(set,A.GOLD,4);want(set,A.PTIME,4);
- if(sig===4){want(set,A.SVAR,0x420);want(set,A.IQTY,150);want(set,A.IID,150);want(set,A.MENU,4);want(set,A.FIELD,2)}}
-function achBits(x){var n=0;while(x){n+=x&1;x>>>=1}return n}
-/* the battle screen's enemies, each poll: names in the fight and the biggest single drop in one enemy's HP */
-function achBattle(ens){if(!CFG.ach)return;var f=ACHS.fight||(ACHS.fight={names:{},hp:{},last:[]}),live=ens.filter(function(e){return !e.wait&&e.name&&!/^Enemy \d/.test(e.name)});
- live.forEach(function(e){f.names[e.name]=1;var k=e.s+'/'+e.mhp,p=f.hp[k];if(p!=null&&e.hp<p){var d=p-e.hp;achLoad();if(d>ACHS.hit&&d<=99999){ACHS.hit=d;LS.set('achHit',String(d))}}f.hp[k]=e.hp});
- f.last=live.map(function(e){return e.hp===0||e.ko})}
-function achFightEnd(){var f=ACHS.fight;ACHS.fight=null;if(!f||!f.last.length||!f.last.every(function(k){return k}))return;achLoad();var ch=false;
- for(var n in f.names)if(!ACHS.wins[n]){ACHS.wins[n]=1;ch=true}if(ch)LS.set('achWins',JSON.stringify(ACHS.wins));ACHS.due=0}
-function achCheck(){var L=window.ACH_LIST;if(!L)return;achLoad();var st=u16(A.STORY);if(st!=null&&st>=1000)st=null;
- var av=u16(A.PARTY-4)||0,gold=u32(A.GOLD),sec=Math.floor((u32(A.PTIME)||0)/60),room=ACHS.room,ch=[],sk=[],id;
- for(id=0;id<=10;id++){ch[id]=readChar(A.CHAR+id*REC);sk[id]=rd(A.SKILL+id*0x20,0x20)}
- if(!ch[0]||!sk[0])return;
- var joined=function(i){var b=function(j){return (av>>j)&1};return i===2?b(2)||b(9):i===6?b(6)||b(10):b(i)},ids=[];for(id=0;id<=10;id++)if((av>>id)&1&&ch[id])ids.push(id);
- var dbN=function(i){if(!sk[i])return 0;var t=window.DBLOW&&DBLOW[i]?DBLOW[i].n.filter(function(x){return x&&x!=='null'}).length:0;return Math.min(achBits(le16(sk[i],4)),t)},
-  dbT=function(i){return window.DBLOW&&DBLOW[i]?DBLOW[i].n.filter(function(x){return x&&x!=='null'}).length:0},
-  eth=function(i){return sk[i]?achBits(le16(sk[i],6)):0},
-  flag=function(v,b){var x=u16(A.SVAR+v);return x!=null&&(x>>b&1)===1};
- var dbAll=0;ids.forEach(function(i){if(i!==10||!((av>>6)&1))dbAll+=dbN(i)});
- var ethAll=0,ethMax=0;ids.forEach(function(i){var n=eth(i);ethAll+=n;ethMax=Math.max(ethMax,n)});
- var lvMax=0,lvMin=999,hpMax=0;ids.forEach(function(i){lvMax=Math.max(lvMax,ch[i].lv);lvMin=Math.min(lvMin,ch[i].lv);hpMax=Math.max(hpMax,ch[i].mhp)});
- var all8=[1,2,3,4,5,6,7,8].every(joined),de=room&&discEndOpen(),tg=0,tt=0,d1g=0,d1t=0;
- if(room&&window.TREASURE)for(var f in TREASURE)TREASURE[f].forEach(function(t){var g=flag(t[0],t[1]);tt++;if(g)tg++;if(+f<612){d1t++;if(g)d1g++}});
- var mg=0,mt=0;if(de&&window.MISS){for(var key in MISS.tag){var q=key.split(':');if(+q[0]>=612)continue;mt++;if(flag(+q[1],+q[2]))mg++}
-  for(var xf in MISS.extra){if(+xf>=612)continue;MISS.extra[xf].forEach(function(e){if(e[0]<0)return;mt++;if(flag(e[0],e[1]))mg++})}}
- jload();var best=Object.keys(BEST||{}).length,rooms=Object.keys(visited).length,sv=function(o){return u16(A.SVAR+o)};
- var P=ACHS.prog={},fresh=[];
- L.forEach(function(a,i){var c=a[4],k=c[0],v=c[1],ok=null,pr=null;
-  if(k==='st'){ok=st!=null&&st>=v}else if(k==='disc'){ok=de?true:null}else if(k==='end'){ok=endingOpen()?true:null}
-  else if(k==='pj'){ok=!!joined(v)}else if(k==='pall'){ok=all8;pr=[[1,2,3,4,5,6,7,8].filter(joined).length,8]}
-  else if(k==='db1'){ok=dbAll>0}else if(k==='dba'){var n=v===6?Math.max((av>>6)&1?dbN(6):0,(av>>10)&1?dbN(10):0):(av>>v)&1?dbN(v):0,t=dbT(v);ok=t>0&&n>=t;if(joined(v)||(av>>v)&1)pr=[n,t]}
-  else if(k==='db50'){ok=dbAll>=50;pr=[dbAll,50]}else if(k==='gdb'){ok=ids.some(function(i){return sk[i]&&(le16(sk[i],8)&0x1FFF)!==0})}
-  else if(k==='eth1'){ok=ethMax>=v;pr=[ethMax,v]}else if(k==='ethall'){ok=ethAll>=v;pr=[ethAll,v]}
-  else if(k==='lv'){ok=lvMax>=v;pr=[lvMax,v]}else if(k==='lvall'){ok=all8&&lvMin>=v;pr=[Math.min(lvMin,v),v]}else if(k==='mhp'){ok=hpMax>=v;pr=[hpMax,v]}
-  else if(k==='boss'){ok=!!ACHS.wins[v]}
-  else if(k==='tre'){if(room){ok=tg>=v;pr=[tg,v]}}else if(k==='tred1'){if(room){ok=d1t>0&&d1g>=d1t;pr=[d1g,d1t]}}
-  else if(k==='fl'){if(room)ok=flag(v,c[2])}else if(k==='forage'){if(room)ok=flag(448,0)&&haveItem(87)===true}
-  else if(k==='nolost'){if(de)ok=mt>0&&mg>=mt}else if(k==='rooms'){ok=rooms>=v;pr=[rooms,v]}
-  else if(k==='rps1'){if(room)ok=(u16(A.FIELD)&0x7FF)===7&&(sv(0x412)|0)>=1&&(sv(0x412)|0)<=5||flag(0x2CE,15)}else if(k==='rpsb'){if(room)ok=flag(0x2CE,15)}
-  else if(k==='kanna1'){if(room)ok=flag(0x194,3)}else if(k==='kanna5'){if(room)ok=((sv(0x194)|0)&7)>=5}
-  else if(k==='hit'){ok=ACHS.hit>=v;pr=[Math.min(ACHS.hit,v),v]}else if(k==='best'){ok=best>=v;pr=[Math.min(best,v),v]}
-  else if(k==='gold'){ok=gold!=null&&gold>=v}else if(k==='time'){ok=sec>=v*3600;pr=[Math.min(Math.floor(sec/3600),v),v]}else if(k==='swift'){if(de)ok=sec>0&&sec<v*3600}
-  if(pr)P[a[1]]=pr;if(ok&&ACHS.got[a[1]]==null){ACHS.got[a[1]]=sec;fresh.push(i)}});
- if(!fresh.length)return;LS.set('ach',JSON.stringify(ACHS.got));
- if(LS.get('achInit','0')!=='1'){if(!room)return;LS.set('achInit','1');achToast(null,Object.keys(ACHS.got).length);return}   /* first check: what the save already has */
- if(fresh.length>3){achToast(null,fresh.length,true);return}fresh.forEach(function(i){achToast(i)})}
-/* render() each frame: run the check once the poll that read its data has come back */
-function achTick(linked){if(!CFG.ach||!linked||ACHS.planR<0||replies<=ACHS.planR)return;ACHS.planR=-1;achCheck()}
-function achIcon(i,cls){return '<span class="aic'+(cls?' '+cls:'')+'" style="background-position:-'+(i%10)*36+'rem -'+Math.floor(i/10)*36+'rem"></span>'}
-function achToast(i,n,batch){ACHS.q.push([i,n,batch]);if(!ACHS.showing)achNext()}
-function achNext(){var el=document.getElementById('achpop'),q=ACHS.q.shift();if(!q){ACHS.showing=false;el.style.display='none';return}ACHS.showing=true;var h;
- if(q[0]==null)h='<div class="row">'+T('ACHIEVEMENTS','c')+'</div><div class="row">'+T(q[1]+(q[2]?' NEW':' EARNED ON THIS SAVE'),'y')+'</div><div class="row">'+T('SEE THE JOURNAL TAB','g')+'</div>';
- else{var a=ACH_LIST[q[0]];h='<div class="arow">'+achIcon(q[0])+'<div class="col"><div class="row">'+T('ACHIEVEMENT','c')+'</div><div class="row">'+T(a[1],'y')+'</div>'+wrap(a[2],34).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join('')+'</div></div>'}
- el.innerHTML=win('<div class="in">'+h+'</div>','card');el.style.display='flex';clearTimeout(ACHS.popT);ACHS.popT=setTimeout(achNext,4500)}
-/* JOURNAL > ACHIEVEMENTS: by group; earned ones show the play time, locked ones a bar where there is a count, hidden ones ??? */
-function achView(){var L=window.ACH_LIST||[];achLoad();var n=0;L.forEach(function(a){if(ACHS.got[a[1]]!=null)n++});
- var h='<div class="row">'+T('EARNED','c')+T(' '+n+' / '+L.length)+'<span class="sp"></span>'+T(CFG.ach?'':'OFF IN SETTINGS','r')+'</div>',grp='';
- L.forEach(function(a,i){var got=ACHS.got[a[1]],hid=a[3]&&got==null,x=a[4][0]==='x',pr=ACHS.prog[a[1]];
-  if(a[0]!==grp){grp=a[0];h+='<div class="sep"></div><div class="row">'+T(grp,'y')+'</div>'}
-  var right=got!=null?T(fmtT(got),'n'):x?T('NOT TRACKED','g'):pr&&!hid?bar('ep',pr[0],pr[1])+T(pr[0]+'/'+pr[1],'g'):'';
-  h+='<div class="arow">'+achIcon(i,got!=null?'':hid?'hid':'lk')+'<div class="col"><div class="row">'+T(hid?'???':a[1],got!=null?'w':'g')+'<span class="sp"></span>'+right+'</div>'
-   +(hid?'<div class="row">'+T('Hidden until earned.','g')+'</div>':wrap(a[2],38).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join(''))+'</div></div>'});
- return h}
 /* every enemy name with a picture, once, in bank order (names that are not enemies, allies and placeholders left out) */
 var BALL=null;
 function bestAll(){if(BALL)return BALL;BALL=[];var seen={};if(window.ENEMIES)ENEMIES.forEach(function(b){b.n.forEach(function(n,i){if(!n||n.length<3||!/^[A-Z]/.test(n)||!okName(n)||ALLY[n]||seen[n]||!(b.p&&b.p[i]))return;seen[n]=1;BALL.push({n:n,p:b.p[i]})})});return BALL}
@@ -1987,9 +1908,9 @@ function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/
 var ffOn=false;
 /* draw the whole screen from what was last read */
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){if(lastMd==='b')achFightEnd();lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
- recapTick(linked,sig,md);achTick(linked);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
+ recapTick(linked,sig,md);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var hfl=linked&&!bt&&CFG.follow&&Date.now()-HF.flash<2500&&hintNext(),loc=!linked?'NO LINK':hfl?'HINT '+((hintSavedPage(hfl)||0)+1)+'/'+hintPages(hfl):ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
  var rg=linked&&!bt&&!bl&&!ed&&anyRiding(),rgt=rg?' '+T('GEAR','n'):'';   /* someone is in a Gear outside battle */
  put('loc',hfl?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'n')+'</span>':(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
@@ -2059,7 +1980,6 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+='<div class="opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(s){return chip(String(s),CFG.scale===s,"sv('scale',"+s+")")}).join('')+'</div>';
  h+=onoff('START SCREEN','intro',CFG.intro);
  h+='<div class="opt">'+T('APP TOUR','c')+chip('SHOW ME AROUND',false,'closeSet();tourGo(0)')+'</div>';
- h+=onoff('ACHIEVEMENTS','ach',CFG.ach);
  h+=setHd('BATTLE');
  h+=onoff('BATTLE COUNTDOWN','enc',CFG.enc);
  h+=onoff('BOSS CARDS','boss',CFG.boss);

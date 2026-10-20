@@ -71,7 +71,3 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 
 - **The tour and welcome-back card wait for play.** They used to open as soon as the app linked, which could be the title screen or a dimmed cutscene. Now they wait until you are free to walk on the map or world map (no talk, cutscene, battle, shop or menu) for 3 seconds.
 - Hint step 57 (Bart's Hideout): follow Maison, visit the planning room, then talk to Bart at the dock, with a spot in each of the three rooms.
-
-## 2.0.0.13 (test build: achievements)
-
-- **Achievements.** 100 of them under JOURNAL > ACHIEVEMENTS, each with an icon (enemy sprites, party portraits or new pixel art): story, party, deathblows, ether, levels, bosses, exploring, mini-games and battle/wealth. Checked every 5 seconds on the field and world map; a card drops in at the top when one is earned. The first check awards what your save already has, quietly, with one card giving the count. Earned ones show the play time; locked ones show progress where there is a count; 19 spoilers show as ??? until earned. Four are not tracked yet (Infinity combo, Globetrotter, Speed Demon, Battle Arena Regular). Switch in SETTINGS > GENERAL.
