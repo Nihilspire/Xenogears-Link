@@ -71,3 +71,13 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 
 - **The tour and welcome-back card wait for play.** They used to open as soon as the app linked, which could be the title screen or a dimmed cutscene. Now they wait until you are free to walk on the map or world map (no talk, cutscene, battle, shop or menu) for 3 seconds.
 - Hint step 57 (Bart's Hideout): follow Maison, visit the planning room, then talk to Bart at the dock, with a spot in each of the three rooms.
+
+## 2.0.0.14 (polish)
+
+- **Smoother screens.** The main area fades in when the screen changes (map, fight, cutscene, tab). In fights, HP bars leave a pale trail where they were after a hit, which slides down after a moment.
+- **Font: < > [ ] =** added, so tab brackets like [PROGRESS] and arrows show; the comma has a tail now, so it no longer looks like a full stop.
+- **Commas in big numbers:** gold, prices, EXP and rewards (1,501,802 G).
+- **No link help.** If the game does not answer at start, or the link drops for more than 3 seconds, a card lists what to check (game running, Network Commands, port; recomp Link on) with SETTINGS and TRY NOW.
+- **Settings tidied.** Each group folds when you tap its heading. GENERAL has RESET TO DEFAULTS (keeps the link, journal and bestiary). DEVELOPER is hidden until DEV OPTIONS is on: tap the version line at the bottom five times.
+- **Empty screens** (no party, no items, a shop without a list, no deathblows yet, a fight still loading, the Battle Arena waiting) show an icon and a line on what fills them.
+- **Android:** a round launcher icon (Fei on the menu blue), and the title logo while the app starts instead of a black screen.

@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
         // Never take input focus: touches still reach this window, but controller and key input stay with the emulator.
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         web = new WebView(this);
-        web.setBackgroundColor(0xFF000000);
+        web.setBackgroundColor(0x00000000);   // see-through until the page draws, so the splash (theme background) shows while starting
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);

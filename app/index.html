@@ -42,7 +42,7 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 .card.on{filter:brightness(1.25)}
 .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem;justify-content:center}
 .bar{margin:0 4rem;width:64rem;height:6rem;border:1rem solid #8c7352;background:#100808;position:relative;flex:none}
-.bar>i{position:absolute;left:0;top:0;bottom:0;display:block}
+.bar>i{position:absolute;left:0;top:0;bottom:0;display:block}.bar>b.gh{position:absolute;left:0;top:0;bottom:0;display:block;background:#fff6c8;opacity:.75;animation:ghs 1.1s linear forwards}@keyframes ghs{0%,36%{width:var(--a)}100%{width:var(--b)}}
 .bar.hp>i{background:linear-gradient(#9f6,#283)}.bar.hp.low>i{background:linear-gradient(#fd6,#a60)}.bar.hp.crit>i{background:linear-gradient(#f66,#900)}
 .bar.ep>i{background:linear-gradient(#6cf,#247)}.bar.en>i{background:linear-gradient(#f77,#822)}
 .bar.s{width:26rem}.bar.f{flex:1;width:auto;min-width:10rem;margin-left:0}.bar.en{height:11rem}
@@ -62,7 +62,7 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 .btn.on{filter:brightness(1.5)}
 .btn.nar{flex:none;width:40rem}
 #app.quiet #top{visibility:hidden}
-#app.stale #main,#app.stale #bot{opacity:.4}#app.stale #enc{visibility:hidden}
+#app.stale #main,#app.stale #bot{opacity:.4}.emp{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;padding:10rem 4rem;flex:1;text-align:center}.emp svg{width:30rem;height:30rem;margin-bottom:3rem}.emp .row{justify-content:center}#lost{position:absolute;left:8rem;right:8rem;top:30rem;display:none;z-index:5;justify-content:center}#lost .win{max-width:330rem;width:100%}.lh{display:flex;flex-direction:column;padding:2rem 4rem;width:100%;box-sizing:border-box}.lhb{height:16rem;margin-top:3rem}#bootin .lh{width:310rem}#app.stale #enc{visibility:hidden}
 .sep{height:1rem;margin:1rem 0;background:#524a31}
 #more{position:absolute;left:50%;bottom:27rem;margin-left:-5rem;width:0;height:0;border:5rem solid transparent;border-top-color:#ffd866;border-bottom:0;display:none;z-index:2;filter:drop-shadow(0 0 1rem #000)}
 #app.movie #top,#app.movie #bot{display:none}
@@ -72,7 +72,7 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 #set .win{flex:1;overflow:auto}
 #set .in{margin:2rem 4rem;display:flex;flex-direction:column;gap:2.5rem}
 .opt{display:flex;align-items:center;gap:6rem;min-height:14rem}
-.sethd{min-height:19rem;margin-top:5rem;border-bottom:1rem solid #524a31}.sethd .t{transform:scale(1.5);transform-origin:left center}
+.sgrp.shut>.opt:not(.sethd){display:none}.setver{margin-top:8rem;min-height:16rem}.sethd{cursor:pointer;min-height:19rem;margin-top:5rem;border-bottom:1rem solid #524a31}.sethd .t{transform:scale(1.5);transform-origin:left center}
 .chip{border:1rem solid #8c7352;padding:3rem 4rem;background:#211810}
 .chip.on{background:#635a39;border-color:#efefef}
 input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monospace;padding:2rem;width:110rem;user-select:text;-webkit-user-select:text}
@@ -97,7 +97,7 @@ input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monos
 .ttl{width:204rem;height:144rem;opacity:.5;display:block}.btn.big .ttl{width:136rem;height:96rem}
 #boot{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8rem;
  background:radial-gradient(ellipse at 50% 30%,#1a1a3a 0%,#0b0b1c 55%,#050509 100%)}
-#bootin{height:38rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5rem}
+#bootin{min-height:38rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5rem}
 #bootset{position:absolute;right:8rem;top:8rem;padding:6rem}
 #boot.start{justify-content:flex-start;align-items:stretch;padding:6rem 8rem;gap:4rem}
 .st-top{display:flex;gap:8rem;align-items:center;flex:none}.st-logo{width:80rem;height:56rem;flex:none}.st-how{flex:1;min-width:0;display:flex;flex-direction:column;gap:1rem}
@@ -134,7 +134,7 @@ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
  <div id="boot"></div>
  <div id="pop" onclick="closePop()"></div>
  <div id="set"><div class="win"><div class="in" id="setin"></div></div></div>
- <div id="tourhi"></div><div id="tour"></div>
+ <div id="tourhi"></div><div id="tour"></div><div id="lost"></div>
 </div>
 <script src="tables.js"></script>
 <script src="enemies.js"></script>
@@ -254,7 +254,7 @@ addEventListener('resize',fit);fit();
 /* ================= bitmap font from the game's menu atlas ================= */
 var GL={},FONT={};
 (function(){var s='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/.';for(var i=0;i<s.length;i++)GL[s[i]]=[i%16,i>>4];
- GL['%']=[2,12];GL['+']=[3,12];GL['-']=[4,12];GL['!']=[5,12];GL[':']=[12,13];GL["'"]=[13,13];GL[',']=[14,13];GL['(']=[0,14];GL[')']=[1,14];GL['&']=[2,14];GL['?']=[3,14];GL['*']=[4,14];GL['"']=[5,14];GL['#']=[6,14];})();
+ GL['%']=[2,12];GL['+']=[3,12];GL['-']=[4,12];GL['!']=[5,12];GL[':']=[12,13];GL["'"]=[13,13];GL[',']=[14,13];GL['(']=[0,14];GL[')']=[1,14];GL['&']=[2,14];GL['?']=[3,14];GL['*']=[4,14];GL['"']=[5,14];GL['#']=[6,14];GL['<']=[7,14];GL['>']=[8,14];GL['[']=[9,14];GL[']']=[10,14];GL['=']=[11,14];})();
 var COLORS={w:null,y:'#ffd866',c:'#7fd8ff',r:'#ff6a5a',g:'#8a8a9a',n:'#9cf58a',o:'#e0a878'};
 var fontReady=false;
 (function(){var im=new Image();im.onload=function(){
@@ -263,8 +263,9 @@ var fontReady=false;
  function px(cx,cy,x,y){var v=255-y*14;b.fillStyle='rgb('+v+','+v+','+v+')';b.fillRect(cx*8+x,cy*8+y,1,1)}
  [[2,2],[3,2],[2,3],[3,3],[2,5],[3,5],[2,6],[3,6]].forEach(function(p){px(12,13,p[0],p[1])});
  [[3,0],[3,1],[2,2]].forEach(function(p){px(13,13,p[0],p[1])});
- [[2,6],[3,6],[3,7],[2,7]].forEach(function(p){px(14,13,p[0],p[1])});
- ['...#. ..#.. .#... .#... .#... ..#.. ...#.','.#... ..#.. ...#. ...#. ...#. ..#.. .#...','.##.. #..#. #.#.. .#... #.#.# #..#. .##.#','.###. #...# ....# ...#. ..#.. ..... ..#..','..... #.#.# .###. ##### .###. #.#.# .....','.#.#. .#.#. ..... ..... ..... ..... .....','.#.#. .#.#. ##### .#.#. ##### .#.#. .#.#.']
+ [[2,4],[3,4],[2,5],[3,5],[3,6],[2,7]].forEach(function(p){px(14,13,p[0],p[1])});   /* comma with a tail (v2.0.0.14; was a square like the full stop) */
+ ['...#. ..#.. .#... .#... .#... ..#.. ...#.','.#... ..#.. ...#. ...#. ...#. ..#.. .#...','.##.. #..#. #.#.. .#... #.#.# #..#. .##.#','.###. #...# ....# ...#. ..#.. ..... ..#..','..... #.#.# .###. ##### .###. #.#.# .....','.#.#. .#.#. ..... ..... ..... ..... .....','.#.#. .#.#. ##### .#.#. ##### .#.#. .#.#.',
+  /* v2.0.0.14: < > [ ] = */ '....# ...#. ..#.. .#... ..#.. ...#. ....#','#.... .#... ..#.. ...#. ..#.. .#... #....','.###. .#... .#... .#... .#... .#... .###.','.###. ...#. ...#. ...#. ...#. ...#. .###.','..... ..... ##### ..... ##### ..... .....']
   .forEach(function(g,ci){g.split(' ').forEach(function(r,y){for(var x=0;x<r.length;x++)if(r[x]==='#')px(ci,14,x+1,y)})});
  Object.keys(COLORS).forEach(function(k){var c=document.createElement('canvas');c.width=128;c.height=120;var x=c.getContext('2d');
   x.drawImage(base,0,0);if(COLORS[k]){x.globalCompositeOperation='multiply';x.fillStyle=COLORS[k];x.fillRect(0,0,128,120);x.globalCompositeOperation='destination-in';x.drawImage(base,0,0)}
@@ -272,6 +273,8 @@ var fontReady=false;
  var st=document.createElement('style');st.textContent=Object.keys(FONT).map(function(k){return '.f'+k+' .g{background-image:url('+FONT[k]+')}'}).join('');
  document.head.appendChild(st);fontReady=true;last={};};im.src=window.FONT_PNG})();
 /* text drawn with the game's font: one span per letter, in colour col (see COLORS) */
+/* v2.0.0.14: thousands commas for gold, EXP and prices */
+function cm(n){return n==null?'-':String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
 function T(s,col){s=String(s);var h='<span class="t f'+(col||'w')+'">';for(var i=0;i<s.length;i++){var g=GL[s[i]];
  h+=g?'<i class="g" style="background-position:-'+g[0]*8+'rem -'+g[1]*8+'rem"></i>':'<i class="g" style="background:none"></i>'}return h+'</span>'}
 /* ================= small helpers ================= */
@@ -358,8 +361,21 @@ function bootStep(){if(booted)return;
  if(!bootGo&&CFG.intro){startScreen();return}
  var h;if(!bootGo)h=win(T('START','y'),'btn boot','onclick="bootStart()"');
  else if(Date.now()-bootAt<5000)h='<div class="row">'+T('CONNECTING...','c')+'</div>';
- else h='<div class="row">'+T('NO REPLY FROM THE GAME','r')+'</div><div class="row">'+T('RETROARCH: NETWORK COMMANDS ON,','g')+'</div><div class="row">'+T('PORT '+CFG.port+'. STILL TRYING...','g')+'</div>';
+ else h=linkHelp('NO REPLY FROM THE GAME',Date.now()-bootAt);
  bootDraw('<span id="bootset" onclick="openSet()" style="display:flex">'+GEAR_ICON+'</span><img class="ttl" src="img/title.png"><div id="bootin">'+h+'</div>','')}
+/* v2.0.0.14: what to check when the game does not answer, shown on the start-up layer after 5 s and over a dimmed screen when a
+   working link drops for more than 3 s. The app keeps asking the whole time; TRY NOW restarts the attempt at once. */
+function linkHelp(title,ms){var t=Math.floor(ms/1000),h='<div class="lh">'+'<div class="row">'+T(title,'r')+'<span class="sp"></span>'+T((t>=60?Math.floor(t/60)+':'+p2(t%60):t+' S'),'g')+'</div>';
+ h+='<div class="row">'+T('RETROARCH','c')+'</div>';
+ h+='<div class="row">'+T('1 ','y')+T('Game running, not the menu','g')+'</div>';
+ h+='<div class="row">'+T('2 ','y')+T('Network Commands ','g')+T('ON','n')+'</div>';
+ h+='<div class="row">'+T('3 ','y')+T('Command Port ','g')+T(String(CFG.port),'n')+'</div>';
+ if(HAS_NATIVE&&CFG.host&&CFG.host!=='127.0.0.1'&&CFG.host!=='localhost')h+='<div class="row">'+T('4 ','y')+T('Same Wi-Fi, host ','g')+T(String(CFG.host),'n')+'</div>';
+ h+='<div class="row">'+T('PC RECOMP','c')+T('  Link on','g')+'</div>';
+ h+='<div class="row lhb">'+chip('SETTINGS',false,'openSet()')+'<span class="sp"></span>'+T('STILL TRYING','g')+'<span class="sp"></span>'+chip('TRY NOW',true,'linkRetry()')+'</div></div>';
+ return h}
+function linkRetry(){bootAt=Date.now();lastTry=0;busy=false;poll();render()}
+var lastTry=0;
 /* The start screen (SHOW AT START, on by default): how to connect, the options most people will want to set once, and START.
    With it switched off the app opens on the plain logo and START button; either way nothing is read until START is pressed. */
 /* every switch the app has, grouped, with a few words each (the start screen scrolls; SET has the same switches and the dev ones) */
@@ -540,8 +556,8 @@ function battlerFighter(base,ix){var hp=s16(base),mh=s16(base+8),i=u32(ix);if(hp
 /* heat (+2): the red tube on the arena screen fills one pixel per 64, 51 pixels full, so full is about 3264 (four save states, 14 Oct) */
 var HEATMAX=3264;
 function battlerView(){var p=battlerFighter(A.BTLP,A.BTLIX),e=battlerFighter(A.BTLE,A.BTLIX+4);
- if(!p||!e)return win('<div class="row">'+T('BATTLE ARENA','y')+'</div><div class="row">'+T('Waiting for the match...','g')+'</div>','card');
- function side(f,who,col){return win('<div class="col"><div class="row">'+T(who,'g')+'</div><div class="row bn">'+T(f.n||'?',col)+'</div><div class="row bigbar">'+bar('hp',f.hp,f.mh,'big')+'</div>'
+ if(!p||!e)return win(empty('wait','BATTLE ARENA','Waiting for the match to start. The bars appear once both gears are in the ring.'),'card');
+ function side(f,who,col){return win('<div class="col"><div class="row">'+T(who,'g')+'</div><div class="row bn">'+T(f.n||'?',col)+'</div><div class="row bigbar">'+bar('hp',f.hp,f.mh,'big','a'+who)+'</div>'
   +'<div class="row bn">'+T(f.hp+' / '+f.mh,f.hp*4<=f.mh?'r':'w')+'</div>'
   +'<div class="row">'+T('HEAT','g')+bar('heat',Math.min(f.ht,HEATMAX),HEATMAX)+(f.ht>=HEATMAX?T('MAX','r'):'')+'</div></div>','card btlr')}
  var dealt=e.mh-e.hp,taken=p.mh-p.hp,lead=p.hp*e.mh-e.hp*p.mh;
@@ -572,7 +588,7 @@ function endScreen(d1){var pt=u32(A.PTIME),g=u32(A.GOLD),av=u16(A.PARTY-4)||0,se
  var h='<div class="endhd"><img class="endlogo" src="img/title.png"><div class="col"><div class="row endbig">'+T(d1?'DISC 1 COMPLETE':'THE END','y')+'</div>';
  h+='<div class="row">'+T('PLAY TIME','c')+'<span class="sp"></span>'+T(sec==null?'-':ft(sec),'w')+'</div>';
  var d1t=+LS.get('d1time','0')||0;if(!d1&&d1t&&sec!=null&&sec>d1t)h+='<div class="row">'+T('DISC 1','g')+'<span class="sp"></span>'+T(ft(d1t),'g')+'</div><div class="row">'+T('DISC 2','g')+'<span class="sp"></span>'+T(ft(sec-d1t),'g')+'</div>';
- h+='<div class="row">'+T('GOLD','c')+'<span class="sp"></span>'+T(g==null?'-':String(g),'w')+T(' G','y')+'</div></div></div>';
+ h+='<div class="row">'+T('GOLD','c')+'<span class="sp"></span>'+T(cm(g),'w')+T(' G','y')+'</div></div></div>';
  function tile(lab,v,m,note){var full=m&&v>=m;return win('<div class="col"><div class="row">'+T(lab,'c')+'<span class="sp"></span>'+T(v+'/'+m,full?'n':'w')+'</div><div class="row">'+bar(full?'hp':'ep',v,m,'f')+T(pad(Math.round(v*100/m),3)+'%',full?'n':'g')+'</div></div>','card endt')}
  var tl=tile('TREASURE',tg,tt)+tile('MISSABLE',mg,mt)+tile('BESTIARY',bm,all.length)+(dbt?tile('DEATHBLOW',db,dbt):'');
  h+='<div class="endg">'+tl+'</div>';
@@ -627,7 +643,13 @@ function readGear(base){var b=rd(base,REC);if(!b)return null;
  return{hp:le32(b,0x60),mhp:le32(b,0x64),fuel:le16(b,0x38),mfuel:le16(b,0x3A),frame:b[2],engine:b[3],armor:b[8],acc:[b[9],b[10],b[11]],wp:[b[12],b[13],b[14],b[15]]}}
 /* ================= field cards (STATUS, EQUIP, ITEMS) ================= */
 /* size: 's' short, 'f' fills the row, none = standard */
-function bar(cls,v,m,size){var p=m>0?Math.max(0,Math.min(100,v*100/m)):0;var c=cls;if(cls==='hp'){if(p<=25)c+=' crit';else if(p<=50)c+=' low'}return '<span class="bar '+c+(size?' '+size:'')+'"><i style="width:'+p+'%"></i></span>'}
+/* v2.0.0.14: a bar given a key gk keeps a pale 'ghost' where it was after a drop: it holds 0.4 s, then slides down to the new value
+   (fighting-game style). The ghost's CSS animation is given a negative delay, so a redraw mid-slide carries on from where it was. */
+var GH={};
+function ghost(gk,p){var g=GH[gk],now=Date.now();if(!g||p>g.to){GH[gk]={a:p,to:p,t0:0};return ''}
+ if(p<g.to){var cur=g.a;if(g.t0){var k=Math.min(1,Math.max(0,(now-g.t0-400)/700));cur=g.a+(g.to-g.a)*k}g.a=Math.round(Math.max(cur,g.to)*10)/10;g.to=p;g.t0=now}
+ var el=now-g.t0;if(!g.t0||el>=1100)return '';return '<b class="gh" style="--a:'+g.a+'%;--b:'+g.to+'%;width:'+g.to+'%;animation-delay:-'+el+'ms"></b>'}
+function bar(cls,v,m,size,gk){var p=m>0?Math.max(0,Math.min(100,v*100/m)):0;var c=cls;if(cls==='hp'){if(p<=25)c+=' crit';else if(p<=50)c+=' low'}return '<span class="bar '+c+(size?' '+size:'')+'">'+(gk?ghost(gk,p):'')+'<i style="width:'+p+'%"></i></span>'}
 /* colour of an HP number: red at a quarter or less, yellow at half or less */
 function hpCol(v,m){return v===0?'r':m&&v*4<=m?'r':m&&v*2<=m?'y':'w'}
 /* one of the game's bordered windows around inner */
@@ -675,7 +697,7 @@ function equipCard(id){var c=readChar(A.CHAR+id*REC);if(!c)return win(T('...','g
 /* ITEMS tab: the item bag, two columns, tap for a description */
 function itemsView(){var q=rd(A.IQTY,150),ids=rd(A.IID,150);if(!q||!ids)return win(T('...','g'),'list');var h='',n=0;
  for(var i=0;i<150;i++){if(!q[i])continue;var nm=TABLES.items[ids[i]];if(!nm)continue;n++;h+='<div class="it" onclick="showDesc(\'items\','+ids[i]+','+q[i]+')">'+T(padr(nm,13))+T(pad(q[i],2),'y')+'</div>'}
- if(!n)h=T('NO ITEMS','g');return win(h,'list')}
+ if(!n)h=empty('bag','NO ITEMS','Items you pick up or buy show here, with what each one does.');return win(h,'list')}
 /* ================= shop screen =================
    While a shop is open the room program holds its screen number at MENU (4 item shop, 5 gear shop; -1 when no menu is up) and the
    shop number at MARG. SHOPS lists what each shop sells; prices come from STATS. A price the party cannot pay is red. */
@@ -731,9 +753,19 @@ var GAINLBL={weapons:'ATK',equipment:'DEF',gear_frames:'HP',gear_armor:'ARM',gea
 function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='';
  SHOPCAT[sh.k].forEach(function(c,ci){var l=sh.st[ci]||[],t=window.STATS&&STATS[c[0]],rows='',bag=have[c[0]]||{},use=have.use[c[0]]||{};
   l.forEach(function(id){var nm=gearName(c[0],id);if(!nm)return;var r=t&&t[id],pr=r?r[SHOPPRICE[c[0]]]:null,o=bag[id]||0,gn=CFG.advise&&GAINLBL[c[0]]?shopGain(c[0],id):null;
-   rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+')">'+T(nm.trim(),o||use[id]?'n':'w')+'<span class="sp"></span>'+(gn?T('+'+gn.d+' '+GAINLBL[c[0]]+' '+gn.w.trim().slice(0,8)+'  ','n'):'')+T(pad(pr==null?'?':pr,6),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
+   rows+='<div class="it" onclick="showDesc(\''+c[0]+'\','+id+','+o+')">'+T(nm.trim(),o||use[id]?'n':'w')+'<span class="sp"></span>'+(gn?T('+'+gn.d+' '+GAINLBL[c[0]]+' '+gn.w.trim().slice(0,8)+'  ','n'):'')+T(pad(pr==null?'?':cm(pr),7),pr!=null&&g!=null&&pr>g?'r':'y')+'</div>'});
   if(rows)h+='<div class="shd">'+T(c[1],'c')+'</div>'+rows});
- return win(h||T('NOTHING LISTED','g'),'list shop')}
+ return win(h||empty('shop','NOTHING LISTED','This shop has no list in the app yet. Prices show for shops it knows.'),'list shop')}
+/* v2.0.0.14: empty and waiting screens: a small line icon, a title and one sentence on what fills it */
+var EMPTY_ICON={
+ party:'<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5"/>',
+ bag:'<path d="M5 9h14l-1.5 11h-11z"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/>',
+ shop:'<circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5c0-1.2 1.1-2 2.5-2s2.5.8 2.5 2-1.1 1.7-2.5 2-2.5.9-2.5 2.1 1.1 2 2.5 2 2.5-.8 2.5-2"/>',
+ sword:'<path d="M5 19l9-9M14 10l4-5 1 1-5 4M7 14l3 3M4 20l2-2"/>',
+ wait:'<path d="M7 4h10M7 20h10M8 4c0 5 8 5 8 8s-8 3-8 8M16 4c0 5-8 5-8 8s8 3 8 8"/>',
+ fist:'<path d="M7 11V8a1.5 1.5 0 0 1 3 0v2M10 10V7a1.5 1.5 0 0 1 3 0v3M13 10V8a1.5 1.5 0 0 1 3 0v3M16 11v-1a1.5 1.5 0 0 1 3 0v3c0 4-3 7-6.5 7S7 17 7 14v-3"/>'};
+function empty(ic,title,line){var h='<div class="emp"><svg viewBox="0 0 24 24" fill="none" stroke="#8a8a9a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+EMPTY_ICON[ic]+'</svg>'+'<div class="row">'+T(title,'c')+'</div>';
+ wrap(line,36).forEach(function(l){h+='<div class="row">'+T(l,'g')+'</div>'});return h+'</div>'}
 /* the main area outside battle: the card or list for the chosen tab */
 /* The party the game's own menu shows: the three party bytes, less anyone whose bit is clear in (members u16 at PARTY-4 AND
    shown-mask u16 at PARTY-2). Scenes put a member in the party before they join on screen (Elly at the start of Blackmoon Forest);
@@ -741,7 +773,7 @@ function shopView(sh){var g=u32(A.GOLD),have=shopHave(),h='';
    loadPartyMembers). */
 function shownParty(p){var av=u16(A.PARTY-4),fm=u16(A.PARTY-2),m=av!=null&&fm!=null?av&fm:0xFFFF,o=[];for(var i=0;i<3;i++){var c=p[i];if(c==null||c>10)continue;if((m>>(c&0x1F))&1||!(m&0x7FF))o.push(c)}return o}
 function fieldView(){var p=rd(A.PARTY,3);if(!p)return win(T(TEST?'...':HAS_NATIVE?'WAITING FOR GAME':'NO LINK ON THIS DEVICE','g'),'card');var ids=shownParty(p);
- if(tab==='items')return itemsView();if(tab==='map')return mapView();if(tab==='journal')return journalView();if(!ids.length)return win(T('NO PARTY YET','g'),'card');
+ if(tab==='items')return itemsView();if(tab==='map')return mapView();if(tab==='journal')return journalView();if(!ids.length)return win(empty('party','NO PARTY YET','Your party shows here once the game has loaded a save or a new game.'),'card');
  return ids.map(tab==='equip'?equipCard:statusCard).join('')}
 /* ================= battle screen =================
    Enemy names. Confirmed on the handheld (v1.7): a fight's enemies fill the enemy slots in formation order, not in the order
@@ -931,7 +963,7 @@ function bossCheck(list){if(!CFG.boss||bossDone||Date.now()-bstart<1500||!list.l
 function showEnemy(s,name,mhp,boss){var q=reward(s);if(!q)return;var tip=bossTip(name),h='<div class="row">'+(boss?T('BOSS  ','y'):'')+T(name||'Enemy','r')+'</div>';
  if(mhp){var ch2=u16(A.BSLOT+s*BREC+0x4C),cg=u32(A.BSLOT+s*BREC+REC+0x64)>0?u32(A.BSLOT+s*BREC+REC+0x60):ch2;h+='<div class="row">'+T('HP','c')+T(pad(cg==null?'-':cg,7))+T(' / ','g')+T(String(mhp))+'</div>'}
  if(tip)wrap(tip,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});
- h+='<div class="row">'+T('EXP','c')+T(pad(q.exp,7))+'<span class="sp"></span>'+T(pad(q.gold,6))+T(' G','y')+'</div>';
+ h+='<div class="row">'+T('EXP','c')+T(pad(cm(q.exp),8))+'<span class="sp"></span>'+T(pad(cm(q.gold),7))+T(' G','y')+'</div>';
  if(q.drops.length)q.drops.forEach(function(d){h+='<div class="row">'+T(padr(d.n,13))+'<span class="sp"></span>'+T(pad(d.p,3)+'%','n')+'</div>'});else h+='<div class="row">'+T('No drops.','g')+'</div>';
  var sl=statusList(s);if(sl.length){h+='<div class="row">'+T('STATUS','c')+'</div>';sl.forEach(function(e){h+='<div class="row">'+T(e.n,e.bad?'r':'n')+'</div>'})}
  var im=immuneList(s);if(im.length){h+='<div class="row">'+T('IMMUNE TO','c')+'</div>';wrap(im.join(', '),26).forEach(function(l){h+='<div class="row">'+T(l,'o')+'</div>'})}
@@ -1039,9 +1071,9 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
  shownE.forEach(function(e){var pc=names[e.s-3].p,im='',etag=e.ko?'':statusTag(e.s);   /* with a tag the HP number is not padded, so the bar keeps some width */
   if(pc)im=sprImg(pc,28,ch-1);
   en+='<div class="ec'+(e.ko?' dim':'')+'" style="height:'+ch+'rem" onclick="showEnemy('+e.s+',\''+enm[e.s]+'\','+(e.mhp|0)+','+(e.name===bossName?1:0)+')"><span class="es">'+im+'</span><div class="col">'
-   +'<div class="row">'+T(e.name,'r')+(CFG.boss&&bossTip(e.name)?'<span class="sp"></span>'+T('TIP','y'):'')+'</div><div class="row">'+idTag(rk,e.s)+bar('en',e.hp,e.mhp,'f')+etag+T(etag?String(e.hp):pad(e.hp,5),hpCol(e.hp,e.mhp))+'</div></div></div>'});
+   +'<div class="row">'+T(e.name,'r')+(CFG.boss&&bossTip(e.name)?'<span class="sp"></span>'+T('TIP','y'):'')+'</div><div class="row">'+idTag(rk,e.s)+bar('en',e.hp,e.mhp,'f','e'+e.s)+etag+T(etag?String(e.hp):pad(e.hp,5),hpCol(e.hp,e.mhp))+'</div></div></div>'});
  battleTot=ens.length?[tx,tg]:null;
- var left=win(en||T('NO ENEMY DATA','g'),tight?'tight':'','id="enemies"'),pr='',ids=[],act=actingSlot(),selGear=-1;
+ var left=win(en||empty('sword','READING THE FIGHT','Enemies show here in a moment.'),tight?'tight':'','id="enemies"'),pr='',ids=[],act=actingSlot(),selGear=-1;
  if(act>=0&&act!==lastAct)dbSel=act;lastAct=act;
  for(s=0;s<3;s++){var pid=u8(A.BPID+s);if(pid!=null&&pid<=10&&rd(A.BSLOT+s*BREC,REC))ids[s]=pid}
  if(ids[dbSel]==null)for(s=2;s>=0;s--)if(ids[s]!=null)dbSel=s;
@@ -1050,11 +1082,11 @@ function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),any
   var r='<div class="pm'+(ko?' dim':'')+'" onclick="dbSel='+s+';last={};render()">';
   var stg=ko?'':statusTag(s);
   if(ing&&g){r+='<div class="row">'+T(padr(cname(id),6),sel?'w':'y')+'<span class="sp"></span>'+T('HP','c')+T(pad(g.hp,6),hpCol(g.hp,g.mhp))+'</div>';
-   r+='<div class="row">'+bar('hp',g.hp,g.mhp,'f')+stg+T('FU','c')+T(pad(g.fuel,6))+'</div>'}
+   r+='<div class="row">'+bar('hp',g.hp,g.mhp,'f','g'+s)+stg+T('FU','c')+T(pad(g.fuel,6))+'</div>'}
   else{r+='<div class="row">'+T(padr(cname(id),6),sel?'w':'y')+'<span class="sp"></span>'+T('HP','c')+T(pad(c.hp,4),hpCol(c.hp,c.mhp))+T('/','g')+T(pad(c.mhp,4))+'</div>';
-   r+='<div class="row">'+bar('hp',c.hp,c.mhp,'f')+stg+T('EP','c')+T(pad(c.ep,3))+T('/','g')+T(pad(c.mep,3))+'</div>'}
+   r+='<div class="row">'+bar('hp',c.hp,c.mhp,'f','c'+s)+stg+T('EP','c')+T(pad(c.ep,3))+T('/','g')+T(pad(c.mep,3))+'</div>'}
   pr+=r+'</div>'}
- var right=win(pr||T('NO PARTY DATA','g'),'','id="bparty"')+win(ids[dbSel]==null?'':selGear>=0?gdbList(selGear,ids[dbSel]):dbList(ids[dbSel]),'','id="dbl"');
+ var right=win(pr||empty('party','READING THE PARTY','Your fighters show here in a moment.'),'','id="bparty"')+win(ids[dbSel]==null?'':selGear>=0?gdbList(selGear,ids[dbSel]):dbList(ids[dbSel]),'','id="dbl"');
  return '<div class="bat"><div class="bl">'+left+'</div><div class="br">'+right+'</div></div>'+timeline(rk,names,enm,tb)}
 /* deathblow list on the battle screen. Every character uses the same button strings, in the order the deathblows are stored:
    T = triangle (weak, 1 AP), S = square (strong, 2 AP), X = cross (fierce, 3 AP); a string's AP cost is the sum.
@@ -1107,7 +1139,7 @@ function dbRows(id){var t=window.DBLOW&&DBLOW[id];if(!t)return null;var b=A.CHAR
   out.push({i:i,n:n,got:got,need:need,have:have,lv:t.l?t.l[i]:0,lock:!got&&!!t.l&&t.l[i]>lv,q:q,pts:pts,clv:lv})}
  return out}
 /* the deathblow list for a character on foot (name, button sequence when switched on, progress) */
-function dbList(id){var rows=dbRows(id),h='';if(rows)rows=rows.filter(function(d){return d.got||CFG.dball});if(!rows||!rows.length)return T('No deathblows.','g');
+function dbList(id){var rows=dbRows(id),h='';if(rows)rows=rows.filter(function(d){return d.got||CFG.dball});if(!rows||!rows.length)return empty('fist','NO DEATHBLOWS YET','Use attack combos: each one learns as its attack points fill. SHOW ALL in settings lists the locked ones.');
  rows.forEach(function(d){var pc=Math.min(99,Math.floor(d.have*100/d.need)),cb=combo(d.i);
   h+='<div class="row'+(d.got?'':d.lock?' dim':' dm')+'" onclick="showMove('+id+','+d.i+')">'+T(d.n,d.got?'w':'g')+'<span class="sp"></span>'+(CFG.seq?cb.h:'')+(d.got?T(pad(cb.ap,3),'c'):d.lock?T('L'+pad(d.lv,2),'g'):T(pad(pc,2)+'%','g'))+'</div>'});
  return h}
@@ -1586,7 +1618,7 @@ function bestAll(){if(BALL)return BALL;BALL=[];var seen={};if(window.ENEMIES)ENE
 function bestPop(k){jload();var o=BEST[k];if(!o)return;var h='<div class="row">'+T(k,'r')+'</div>';var pc=null;if(window.ENEMIES)ENEMIES.some(function(b){var i=b.n.indexOf(k);if(i>=0&&b.p&&b.p[i]){pc=b.p[i];return true}return false});
  if(pc)h+='<div class="row" style="height:auto;justify-content:center">'+sprImg(pc,120,60)+'</div>';
  h+='<div class="row">'+T('HP','c')+T(pad(o.h,6))+'<span class="sp"></span>'+T('FIGHTS','c')+T(pad(o.n,4))+'</div>';
- h+='<div class="row">'+T('EXP','c')+T(pad(o.x,7))+'<span class="sp"></span>'+T(pad(o.g,6))+T(' G','y')+'</div>';
+ h+='<div class="row">'+T('EXP','c')+T(pad(cm(o.x),8))+'<span class="sp"></span>'+T(pad(cm(o.g),7))+T(' G','y')+'</div>';
  if(o.d&&o.d.length)o.d.forEach(function(d){h+='<div class="row">'+T(padr(d[0],15))+'<span class="sp"></span>'+T(pad(d[1],3)+'%','n')+'</div>'});else h+='<div class="row">'+T('No drops.','g')+'</div>';
  var tip=bossTip(k);if(tip)wrap(tip,30).forEach(function(l){h+='<div class="row">'+T(l,'n')+'</div>'});popup(h,tip?250:200)}
 /* ================= random battles =================
@@ -1908,14 +1940,15 @@ function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/
 var ffOn=false;
 /* draw the whole screen from what was last read */
 function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
- document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
+ document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){if(lastMd)fadeMain();lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
+ var lo=document.getElementById('lost'),lsec=Date.now()-lastOk;if(booted&&!TEST&&lsec>3000&&!setOpen()){lo.style.display='flex';var lh=win(linkHelp('LINK LOST',lsec),'card');if(lo._h!==lh){lo._h=lh;lo.innerHTML=lh}}else if(lo.style.display!=='none'){lo.style.display='none';lo._h=''}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';
  recapTick(linked,sig,md);if(linked)track();if(linked&&!bt)hintFollow();var ar=linked&&!bt&&sig===4?areaOf(u16(A.FIELD)==null?null:u16(A.FIELD)&0x7FF):null;
  var hfl=linked&&!bt&&CFG.follow&&Date.now()-HF.flash<2500&&hintNext(),loc=!linked?'NO LINK':hfl?'HINT '+((hintSavedPage(hfl)||0)+1)+'/'+hintPages(hfl):ed?'THE END':bt?'BATTLE':inBattling()?'BATTLER':chapter()||(sig===5?'WORLD MAP':ar?ar.s:'');   /* the MAP tab names the place, so the bar names the chapter */
  var rg=linked&&!bt&&!bl&&!ed&&anyRiding(),rgt=rg?' '+T('GEAR','n'):'';   /* someone is in a Gear outside battle */
  put('loc',hfl?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'n')+'</span>':(linked&&!bt&&CFG.hint&&chapter()?'<span onclick="showHint()" style="padding:4rem 6rem 4rem 0">'+T(loc,'y')+'</span>':T(loc,bt||!linked?'r':'y'))+rgt);   /* tap the chapter name for a story hint */
  var pt=u32(A.PTIME),pts=pt==null?null:Math.floor(pt/60),hh=pts==null?null:Math.floor(pts/3600),mm=pts==null?null:Math.floor(pts/60)%60,ss=pts==null?null:pts%60;   /* the play time itself (vertical blanks); the clock bytes can be stale after a load */put('clock',hh==null?'':T(p2(hh)+':'+p2(mm)+(loc.length+(rg?5:0)>8?'':':'+p2(ss))));
- var g=u32(A.GOLD);put('gold',g==null?'':T(String(g))+T(' G','y'));
+ var g=u32(A.GOLD);put('gold',g==null?'':T(cm(g))+T(' G','y'));
  put('gearbtn','<span onclick="openSet()" style="padding:3rem 0 3rem 6rem;display:flex">'+GEAR_ICON+'</span>');
  if(mv){document.getElementById('main').className='';put('main',win('<img class="ttl" src="img/title.png">'+T('FF',ffOn?'n':'w'),'btn big'+(ffOn?' on':''),'onclick="ff()"'));put('bot','');encDraw();moreHint();return}
  document.getElementById('main').className=pk||ed||de||(!dl&&!bt&&!sh&&(tab==='equip'||tab==='journal'))?'scroll':'';if(!bt)journalTick();
@@ -1928,14 +1961,16 @@ function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SI
  var b='';if(dl)b+='<span class="sp"></span>';
  else if(bl)b+=win(T('BATTLE ARENA','y')+'<span class="sp"></span>'+T('BATTLER','g'),'rew');
  else if(sh)b+=win(T(sh.k===4?'ITEM SHOP':'GEAR SHOP','y')+'<span class="sp"></span>'+T('GREEN','n')+T(': YOU HAVE ONE','g'),'rew');
- else if(bt)b+=battleTot?win(T('Rewards:','y')+'<span class="sp"></span>'+T('EXP','c')+T(pad(battleTot[0],7))+T(pad(battleTot[1],8))+T(' G','y'),'rew',CFG.dev?'onclick="showLog()"':''):'<span class="sp"></span>';
+ else if(bt)b+=battleTot?win(T('Rewards:','y')+'<span class="sp"></span>'+T('EXP','c')+T(pad(cm(battleTot[0]),8))+T(pad(cm(battleTot[1]),9))+T(' G','y'),'rew',CFG.dev?'onclick="showLog()"':''):'<span class="sp"></span>';
  else [['status','STATUS'],['equip','EQUIP'],['items','ITEMS'],['map','MAP'],['journal',remSize()[0]<380?'LOG':'JOURNAL']].forEach(function(t){b+=win(T(t[1],tab===t[0]?'y':'g'),'btn'+(tab===t[0]?' on':''),'onclick="setTab(\''+t[0]+'\')"')});
  b+=win(T('FF',ffOn?'n':'w'),'btn nar'+(ffOn?' on':''),'onclick="ff()"');put('bot',b)}
 /* small arrow above the bottom bar while the EQUIP list has more below */
 function moreHint(){var m=document.getElementById('main'),e=document.getElementById('more');e.style.display=m.className==='scroll'&&m.scrollTop+m.clientHeight<m.scrollHeight-4&&!document.getElementById('app').className?'block':'none'}
 document.getElementById('main').addEventListener('scroll',moreHint);
 /* switch tab */
-function setTab(t){tab=t;LS.set('tab',t);fullKey='';poll();render()}
+function setTab(t){var ch=t!==tab;tab=t;LS.set('tab',t);fullKey='';poll();render();if(ch)fadeMain(120)}
+/* v2.0.0.14: a short fade-in of the main area when the screen changes (map, battle, cutscene, tab) */
+function fadeMain(ms){var m=document.getElementById('main');if(m&&m.animate)try{m.animate([{opacity:0},{opacity:1}],{duration:ms||180,easing:'ease-out'})}catch(e){}}
 /* toggle RetroArch's fast forward */
 function ff(){ffOn=!ffOn;if(HAS_NATIVE)Native.send(CFG.host,CFG.port,'FAST_FORWARD');render()}
 /* ================= settings panel ================= */
@@ -1974,12 +2009,23 @@ function readout(){var f=u16(A.FIELD),world=u32(A.SIG)===5,o=[];f=f==null?null:f
  if(DLG)o.push('signals (address=value now):',DLG.a.map(function(a){var v=u8(a);return a.toString(16)+'='+(v==null?'--':(v<16?'0':'')+v.toString(16))}).join(' '));
  return o}
 /* fill the settings panel */
-function setHd(t){return '<div class="opt sethd">'+T(t,'y')+'</div>'}
-function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"></span>'+chip('CLOSE',false,'closeSet()')+'</div>';
+/* v2.0.0.14: each group folds: tap its heading (kept in LS 'setc'). The panel is opened in drawSet and each heading closes the group
+   before it, so '</div>' first. DEVELOPER only shows once DEV OPTIONS is on, or after five taps on the version line. */
+var SETC=(function(){try{return JSON.parse(LS.get('setc','{}'))||{}}catch(e){return {}}})(),devTaps=0;
+function setHd(t){var sh=!!SETC[t];return '</div><div class="sgrp'+(sh?' shut':'')+'"><div class="opt sethd" onclick="setTog(\''+t+'\')">'+T((sh?'+ ':'- ')+t,'y')+'</div>'}
+function setTog(t){if(SETC[t])delete SETC[t];else SETC[t]=1;LS.set('setc',JSON.stringify(SETC));lastSet='';drawSet()}
+function devTap(){if(CFG.dev)return;if(++devTaps>=5){devTaps=0;sv('dev','1')}else{lastSet='';drawSet()}}
+/* RESET: every switch back to how the app ships; the link (host, port), your notes and the journal are kept */
+var SET_KEYS=['mode','poll','fast','dot','intro','dev','scale','maprot','plan','hdot','tre','gift','enl','hint','exits','places','x3d','xeye','route','follow','advise','boss','smooth','sky','enc','turns','seq','dball','xlog','rps','speed','quiet','map3d','map3eye','setc'];
+function setReset(){popup('<div class="row">'+T('RESET SETTINGS','y')+'</div><div class="sep"></div>'+wrap('Every switch goes back to how the app ships. The link (host and port), the journal, the bestiary and your notes are kept.',40).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join('')
+ +'<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('RESET',true,'event.stopPropagation();setResetGo()')+'</div>',240);document.getElementById('pop').style.zIndex=6}
+function setResetGo(){SET_KEYS.forEach(function(k){try{localStorage.removeItem('xg_'+k)}catch(e){}});location.reload()}
+function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"></span>'+chip('CLOSE',false,'closeSet()')+'</div><div>';
  h+=setHd('GENERAL');
  h+='<div class="opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(s){return chip(String(s),CFG.scale===s,"sv('scale',"+s+")")}).join('')+'</div>';
  h+=onoff('START SCREEN','intro',CFG.intro);
  h+='<div class="opt">'+T('APP TOUR','c')+chip('SHOW ME AROUND',false,'closeSet();tourGo(0)')+'</div>';
+ h+='<div class="opt">'+T('ALL SETTINGS','c')+chip('RESET TO DEFAULTS',false,'setReset()')+'</div>';
  h+=setHd('BATTLE');
  h+=onoff('BATTLE COUNTDOWN','enc',CFG.enc);
  h+=onoff('BOSS CARDS','boss',CFG.boss);
@@ -1999,7 +2045,7 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+='<div class="opt">'+T('3D MAP','c')+chip('ON',CFG.x3d,CFG.x3d?'':"expAsk('x3d')")+chip('OFF',!CFG.x3d,"sv('x3d','0')")+'</div>';
  if(CFG.x3d)h+='<div class="opt">'+T('EYE MODE','c')+chip('ON',CFG.xeye,CFG.xeye?'':"expAsk('xeye')")+chip('OFF',!CFG.xeye,"sv('xeye','0')")+'</div>';
  if(CFG.x3d){h+=onoff('SMOOTH 3D','smooth',CFG.smooth);if(CFG.xeye)h+=onoff('SKY IN EYE','sky',CFG.sky)}
- h+=setHd('DEVELOPER');
+ if(CFG.dev){h+=setHd('DEVELOPER');
  /* everything below is for setting up and debugging the link; hidden unless DEV OPTIONS is switched on */
  h+='<div class="opt">'+T('DEV OPTIONS','c')+chip('SHOW',CFG.dev,"sv('dev','1')")+chip('HIDE',!CFG.dev,"sv('dev','0')")+'</div>';
  if(CFG.dev){
@@ -2016,7 +2062,8 @@ function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"
  h+='<div class="opt">'+T('FIGHT LOG','c')+chip('SHOW',false,'showLog()')+T(blog.length?blog.length+' LINES':'EMPTY','g')+'</div>';
  if(teach){if(teach.msg)h+='<div class="opt">'+T(teach.msg,'y')+'</div>';else{var ts=TEACH_STEPS[teach.step];
   h+='<div class="opt">'+T('STEP '+(teach.step+1)+'/4','y')+'</div><div class="opt">'+T(ts[0])+'</div><div class="opt">'+T(ts[1])+'</div><div class="opt">'+(teach.busy?T('Reading...','c'):chip('TAP HERE NOW',true,'teachTap()'))+'</div>'}}
- h+='<pre>'+readout().join('\n')+'</pre>'}
+ h+='<pre>'+readout().join('\n')+'</pre>'}}
+ h+='</div><div class="opt setver" onclick="devTap()">'+T('XENOGEARS LINK '+VERSION,'g')+(!CFG.dev&&devTaps?T('  '+(5-devTaps)+' MORE FOR DEV','g'):'')+'</div>';
  if(h!==lastSet){lastSet=h;document.getElementById('setin').innerHTML=h}}
 /* change one setting: clean the value, store it, apply it, redraw */
 /* experimental switches: a warning first, ENABLE to switch on (shown above the settings panel) */
