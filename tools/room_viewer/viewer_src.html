@@ -84,7 +84,13 @@ input[type=range]{accent-color:var(--brass);width:100%}
 .tag.mk.exit.sel{background:var(--brass);color:#14100a}
 .tag.mk.exit{transform:translate(-50%,calc(-100% - 40px))}
 body.editing .tag.mk.exit{pointer-events:none}
-.tag.mk.sugg{color:#ff8fd0;border-style:dashed}.tag.mk.hint.far{color:#e0604c;border-color:#e0604c}.tag.mk.hint.chk{color:#e8c34a;border-color:#e8c34a}.li .k.sugg{background:#ff8fd0}
+.tag.mk.sugg{color:#ff8fd0;border-style:dashed}
+.hcbar{height:5px;background:#10151c;border:1px solid var(--line);border-radius:3px;overflow:hidden}.hcbar i{display:block;height:100%;background:#86d08c;width:0}
+.hccard{border:1px solid var(--line);border-radius:6px;padding:10px;background:#10151c;display:flex;flex-direction:column;gap:6px}
+.hccard .say{font-size:14px;line-height:1.45;color:var(--ink)}.hccard .say.dim{color:#8b93a1;font-size:12px}
+.hccard .st{font:500 12px var(--mono);padding:4px 8px;border-radius:4px;background:#0e1116;border-left:3px solid #86d08c}.hccard .st.far{border-color:#e0604c}.hccard .st.chk{border-color:#e8c34a}.hccard .st.world{border-color:#5fb7b0}
+.hccard .done{color:#86d08c;font:600 12px var(--mono)}
+button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}.tag.mk.hint.far{color:#e0604c;border-color:#e0604c}.tag.mk.hint.chk{color:#e8c34a;border-color:#e8c34a}.li .k.sugg{background:#ff8fd0}
 .rhits{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.rhits[hidden]{display:none}   /* in Edit places the door icon itself is what you grab */
 #exSec .row{flex-wrap:wrap}
 .rq{border:1px solid var(--line);border-radius:4px;padding:6px;display:grid;gap:6px;margin:6px 0}.rq select{width:100%}.li.ex.chk .n2::after{content:' \2713';color:var(--hint)}
@@ -157,8 +163,22 @@ body.editing .tag.mk.exit{pointer-events:none}
    <div class="row"><button id="prevRoom" aria-label="Previous room" title="Previous room ( [ )">&#9664;</button><input type="text" id="roomIn" class="grow" style="flex-basis:140px" list="roomList" placeholder="Room number or name"><button id="nextRoom" aria-label="Next room" title="Next room ( ] )">&#9654;</button></div>
    <datalist id="roomList"></datalist><div class="rhits chips" id="roomHits" hidden></div>
    <div class="row"><select id="areaSel" class="grow" aria-label="Jump to an area"></select><button id="backBtn" title="Back to the room you came from" disabled>Back</button></div>
-   <div class="row"><button id="worldBtn" title="The world map, with the x, z the app shows on it">World map</button></div>
+   <div class="row"><button id="worldBtn" title="The world map, with the x, z the app shows on it">World map</button><button id="hcBtn" title="Go through every hint page by page: the room opens by itself, click where the spot belongs, then Right">Check hints</button></div>
    <div class="note" id="roomInfo"></div>
+  </div>
+
+  <div class="sec" id="hcSec" hidden>
+   <div class="lab">Hint check <span class="mono" id="hcProg"></span></div>
+   <div class="hcbar"><i id="hcBar"></i></div>
+   <div class="row"><select id="hcFilter" class="grow" aria-label="Which pages"><option value="todo">Pages not checked yet</option><option value="flag">Flagged by the spot check, and world map spots</option><option value="all">Every page</option></select></div>
+   <div class="row"><label class="note">Step <input type="number" id="hcStep" min="0" max="999" style="width:64px"></label><span class="mono note" id="hcPage"></span></div>
+   <div class="hccard" id="hcCard"></div>
+   <div class="row"><button id="hcBack" title="Previous page (Left arrow)">&#9664; Back</button><button id="hcOk" class="ok" title="The spot is right: mark it and go on (Enter)">&#10003; Right</button><button id="hcSkip" title="Leave it for later (Right arrow)">Skip &#9654;</button></div>
+   <div class="row"><button id="hcSnap" hidden>Snap to that person</button><button id="hcNone" title="No spot: the page only names the room">No spot</button><button id="hcEdit">Edit text</button></div>
+   <div class="row"><span class="note">Add a page:</span><button id="hcAddRoom" title="Add the room on screen as a new page of this hint, after this one">+ This room</button><button id="hcAddWorld" title="Add a world map page after this one">+ World map</button><button id="hcDelPage" title="Take this page out of the hint">Remove page</button></div>
+   <div id="hcTextBox" hidden><textarea id="hcTa" rows="3" aria-label="Hint text" style="width:100%;font:12px var(--body);background:#0e1116;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px"></textarea><label class="note"><input type="checkbox" id="hcInGame"> checked in game (shows in white in the app)</label></div>
+   <div class="note">Click the room, or the world map, where the spot should be: it moves there. The page's room and story step open by themselves.</div>
+   <div class="row"><button id="hcExport" class="on">Export hint edits</button><span class="note" id="hcNote"></span></div>
   </div>
 
   <div class="sec" id="worldSec" hidden>
@@ -451,7 +471,7 @@ function placeList(f){var out=[],E=exitsOf(f),seen={};
   out.push({kind:'arr',x:p[0],z:p[1],from:+from,label:'in from '+from+' '+(roomName(+from)||areaOf(+from)||'')})})})}
  suggOf(f).forEach(function(q){out.push({kind:'sugg',x:q[2],z:q[3],from:q[1],sq:q,label:'Suggested door: '+q[1]+' '+(roomName(q[1])||areaOf(q[1])||'')})});
  marksOf(f).forEach(function(m,mi){out.push({kind:m[2]==='s'?'cube':'shop',x:m[0],z:m[1],ey:m[3],mi:mi,label:MKN[m[2]]||'Mark'})});
- var nx=state.hedit?hEditView():nextHint();if(nx)nx.rooms.forEach(function(q){if(q[0]===f){if(q[1].length)q[1].forEach(function(s){var ck=spotChk(f,s[0],s[1]);out.push({kind:'hint',x:s[0],z:s[1],ck:ck,label:'Step '+nx.k+(ck&&ck[5]==='FAR'?' \u00b7 probably wrong':ck&&ck[5]==='CHECK'?' \u00b7 worth a check':'')})});else out.push({kind:'hint',x:null,z:null,label:'Step '+nx.k+' happens in this room'})}});
+ var nx=HC.on?{k:HC.k,rooms:XD.HROOMS[HC.k]||[]}:state.hedit?hEditView():nextHint();if(nx)nx.rooms.forEach(function(q){if(q[0]===f){if(q[1].length)q[1].forEach(function(s){var ck=spotChk(f,s[0],s[1]);out.push({kind:'hint',x:s[0],z:s[1],ck:ck,label:'Step '+nx.k+(ck&&ck[5]==='FAR'?' \u00b7 probably wrong':ck&&ck[5]==='CHECK'?' \u00b7 worth a check':'')})});else out.push({kind:'hint',x:null,z:null,label:'Step '+nx.k+' happens in this room'})}});
  return out}
 /* door icons (v2.0.0.3 viewer): every way out with a spot stands as a small door, like the app's 3D map, its foot on the spot's height;
    in Edit places a door can be dragged over any surface (Shift-drag lifts or lowers it), nudged with PageUp / PageDown, or typed in */
@@ -646,6 +666,7 @@ $('xzCopy').onclick=function(){if(!pinText)return;var t=pinText,b=this;
 var ray=new THREE.Raycaster(),down=null;
 $('cv').addEventListener('pointerdown',function(e){down=[e.clientX,e.clientY]});
 $('cv').addEventListener('pointerup',function(e){if(!down||Math.abs(e.clientX-down[0])+Math.abs(e.clientY-down[1])>5)return;var r=$('cv').getBoundingClientRect();
+ if(HC.on&&!state.edit){var cp=floorHit(e);if(cp)hcPlace(Math.round(cp.x),Math.round(-cp.z),cur.f);return}
  if(state.hedit&&!(state.edit&&(exSel>=0||mkSel))){var hp=floorHit(e);if(hp)hAddSpot(hp);return}
  if(state.edit){var ep=floorHit(e);if(!ep)return;if(e.shiftKey){exNew(ep);return}if(exSel>=0)exPlace(ep);else if(mkSel)mkPlace(ep);else setPin(ep);return}
  ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),cam);
@@ -680,6 +701,8 @@ function wDraw(){var c=$('wcv'),dpr=Math.min(2,window.devicePixelRatio||1),W=c.c
  g.font='500 11px "IBM Plex Mono", monospace';g.textBaseline='middle';
  wPlaces().forEach(function(q){var x=WV.ox+q[0]/32*WV.s,y=WV.oy+q[1]/32*WV.s;g.fillStyle='#d7a54a';g.strokeStyle='#0e1116';g.lineWidth=2;g.beginPath();g.arc(x,y,4,0,7);g.fill();g.stroke();
   if(WV.s>0.55&&q[4]){g.lineWidth=3;g.strokeText(q[4],x+7,y);g.fillStyle='#d9dee6';g.fillText(q[4],x+7,y)}});
+ if(HC.on){(XD.HROOMS[HC.k]||[]).forEach(function(q,qi){if(q[0]!==-1)return;q[1].forEach(function(sp){var x=WV.ox+sp[0]/32*WV.s,y=WV.oy+sp[1]/32*WV.s,cur=qi===HC.pg;g.strokeStyle=cur?'#86d08c':'rgba(134,208,140,.45)';g.lineWidth=cur?3:2;g.beginPath();g.arc(x,y,cur?11:8,0,7);g.stroke();
+   if(cur){g.lineWidth=3;g.strokeStyle='#0e1116';g.strokeText('Step '+HC.k,x+14,y);g.fillStyle='#86d08c';g.fillText('Step '+HC.k,x+14,y)}})})}
  if(WV.pin){var px=WV.ox+WV.pin.x/32*WV.s,py=WV.oy+WV.pin.z/32*WV.s;g.strokeStyle='#5fb7b0';g.lineWidth=2.5;g.beginPath();g.arc(px,py,8,0,7);g.stroke();g.beginPath();g.moveTo(px-12,py);g.lineTo(px+12,py);g.moveTo(px,py-12);g.lineTo(px,py+12);g.stroke()}}
 function wUnits(e){var r=$('wcv').getBoundingClientRect();return {x:Math.round(((e.clientX-r.left)-WV.ox)/WV.s*32),z:Math.round(((e.clientY-r.top)-WV.oy)/WV.s*32)}}
 function wPlaces(){return (XD.WPLACES[WV.k]||[]).filter(function(q){return q[2]>0&&q[4]})}
@@ -702,8 +725,8 @@ $('worldBtn').onclick=function(){if(D)worldOn(!WV.on)};$('wBack').onclick=functi
    WV.ox=mx-(mx-WV.ox)*ns/WV.s;WV.oy=my-(my-WV.oy)*ns/WV.s;WV.s=ns;WV.moved=99;wDraw();return}
   var dx=e.clientX-q[0],dy=e.clientY-q[1];WV.moved+=Math.abs(dx)+Math.abs(dy);WV.ox+=dx;WV.oy+=dy;P[e.pointerId]=[e.clientX,e.clientY];wDraw()});
  function up(e){var was=!!P[e.pointerId];delete P[e.pointerId];if(Object.keys(P).length<2)pinch=null;if(!Object.keys(P).length)c.classList.remove('drag');if(!was||WV.moved>5)return;
-  var pl=wPlaceAt(e);if(pl){worldOn(false);goTo(pl[2]);return}
-  var u=wUnits(e);if(u.x<0||u.z<0||u.x>32767||u.z>32767)return;WV.pin=u;pinText='world ('+u.x+', '+u.z+')';$('xzPin').textContent='pinned '+pinText;$('xzPin').hidden=false;$('xzCopy').hidden=false;$('xzCopy').textContent='Copy';wDraw()}
+  var pl=HC.on&&hcRoom()===-1?null:wPlaceAt(e);if(pl){worldOn(false);goTo(pl[2]);return}
+  var u=wUnits(e);if(u.x<0||u.z<0||u.x>32767||u.z>32767)return;if(HC.on&&hcRoom()===-1){hcPlace(u.x,u.z,-1);return}WV.pin=u;pinText='world ('+u.x+', '+u.z+')';$('xzPin').textContent='pinned '+pinText;$('xzPin').hidden=false;$('xzCopy').hidden=false;$('xzCopy').textContent='Copy';wDraw()}
  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',function(e){delete P[e.pointerId];pinch=null});
  c.addEventListener('wheel',function(e){e.preventDefault();var r=c.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,ns=Math.max(0.3,Math.min(12,WV.s*Math.exp(-e.deltaY*0.0015)));WV.ox=mx-(mx-WV.ox)*ns/WV.s;WV.oy=my-(my-WV.oy)*ns/WV.s;WV.s=ns;wDraw()},{passive:false});
  window.addEventListener('resize',function(){if(WV.on)wDraw()})})();
@@ -907,7 +930,7 @@ $('hRevert').onclick=function(){var k=hCur();delete HED[k];hApply(k);hSave();hLo
 var hClrT=0;$('hClear').onclick=function(){var b=this;if(Date.now()-hClrT>4000){hClrT=Date.now();b.textContent='Click again to clear';setTimeout(function(){b.textContent='Clear all'},4000);return}
  var ks=Object.keys(HED);HED={};ks.forEach(hApply);hSave();b.textContent='Clear all';hLoad(hCur())};
 function hFile(){var ks=Object.keys(HED).sort(function(a,b){return a-b});
- return '{"format": "xenogears-link-hint-edits", "version": 1, "made": '+JSON.stringify(new Date().toISOString())+',\n "note": "step -> {note (\\"?\\" in front = not checked in game), path: [[room (-1 world map), [[x, z], ...]], ...]}",\n "steps": {\n'+ks.map(function(k){return '  '+JSON.stringify(k)+': '+JSON.stringify(HED[k])}).join(',\n')+'\n }}\n'}
+ return '{"format": "xenogears-link-hint-edits", "version": 1, "made": '+JSON.stringify(new Date().toISOString())+',\n "note": "step -> {note (\\"?\\" in front = not checked in game), path: [[room (-1 world map), [[x, z], ...]], ...]}",\n "spots_checked": '+JSON.stringify(Object.keys(HCK))+',\n "steps": {\n'+ks.map(function(k){return '  '+JSON.stringify(k)+': '+JSON.stringify(HED[k])}).join(',\n')+'\n }}\n'}
 $('hExport').onclick=async function(){if(!Object.keys(HED).length){$('hNote').textContent='No changes to export yet.';return}
  var txt=hFile(),name='Xenogears hint edits '+new Date().toISOString().slice(0,10)+'.json',dl=null;try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
  if(dl){try{await dl.save({filename:name,data:txt});$('hNote').textContent='Saved '+name+'.';return}catch(e){if(e&&e.code==='declined')return}}
@@ -916,6 +939,61 @@ $('hExport').onclick=async function(){if(!Object.keys(HED).length){$('hNote').te
 $('hImport').onchange=async function(){var file=this.files&&this.files[0];if(!file)return;this.value='';var J;try{J=JSON.parse(await file.text())}catch(e){J=null}if(!J||!J.steps){$('hNote').textContent='Not a hint edits file.';return}
  Object.keys(J.steps).forEach(function(k){var e=J.steps[k];if(e&&typeof e.note==='string'&&Array.isArray(e.path)){HED[k]=e;hApply(k)}});hSave();hLoad(hCur());$('hNote').textContent='Loaded '+Object.keys(J.steps).length+' steps.'};
 hSave();
+/* ---------- HINT CHECK (v2.0.0.16 viewer) ----------
+   One page of one hint at a time, in story order: the page's room (or the world map) opens at the step before the hint, with its
+   spot; click where the spot belongs to move it; Right marks the page and goes on. Marks are kept in this browser (xgv.hcheck) and
+   travel in the hint edits export as "spots_checked". */
+var HC={on:false,k:0,pg:0},HCK={};try{HCK=JSON.parse(store('xgv.hcheck')||'{}')||{}}catch(e){HCK={}}
+function hcRoom(){var P=XD.HROOMS[HC.k]||[];return P[HC.pg]?P[HC.pg][0]:null}
+function hcParts(t){if(!t)return [];var o=[],c='';t.split(/(\.\s+)/).forEach(function(x){c+=x;if(/\.\s+$/.test(x)){o.push(c.trim());c=''}});if(c.trim())o.push(c.trim());return o}
+function hcList(){var L=[];HKEYS.forEach(function(k){var P=XD.HROOMS[k]||[];P.forEach(function(q,pg){L.push([k,pg])})});return L}
+function hcWant(k,pg){var mode=$('hcFilter').value;if(mode==='all')return true;if(HCK[k+':'+pg])return false;if(mode==='todo')return true;
+ var q=(XD.HROOMS[k]||[])[pg];if(!q)return false;if(q[0]===-1)return q[1].length>0;return q[1].some(function(sp){var c=spotChk(q[0],sp[0],sp[1]);return c&&(c[5]==='FAR'||c[5]==='CHECK')})}
+function hcCount(){var L=hcList(),d=L.filter(function(x){return HCK[x[0]+':'+x[1]]}).length;$('hcProg').textContent=d+' / '+L.length+' pages';$('hcBar').style.width=(L.length?d*100/L.length:0)+'%'}
+function hcShow(){var k=HC.k,P=XD.HROOMS[k]||[],q=P[HC.pg],note=(XD.HNOTE[k]||'').replace(/^\?/,''),parts=hcParts(note),R=P.length;
+ $('hcStep').value=k;$('hcPage').textContent='page '+(HC.pg+1)+' of '+Math.max(1,R);hcCount();
+ var mine=[];parts.forEach(function(t,i){if(Math.min(i,R-1)===HC.pg)mine.push(t)});if(!mine.length&&parts.length)mine=[parts[Math.min(HC.pg,parts.length-1)]];
+ var h='<div class="say">'+esc(mine.join(' ')||'(no text)')+'</div>';if(parts.length>1)h+='<div class="say dim">Whole hint: '+esc(note)+'</div>';
+ $('hcSnap').hidden=true;
+ if(!q){h+='<div class="st">This step has no rooms.</div>'}else{var f=q[0],rn=f<0?'World map':f+' '+(roomName(f)||areaOf(f)||'');
+  h+='<div class="row"><span class="chip" id="hcGoRoom" title="Open it again">'+esc(rn)+'</span><span class="note">story step '+Math.max(0,k-1)+' shown</span></div>';
+  if(!q[1].length)h+='<div class="st">No spot: the hint just names this '+(f<0?'map':'room')+'. Click to add one.</div>';
+  q[1].forEach(function(sp){var c=f>=0?spotChk(f,sp[0],sp[1]):null,cls=f<0?'world':c&&c[5]==='FAR'?'far':c&&c[5]==='CHECK'?'chk':'',t='Spot '+sp[0]+', '+sp[1];
+   if(f<0)t+=' · world map: check by eye';else if(c&&c[7]!=null)t+=' · '+(c[5]==='FAR'?'probably wrong':c[5]==='CHECK'?'worth a check':'looks right')+'\nnearest person #'+c[6]+' ('+c[9]+' away)'+(c[10]?': “'+c[10].slice(0,70)+'”':'');else if(!c)t+=' · placed by you';
+   h+='<div class="st '+cls+'" style="white-space:pre-line">'+esc(t)+'</div>'});
+  var c0=f>=0&&q[1].length?spotChk(f,q[1][0][0],q[1][0][1]):null;if(c0&&c0[7]!=null&&c0[9]>20){$('hcSnap').hidden=false;$('hcSnap').textContent='Snap to person #'+c0[6]}}
+ if(HCK[k+':'+HC.pg])h+='<div class="done">✓ checked</div>';
+ $('hcCard').innerHTML=h;var gr=$('hcGoRoom');if(gr)gr.onclick=function(){hcOpen()};
+ var nt=XD.HNOTE[k]||'';if(document.activeElement!==$('hcTa'))$('hcTa').value=nt.replace(/^\?/,'');$('hcInGame').checked=!!nt&&nt.charAt(0)!=='?'}
+async function hcOpen(){var q=(XD.HROOMS[HC.k]||[])[HC.pg];state.step=Math.max(0,HC.k-1);store('xgv.step',String(state.step));$('hcNote').textContent='';hcShow();if(!q)return;var f=q[0],sp=q[1][0];
+ if(f===-1){if(!WV.on)await worldOn(true);if(sp){var c=$('wcv');WV.s=Math.max(WV.s,1.6);WV.ox=c.clientWidth/2-sp[0]/32*WV.s;WV.oy=c.clientHeight/2-sp[1]/32*WV.s}wDraw();return}
+ if(WV.on)await worldOn(false);rqFocus=sp?{f:f,x:sp[0],z:sp[1]}:null;if(cur.f===f){rerun();buildMarks()}else{state.keepStep=true;await loadRoom(f)}}
+function hcGo(dir,mark){if(mark){HCK[HC.k+':'+HC.pg]=1;store('xgv.hcheck',JSON.stringify(HCK))}var L=hcList(),i=-1;L.forEach(function(x,j){if(x[0]===HC.k&&x[1]===HC.pg)i=j});
+ for(var n=1;n<=L.length;n++){var j=(i+dir*n+L.length*4)%L.length,x=L[j];if(hcWant(x[0],x[1])){HC.k=x[0];HC.pg=x[1];hcOpen();return}}
+ hcShow();$('hcNote').textContent='Nothing left in this list.'}
+function hcPlace(x,z,f){var k=HC.k,E=hEditable(k),pr=E.path[HC.pg];if(!pr)return;
+ if(pr[0]!==f){$('hcNote').textContent='This page is for '+(pr[0]<0?'the world map':'room '+pr[0])+'. Tap its button above to open it.';return}
+ if(pr[1].length<=1)pr[1]=[[x,z]];else{var b=0,bd=1e9;pr[1].forEach(function(sp,i){var d=Math.hypot(sp[0]-x,sp[1]-z);if(d<bd){bd=d;b=i}});pr[1][b]=[x,z]}
+ hApply(k);hSave();buildMarks();if(WV.on)wDraw();hcShow();$('hcNote').textContent='Spot moved to '+x+', '+z+'. Right keeps it.'}
+$('hcBtn').onclick=function(){HC.on=!HC.on;this.classList.toggle('on',HC.on);$('hcSec').hidden=!HC.on;if(!HC.on){buildMarks();if(WV.on)wDraw();return}
+ if(state.hedit)$('hEdit').onclick.call($('hEdit'));if(state.edit)$('bEdit').onclick.call($('bEdit'));var nx=nextHint();HC.k=nx?nx.k:HKEYS[0];HC.pg=0;if(!hcWant(HC.k,0)){hcGo(1,false);return}hcOpen()};
+$('hcOk').onclick=function(){hcGo(1,true)};$('hcSkip').onclick=function(){hcGo(1,false)};
+$('hcBack').onclick=function(){var L=hcList(),i=0;L.forEach(function(x,j){if(x[0]===HC.k&&x[1]===HC.pg)i=j});var x=L[(i-1+L.length)%L.length];HC.k=x[0];HC.pg=x[1];hcOpen()};
+$('hcFilter').onchange=function(){hcCount();if(!hcWant(HC.k,HC.pg))hcGo(1,false)};
+$('hcStep').onchange=function(){var v=+this.value|0,best=null;HKEYS.forEach(function(k){if(best==null&&k>=v&&(XD.HROOMS[k]||[]).length)best=k});if(best==null)return;HC.k=best;HC.pg=0;hcOpen()};
+$('hcSnap').onclick=function(){var q=(XD.HROOMS[HC.k]||[])[HC.pg];if(!q||!q[1].length)return;var c=spotChk(q[0],q[1][0][0],q[1][0][1]);if(!c||c[7]==null)return;hcPlace(c[7],c[8],q[0])};
+$('hcNone').onclick=function(){var E=hEditable(HC.k),pr=E.path[HC.pg];if(!pr)return;pr[1]=[];hApply(HC.k);hSave();buildMarks();if(WV.on)wDraw();hcShow();$('hcNote').textContent='Spot taken out: the page names the room only.'};
+function hcAdd(f){var E=hEditable(HC.k);E.path.splice(HC.pg+1,0,[f,[]]);hApply(HC.k);hSave();HC.pg++;hcOpen();$('hcNote').textContent='Page added: click where its spot goes.'}
+$('hcAddRoom').onclick=function(){if(WV.on){$('hcNote').textContent='Go into a room first (Back to the room, or pick one), then add it.';return}if(cur.f!=null)hcAdd(cur.f)};
+$('hcAddWorld').onclick=function(){hcAdd(-1)};
+var hcDelT=0;$('hcDelPage').onclick=function(){var b=this,E=hEditable(HC.k);if(!E.path[HC.pg])return;if(Date.now()-hcDelT>4000){hcDelT=Date.now();b.textContent='Click again to remove';setTimeout(function(){b.textContent='Remove page'},4000);return}
+ E.path.splice(HC.pg,1);hApply(HC.k);hSave();b.textContent='Remove page';HC.pg=Math.max(0,Math.min(HC.pg,E.path.length-1));hcOpen()};
+$('hcEdit').onclick=function(){$('hcTextBox').hidden=!$('hcTextBox').hidden};
+function hcText(){var E=hEditable(HC.k);E.note=($('hcInGame').checked?'':'?')+$('hcTa').value.trim();hApply(HC.k);hSave();hcShow()}
+var hcT=0;$('hcTa').oninput=function(){clearTimeout(hcT);hcT=setTimeout(hcText,600)};$('hcInGame').onchange=hcText;
+$('hcExport').onclick=function(){$('hExport').onclick()};
+document.addEventListener('keydown',function(e){if(!HC.on)return;var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;
+ if(e.key==='Enter'){e.preventDefault();hcGo(1,true)}else if(e.key==='ArrowRight'){e.preventDefault();hcGo(1,false)}else if(e.key==='ArrowLeft'){e.preventDefault();$('hcBack').onclick()}});
 /* review queue: exits worth checking. look = the 24 from the 1.99.0.3 review pictures; far = on a room with several levels and far
    from where the game puts you on the way back; noY = no height found (the app falls back to the floor nearest the party).
    Checked ones are remembered in this browser. */
