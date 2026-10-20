@@ -175,6 +175,8 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
    <div class="hccard" id="hcCard"></div>
    <div class="row"><button id="hcBack" title="Previous page (Left arrow)">&#9664; Back</button><button id="hcOk" class="ok" title="The spot is right: mark it and go on (Enter)">&#10003; Right</button><button id="hcSkip" title="Leave it for later (Right arrow)">Skip &#9654;</button></div>
    <div class="row"><button id="hcSnap" hidden>Snap to that person</button><button id="hcNone" title="No spot: the page only names the room">No spot</button><button id="hcEdit">Edit text</button></div>
+   <div class="row" id="hcMoveRow" hidden><button id="hcMove" class="ok"></button></div>
+   <div class="row"><input type="number" id="hcRoomIn" min="-1" max="729" placeholder="room no." aria-label="Room for this page (-1 world map)" style="width:84px"><button id="hcSetRoom" title="Change this page to the room typed (-1 for the world map); its spot is cleared">Change room</button></div>
    <div class="row"><span class="note">Add a page:</span><button id="hcAddRoom" title="Add the room on screen as a new page of this hint, after this one">+ This room</button><button id="hcAddWorld" title="Add a world map page after this one">+ World map</button><button id="hcDelPage" title="Take this page out of the hint">Remove page</button></div>
    <div id="hcTextBox" hidden><textarea id="hcTa" rows="3" aria-label="Hint text" style="width:100%;font:12px var(--body);background:#0e1116;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px"></textarea><label class="note"><input type="checkbox" id="hcInGame"> checked in game (shows in white in the app)</label></div>
    <div class="note">Click the room, or the world map, where the spot should be: it moves there. The page's room and story step open by themselves.</div>
@@ -497,7 +499,8 @@ function buildMarks(){while(markG.children.length){var o=markG.children[0];markG
    tg.onclick=function(){if(m.kind==='sugg'){if(state.edit)suggAccept(m.sq);else focusAt(m.x,m.y,m.z);return}if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if(state.edit&&(m.ti||m.mi!=null)){mkPick(m);return}if(m.kind==='exit'&&m.dest>=0)goTo(m.dest);else if(m.kind==='arr')goTo(m.from);else focusAt(m.x,m.y,m.z)};$('tags').appendChild(tg);m.tag=tg}
   marks.push(m)});
  markG.visible=state.marks;renderPlaces();if(state.edit)exRender();
- if(rqFocus&&rqFocus.f===cur.f){var rf=rqFocus;rqFocus=null;focusAt(rf.x,markY(rf.x,rf.z),rf.z)}}
+ if(rqFocus&&rqFocus.f===cur.f){var rf=rqFocus;rqFocus=null;focusAt(rf.x,markY(rf.x,rf.z),rf.z)}
+ if(HC.on)hcShow()}
 var rqFocus=null;
 var tmpM=new THREE.Vector3();
 function updateMarks(){if(!marks)return;var W=$('cv').clientWidth,H=$('cv').clientHeight,t=performance.now()/1000;
@@ -712,7 +715,7 @@ function wList(){var L=wPlaces().slice().sort(function(a,b){return (a[4]||'~').l
   row.title='Show it on the map';row.onclick=function(){var c=$('wcv');WV.s=Math.max(WV.s,2);WV.ox=c.clientWidth/2-q[0]/32*WV.s;WV.oy=c.clientHeight/2-q[1]/32*WV.s;wDraw()};box.appendChild(row)})}
 async function worldOn(on){WV.on=on;$('wcv').hidden=!on;$('cv').hidden=on;$('tags').hidden=on;$('tools').hidden=on||cur.f==null;$('worldSec').hidden=!on;
  ['stepSec','entrySec','saveSec','placeSec','exSec','peopleSec','varSec'].forEach(function(id){if(on)$(id).dataset.was=$(id).hidden?'1':'';$(id).hidden=on?true:$(id).dataset.was==='1'});
- $('worldBtn').classList.toggle('on',on);
+ $('worldBtn').classList.toggle('on',on);if(HC.on)setTimeout(hcShow,0);
  if(!on){$('hud').innerHTML='Room '+cur.f+'<small>'+esc((roomName(cur.f)||areaOf(cur.f)||'').slice(0,60))+'</small>';clearPin();$('xzHover').textContent='move over the room';resize();return}
  clearPin();$('hud').innerHTML='World map<small>'+(WV.k==='a'?'Normal world':'Late game world')+'</small>';$('xzHover').textContent='move over the map';
  try{await worldPic(WV.k)}catch(e){busy('');showErr('The world map could not be read: '+(e.message||e));return}wFit();wList();wDraw()}
@@ -963,6 +966,7 @@ function hcShow(){var k=HC.k,P=XD.HROOMS[k]||[],q=P[HC.pg],note=(XD.HNOTE[k]||''
    h+='<div class="st '+cls+'" style="white-space:pre-line">'+esc(t)+'</div>'});
   var c0=f>=0&&q[1].length?spotChk(f,q[1][0][0],q[1][0][1]):null;if(c0&&c0[7]!=null&&c0[9]>20){$('hcSnap').hidden=false;$('hcSnap').textContent='Snap to person #'+c0[6]}}
  if(HCK[k+':'+HC.pg])h+='<div class="done">✓ checked</div>';
+ var here=WV.on?-1:cur.f;if(q&&here!=null&&here!==q[0]){$('hcMoveRow').hidden=false;$('hcMove').textContent='Use '+(here<0?'the world map':'room '+here+' '+(roomName(here)||areaOf(here)||'').slice(0,22))+' for this page'}else $('hcMoveRow').hidden=true;
  $('hcCard').innerHTML=h;var gr=$('hcGoRoom');if(gr)gr.onclick=function(){hcOpen()};
  var nt=XD.HNOTE[k]||'';if(document.activeElement!==$('hcTa'))$('hcTa').value=nt.replace(/^\?/,'');$('hcInGame').checked=!!nt&&nt.charAt(0)!=='?'}
 async function hcOpen(){var q=(XD.HROOMS[HC.k]||[])[HC.pg];state.step=Math.max(0,HC.k-1);store('xgv.step',String(state.step));$('hcNote').textContent='';hcShow();if(!q)return;var f=q[0],sp=q[1][0];
@@ -971,8 +975,10 @@ async function hcOpen(){var q=(XD.HROOMS[HC.k]||[])[HC.pg];state.step=Math.max(0
 function hcGo(dir,mark){if(mark){HCK[HC.k+':'+HC.pg]=1;store('xgv.hcheck',JSON.stringify(HCK))}var L=hcList(),i=-1;L.forEach(function(x,j){if(x[0]===HC.k&&x[1]===HC.pg)i=j});
  for(var n=1;n<=L.length;n++){var j=(i+dir*n+L.length*4)%L.length,x=L[j];if(hcWant(x[0],x[1])){HC.k=x[0];HC.pg=x[1];hcOpen();return}}
  hcShow();$('hcNote').textContent='Nothing left in this list.'}
+function hcSetRoom(f){var E=hEditable(HC.k),pr=E.path[HC.pg];if(!pr||f==null||f<-1||f>729)return;pr[0]=f;pr[1]=[];
+ hApply(HC.k);hSave();buildMarks();if(WV.on)wDraw();hcShow();$('hcNote').textContent='Page now points to '+(f<0?'the world map':'room '+f)+'. Click where its spot goes (or No spot).'}
 function hcPlace(x,z,f){var k=HC.k,E=hEditable(k),pr=E.path[HC.pg];if(!pr)return;
- if(pr[0]!==f){$('hcNote').textContent='This page is for '+(pr[0]<0?'the world map':'room '+pr[0])+'. Tap its button above to open it.';return}
+ if(pr[0]!==f){$('hcNote').textContent='This page is for '+(pr[0]<0?'the world map':'room '+pr[0])+'. If that is wrong, press the green Use button above first.';return}
  if(pr[1].length<=1)pr[1]=[[x,z]];else{var b=0,bd=1e9;pr[1].forEach(function(sp,i){var d=Math.hypot(sp[0]-x,sp[1]-z);if(d<bd){bd=d;b=i}});pr[1][b]=[x,z]}
  hApply(k);hSave();buildMarks();if(WV.on)wDraw();hcShow();$('hcNote').textContent='Spot moved to '+x+', '+z+'. Right keeps it.'}
 $('hcBtn').onclick=function(){HC.on=!HC.on;this.classList.toggle('on',HC.on);$('hcSec').hidden=!HC.on;if(!HC.on){buildMarks();if(WV.on)wDraw();return}
@@ -988,6 +994,8 @@ $('hcAddRoom').onclick=function(){if(WV.on){$('hcNote').textContent='Go into a r
 $('hcAddWorld').onclick=function(){hcAdd(-1)};
 var hcDelT=0;$('hcDelPage').onclick=function(){var b=this,E=hEditable(HC.k);if(!E.path[HC.pg])return;if(Date.now()-hcDelT>4000){hcDelT=Date.now();b.textContent='Click again to remove';setTimeout(function(){b.textContent='Remove page'},4000);return}
  E.path.splice(HC.pg,1);hApply(HC.k);hSave();b.textContent='Remove page';HC.pg=Math.max(0,Math.min(HC.pg,E.path.length-1));hcOpen()};
+$('hcMove').onclick=function(){hcSetRoom(WV.on?-1:cur.f)};
+$('hcSetRoom').onclick=function(){var v=parseInt($('hcRoomIn').value,10);if(isNaN(v)||v<-1||v>729){$('hcNote').textContent='Type a room number (0 to 729, or -1 for the world map).';return}hcSetRoom(v);hcOpen()};
 $('hcEdit').onclick=function(){$('hcTextBox').hidden=!$('hcTextBox').hidden};
 function hcText(){var E=hEditable(HC.k);E.note=($('hcInGame').checked?'':'?')+$('hcTa').value.trim();hApply(HC.k);hSave();hcShow()}
 var hcT=0;$('hcTa').oninput=function(){clearTimeout(hcT);hcT=setTimeout(hcText,600)};$('hcInGame').onchange=hcText;
