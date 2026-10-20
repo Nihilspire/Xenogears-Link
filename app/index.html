@@ -1317,7 +1317,7 @@ function rlogView(){var h='<div class="row">'+T('ROOM LOG','y')+'<span class="sp
    already reached (HINTS steps up to the current one), so early areas are not all "???" on a fresh install. An exit's label (on
    tap) is the destination's name from ROOMS (rooms.js) when one has been written, else "<area short name> <room number>" for a
    known room, "World Map" for -1, or "???" for a place not yet reached. */
-var entry=null,prevEntry=null,pendF=-1,pendN=0,lastField=-1,visited={},exitTap=null;try{(LS.get('visited','')||'').split(',').forEach(function(v){if(v)visited[+v]=1})}catch(e){}
+var entry=null,prevEntry=null,pendF=-1,pendN=0,lastField=-1,visited={},exitTap=null,exitTapF=-1;try{(LS.get('visited','')||'').split(',').forEach(function(v){if(v)visited[+v]=1})}catch(e){}
 function roomKnown(f){if(visited[f])return true;var ar=areaOf(f);if(!ar||!window.HINTS)return false;var st=u16(A.STORY);if(st==null)return false;
  for(var k in HINTS){if(+k>st)continue;var L=HINTS[k];for(var i=0;i<L.length;i++){var a2=areaOf(L[i][0]);if(a2&&a2.n===ar.n)return true}}return false}
 function exitLabel(d){if(d===-1)return{t:'World Map',k:1};if(window.ROOMS&&ROOMS[d])return{t:ROOMS[d],k:1};if(!roomKnown(d))return{t:'???',k:0};var ar=areaOf(d);return{t:(ar?ar.s:'Room')+' '+d,k:1}}
@@ -1440,7 +1440,7 @@ function sideTap(k){mapSide=mapSide===k?'':k;last={};render()}
 /* tap on the map: zoom in / out */
 function mapTap(ev){var cv=document.getElementById('mapcv');if(cv&&cv._ex&&ev){var r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1,x=(ev.clientX-r.left)*dpr,y=(ev.clientY-r.top)*dpr,best=-1,bd=1e9;
   cv._ex.forEach(function(e,i){var d=Math.hypot(e[0]-x,e[1]-y);if(d<bd){bd=d;best=i}});
-  if(best>=0&&bd<=12*dpr){exitTap=exitTap===best?null:best;cv._sig=null;drawMap();return}if(exitTap!=null){exitTap=null;cv._sig=null;drawMap();return}}
+  if(best>=0&&bd<=12*dpr){exitTap=exitTap===best?null:best;exitTapF=u16(A.FIELD)&0x7FF;cv._sig=null;drawMap();return}if(exitTap!=null){exitTap=null;cv._sig=null;drawMap();return}}
  if(drag3.moved){drag3.moved=false;return}   /* the end of a swipe on the 3D view */
  if(map3on&&window.M3&&M3.ready){M3.recentre();var c=document.getElementById('mapcv');if(c)c._sig=null;drawMap();return}   /* 3D: tap = camera back behind the party */
  mapZoom=!mapZoom;LS.set('mapzoom',mapZoom?'1':'0');last={};render();drawMap()}
@@ -1521,6 +1521,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  function EP(e){return YP(e[0],e[1],e[3])}
  exl.forEach(function(e,i){var pq=EP(e),ex=pq[0],ey=pq[1],q=3.4*dpr;cv._ex.push([ex,ey]);if(ex<-1e4)return;
    g.fillStyle='#100808';g.fillRect(ex-q-dpr,ey-q*1.3-dpr,2*q+2*dpr,2.6*q+2*dpr);g.fillStyle='#e8d8a8';g.fillRect(ex-q,ey-q*1.3,2*q,2.6*q);g.fillStyle='#8c7352';g.fillRect(ex-q+dpr,ey-q*1.3+dpr,2*q-2*dpr,2.6*q-2*dpr);g.fillStyle='#ffd23c';g.fillRect(ex+q*.2,ey-dpr*.5,dpr*1.2,dpr*1.2)});
+ if(exitTap!=null&&exitTapF!==f)exitTap=null;
  if(exitTap!=null&&exl[exitTap]){var te=exl[exitTap],tx2=cv._ex[exitTap][0],ty2=cv._ex[exitTap][1],lb=exitText(te[2]);g.font=(7*dpr)+'px monospace';g.textAlign='center';var tw=g.measureText(lb.t).width+6*dpr,lx=Math.max(tw/2,Math.min(W-tw/2,tx2)),ly=ty2-4.5*dpr;if(ly-11*dpr<0)ly=ty2+16*dpr;
    g.fillStyle='rgba(16,8,8,.9)';g.fillRect(lx-tw/2,ly-11*dpr,tw,9*dpr);g.fillStyle=lb.k?'#efefef':'#9a9a9a';g.fillText(lb.t,lx,ly-4*dpr)}
  if(!on3&&CFG.exits&&entry&&entry.f===f&&entry.d){var ax=SX(entry.x,entry.z),ay=SY(entry.x,entry.z),ed=DIR(entry.x,entry.z,entry.d[0],entry.d[1]),dx=ed[0],dy=ed[1],l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;var L=7*dpr,Wd=4.5*dpr;
@@ -1641,6 +1642,9 @@ function encInfo(){var w,n,c,base,max,i,v,best=null,sig=u32(A.SIG);
    on the right floor. */
 var RTM={key:'',v:null};
 function routeTo(f,p){var E=window.EXITS&&EXITS[f]||[];
+ /* v2.0.0.15: a tapped door belongs to the room it was tapped in. It was kept by its place in the list, so after a room change the
+    line went to whatever door had that place in the new room (Jack, 20 Oct: Lahan pointed at the RPS Maniac's house, not the Mountain Path) */
+ if(exitTap!=null&&exitTapF!==f)exitTap=null;
  if(exitTap!=null){var ex=roomExits(f)[exitTap];if(ex)return{x:ex[0],z:ex[1],y:ex[3]==null?null:ex[3]}}
  var hn=hintNext();if(!hn)return null;
  /* once the hint has been opened, the line follows the room of the page last read: its green spot when the party is in it, else the
