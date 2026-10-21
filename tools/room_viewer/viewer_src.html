@@ -972,6 +972,13 @@ $('cmpList').onclick=function(e){var t=e.target.closest('[data-r],[data-c]');if(
 var HED={},HORIG={};try{HED=JSON.parse(store('xgv.hintEdits')||'{}')||{}}catch(e){HED={}}
 function hOrig(k){if(!HORIG[k])HORIG[k]={note:XD.HNOTE[k],rooms:XD.HROOMS[k],hints:XD.HINTS[k]};return HORIG[k]}
 function hApply(k){hOrig(k);var e=HED[k];if(e){XD.HNOTE[k]=e.note;XD.HROOMS[k]=e.path;XD.HINTS[k]=e.path.map(function(q){return q[0]})}else{var o=HORIG[k];if(o.note===undefined)delete XD.HNOTE[k];else XD.HNOTE[k]=o.note;if(o.rooms===undefined){delete XD.HROOMS[k];delete XD.HINTS[k]}else{XD.HROOMS[k]=o.rooms;XD.HINTS[k]=o.hints}}hKeys()}
+/* edits already in the shipped data (after Jack's files are imported) are dropped here, so only real differences stay as edits */
+(function(){var J=JSON.stringify,n=0;
+ Object.keys(HED).forEach(function(k){var e=HED[k];if(e&&J(e.note||'')===J(XD.HNOTE[k]||'?')&&J(e.path)===J(XD.HROOMS[k]||[])){delete HED[k];n++}});
+ Object.keys(EXED).forEach(function(f){if(J(EXED[f])===J(XD.EXITS[f]||[])){delete EXED[f];n++}});
+ Object.keys(MKED).forEach(function(f){if(J(MKED[f])===J(XD.MARKS[f]||[])){delete MKED[f];n++}});
+ Object.keys(TRED).forEach(function(f){var o=TRED[f],T=XD.TRE[f]||[];Object.keys(o).forEach(function(i){var t=T[i];if(t&&o[i][0]===t[1]&&o[i][1]===t[2]&&(o[i][2]===t[6]||t[6]==null)){delete o[i];n++}});if(!Object.keys(o).length)delete TRED[f]});
+ if(n){store('xgv.hintEdits',JSON.stringify(HED));store('xgv.exitEdits',JSON.stringify(EXED));store('xgv.treEdits',JSON.stringify(TRED));store('xgv.markEdits',JSON.stringify(MKED))}})();
 Object.keys(HED).forEach(hApply);
 function hSave(){store('xgv.hintEdits',JSON.stringify(HED));var n=Object.keys(HED).length;$('hCount').textContent=n?n+' step'+(n===1?'':'s')+' changed':''}
 function hCur(){return +$('hStep').value|0}
