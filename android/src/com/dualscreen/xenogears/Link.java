@@ -23,7 +23,7 @@ public final class Link {
         InetAddress a = InetAddress.getByName(host);
         byte[] buf = new byte[4096];
         s.setSoTimeout(1); // drop stale replies from an earlier poll
-        try { while (true) s.receive(new DatagramPacket(buf, buf.length)); } catch (java.net.SocketTimeoutException e) { }
+        try { for (int drain = 0; drain < 500; drain++) s.receive(new DatagramPacket(buf, buf.length)); } catch (java.net.SocketTimeoutException e) { }   // at most 500, in case something keeps sending
         String cmd = mode.equals("ram") ? "READ_CORE_RAM" : "READ_CORE_MEMORY";
         long base = mode.equals("m80") ? 0x80000000L : 0L;
         String[] pages = pagesCsv.length() == 0 ? new String[0] : pagesCsv.split(",");

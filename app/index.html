@@ -327,7 +327,7 @@ function s16(a){var v=u16(a);return v==null?null:(v<<16)>>16}
 /* a hex string from the link as bytes */
 function hexToBytes(h){var n=h.length>>1,o=new Uint8Array(n);for(var i=0;i<n;i++)o[i]=parseInt(h.substr(i*2,2),16);return o}
 /* called back from the Android side with {seq,ok:{pageHex:dataHex},sent,got,err} */
-window.onMem=function(r){if(r.seq>=1000000){if(scan)scan(r);return}busy=false;lastReply=r.got+'/'+r.sent+(r.err?' '+r.err:'');var n=0;for(var k in r.ok){var pk=parseInt(k,16);pages[pk]=hexToBytes(r.ok[k]);n++;if(DUMP)dumpTake(pk,pages[pk])}if(DUMP)dumpCheck();
+window.onMem=function(r){hwStage('reply');if(r.seq>=1000000){if(scan)scan(r);return}busy=false;lastReply=r.got+'/'+r.sent+(r.err?' '+r.err:'');var n=0;for(var k in r.ok){var pk=parseInt(k,16);pages[pk]=hexToBytes(r.ok[k]);n++;if(DUMP)dumpTake(pk,pages[pk])}if(DUMP)dumpCheck();
  if(n){lastOk=Date.now();if(linkMode)goodPolls++;if(!linkMode)linkMode=MODES[probeIdx]}else if(CFG.mode==='auto'&&Date.now()-lastOk>1500){linkMode=null;probeIdx=(probeIdx+1)%3}
  pollDone();render()};
 /* Pacing. A poll costs about one emulator frame, so the wait between polls is what limits how fresh the screen is.
@@ -772,7 +772,7 @@ function empty(ic,title,line){var h='<div class="emp"><svg viewBox="0 0 24 24" f
    script commands FE 3A / FE 3B set and clear the mask, and the menu and the battle loader both test it (Noah: initMenuGlobals,
    loadPartyMembers). */
 function shownParty(p){var av=u16(A.PARTY-4),fm=u16(A.PARTY-2),m=av!=null&&fm!=null?av&fm:0xFFFF,o=[];for(var i=0;i<3;i++){var c=p[i];if(c==null||c>10)continue;if((m>>(c&0x1F))&1||!(m&0x7FF))o.push(c)}return o}
-function fieldView(){var p=rd(A.PARTY,3);if(!p)return win(T(TEST?'...':HAS_NATIVE?'WAITING FOR GAME':'NO LINK ON THIS DEVICE','g'),'card');var ids=shownParty(p);
+function fieldView(){hwStage('field');var p=rd(A.PARTY,3);if(!p)return win(T(TEST?'...':HAS_NATIVE?'WAITING FOR GAME':'NO LINK ON THIS DEVICE','g'),'card');var ids=shownParty(p);
  if(tab==='items')return itemsView();if(tab==='map')return mapView();if(tab==='journal')return journalView();if(!ids.length)return win(empty('party','NO PARTY YET','Your party shows here once the game has loaded a save or a new game.'),'card');
  return ids.map(tab==='equip'?equipCard:statusCard).join('')}
 /* ================= battle screen =================
@@ -809,7 +809,7 @@ function lineup(sl){var b=rd(A.BFORM,0x20);if(!b||!window.ENEMIES)return null;va
  return out}
 /* names for the enemy slots: from the fight's line-up record when it can be read (lineup); otherwise find the monster bank that explains
    every enemy, then name each slot from it. Kept per fight in bankCache. */
-function enemyNames(sl){var fb=rd(A.BFORM,0x20),key=sl.map(function(s){return s?[s.m,s.g,s.x,s.gd,s.d,s.st,s.on].join('/'):''}).join(',')+'|'+(fb?hx(fb):'');if(key in bankCache)return bankCache[key];
+function enemyNames(sl){hwStage('enemy names');var fb=rd(A.BFORM,0x20),key=sl.map(function(s){return s?[s.m,s.g,s.x,s.gd,s.d,s.st,s.on].join('/'):''}).join(',')+'|'+(fb?hx(fb):'');if(key in bankCache)return bankCache[key];
  var lu=lineup(sl);if(lu)return bankCache[key]=lu;
  var best=null,bs=0;
  ENEMIES.forEach(function(e){var sc=0;for(var i=0;i<8;i++){var s=sl[i];if(!s||!s.on||!(s.m||s.g))continue;var r=bestRec(e,i,s,false);sc+=r?r.v:-8}if(sc>bs){bs=sc;best=e}});
@@ -1038,7 +1038,7 @@ function offField(s,hp,name){if(!actorHidden(s,name)){seenOut[s]=Date.now();if(D
 /* Names the bank tables get wrong. Bart's unwinnable gear fight with Grahf in the desert uses the 99999-HP record of the Rankar bank
    (bank 11 record 0, the same unwinnable record as Fei's Rankar fight), so with Bart fighting and Fei not, it is Grahf. */
 function fixFoe(nm,e,pty){if(nm.n==='Rankar Dragon'&&e.mhp>=99000&&pty.indexOf(3)>=0&&pty.indexOf(0)<0){nm.n='Grahf';nm.p=['55_0',37,59]}}
-function battleView(){var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),anyLive=false,s;var ptyIds=[];for(s=0;s<3;s++){var pq=u8(A.BPID+s);if(pq!=null&&pq<=10)ptyIds.push(pq)}
+function battleView(){hwStage('battle');var h='',en='',ens=[],fp=[],all=[],live=rd(A.BLIVE,11),anyLive=false,s;var ptyIds=[];for(s=0;s<3;s++){var pq=u8(A.BPID+s);if(pq!=null&&pq<=10)ptyIds.push(pq)}
  for(s=3;s<11;s++)if(live&&live[s])anyLive=true;
  for(s=3;s<11;s++){var b=A.BSLOT+s*BREC,hp=u16(b+0x4C),mhp=u16(b+0x4E),ghp=u32(b+REC+0x60),gm=u32(b+REC+0x64);if(hp==null){fp.push(null);continue}
   fp.push({m:mhp,g:gm,x:u32(b+0x14C)||0,gd:u16(b+0x156)||0,d:hx(rd(b+0x150,6)),st:hx(rd(b+0x58,8)),on:!anyLive||!!live[s]});if(gm>0){hp=ghp;mhp=gm}all.push({s:s,hp:hp,mhp:mhp,gear:gm>0,st:u16(b+0x7C),rm:u8(A.BGONE+s)})}
@@ -1458,7 +1458,7 @@ document.addEventListener('wheel',function(e){if(!on3d(e))return;e.preventDefaul
 /* the grey message over the map (LOADING, NO MAP FOR THIS ROOM...) */
 function mapMsg(t){var e=document.getElementById('mapmsg');if(e)e.innerHTML=t?'<div class="row">'+T(t,'g')+'</div>':''}
 /* draw the room map: picture, walkable outline, cube / shop / chest markers, the party marker */
-function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr=window.devicePixelRatio||1,W=Math.max(1,Math.round(cv.clientWidth*dpr)),H=Math.max(1,Math.round(cv.clientHeight*dpr));
+function drawMap(){hwStage('map');var cv=document.getElementById('mapcv');if(!cv)return;var dpr=window.devicePixelRatio||1,W=Math.max(1,Math.round(cv.clientWidth*dpr)),H=Math.max(1,Math.round(cv.clientHeight*dpr));
  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;cv._sig=null}var g=cv.getContext('2d');
  if(u32(A.SIG)===5){drawWorld(cv,g,W,H,dpr);return}wPrev=null;wHead=null;
  function blank(t){g.clearRect(0,0,W,H);cv._sig=null;mapMsg(t)}
@@ -1482,7 +1482,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
  /* icon places: flat map, or with 3D on the room drawn in 3D and each spot put on the floor under it nearest the party's height */
  var py3=pr?pr.y:0,PJ={};
  if(on3){if(M3.fitKey!==f+'/'+lvis){M3.fitKey=f+'/'+lvis;var fxs=[],fzs=[];for(i=0;i<m.nv;i++)if(m.wk[i]){fxs.push(m.vx[i]);fzs.push(m.vz[i])}M3.fit(fxs,fzs)}
-  M3.follow(f);M3.firstPerson(map3eye);M3.smooth=CFG.smooth;M3.sky=CFG.sky;var rtg=CFG.route&&p?routeTo(f,p):null;if(CFG.route&&!rtg)M3.routeWarm();else M3.setRoute(CFG.route&&p&&pr?{x:p.x,y:pr.y,z:p.z}:null,rtg);if(map3eye){var lv3=liveVars();if(lv3)M3.peopleSetup(u16(A.STORY)|0,lv3);M3.people(livePeople())}M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
+  hwStage('map 3D');M3.follow(f);M3.firstPerson(map3eye);M3.smooth=CFG.smooth;M3.sky=CFG.sky;hwStage('route 3D');var rtg=CFG.route&&p?routeTo(f,p):null;hwStage('map 3D draw');if(CFG.route&&!rtg)M3.routeWarm();else M3.setRoute(CFG.route&&p&&pr?{x:p.x,y:pr.y,z:p.z}:null,rtg);if(map3eye){var lv3=liveVars();if(lv3)M3.peopleSetup(u16(A.STORY)|0,lv3);M3.people(livePeople())}M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
   /* the map's own outline, each edge on its triangle's walk layer; edges on a floor above the cut are left out */
   var OY={};g.beginPath();if(!M3.isFP())for(i=0;i<m.nt;i++){var e3=(m.fl[i]>>2)&7;if(!e3||!shown(i))continue;var ly=(m.fl[i]>>5)&3;
    for(var k3=0;k3<3;k3++)if(e3>>k3&1){var q3=m.tr[i*3+k3],r3=m.tr[i*3+(k3+1)%3],A3=OY[q3+'/'+ly]||(OY[q3+'/'+ly]=oyP(m.vx[q3],m.vz[q3],ly)),B3=OY[r3+'/'+ly]||(OY[r3+'/'+ly]=oyP(m.vx[r3],m.vz[r3],ly));
@@ -1537,7 +1537,7 @@ function drawMap(){var cv=document.getElementById('mapcv');if(!cv)return;var dpr
    walk layer (a way can pass over or under a layer the map is not showing), joined where two share an edge (by its corners' x/z, so steps between walk layers join too), A* between centroids,
    then the funnel to pull the line tight through the shared edges. Start: the triangle under the party on its own layer if possible. */
 var R2={key:'',G:null};
-function route2d(m,f,lvis,shown,p,to){var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==key){R2.key=key;R2.G=null}
+function route2d(m,f,lvis,shown,p,to){hwStage('route 2D');var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==key){R2.key=key;R2.G=null}
  if(!R2.G){var n=m.nt,ok=new Uint8Array(n),cx=new Float32Array(n),cz=new Float32Array(n),adj=[],E={},i,k;
   for(i=0;i<n;i++){adj.push([]);ok[i]=(m.fl[i]&3)!==2?1:0;var a=m.tr[i*3],b=m.tr[i*3+1],c=m.tr[i*3+2];cx[i]=(m.vx[a]+m.vx[b]+m.vx[c])/3;cz[i]=(m.vz[a]+m.vz[b]+m.vz[c])/3;
    if(!ok[i])continue;for(k=0;k<3;k++){var u=m.tr[i*3+k],v=m.tr[i*3+(k+1)%3],ku=Math.round(m.vx[u])+','+Math.round(m.vz[u]),kv=Math.round(m.vx[v])+','+Math.round(m.vz[v]),ek=ku<kv?ku+'|'+kv:kv+'|'+ku;
@@ -1570,7 +1570,7 @@ function route2d(m,f,lvis,shown,p,to){var key=f+'/'+lvis+'/'+m.nt;if(R2.key!==ke
   gs[s]=0;came[s]=-1;push(0,s);
   while(hk.length&&it++<30000){var c=pop();if(c===g)break;if(done[c])continue;done[c]=1;var A=G.adj[c];
    for(var q=0;q<A.length;q+=3){var nb=A[q],ng=gs[c]+Math.hypot(G.cx[nb]-G.cx[c],G.cz[nb]-G.cz[c]);if(gs[nb]!=null&&gs[nb]<=ng)continue;gs[nb]=ng;came[nb]=c;ca[nb]=A[q+1];cb[nb]=A[q+2];push(ng+Math.hypot(G.cx[g]-G.cx[nb],G.cz[g]-G.cz[nb]),nb)}}
-  if(came[g]==null){R2.C=null;return null}var corr=[g],por=[],cur=g;while(cur!==s){por.push([ca[cur],cb[cur]]);cur=came[cur];corr.push(cur)}corr.reverse();por.reverse();
+  if(came[g]==null){R2.C=null;return null}var corr=[g],por=[],cur=g,gd=0;while(cur!==s){if(cur==null||cur<0||++gd>20000){R2.C=null;return null}por.push([ca[cur],cb[cur]]);cur=came[cur];corr.push(cur)}corr.reverse();por.reverse();
   R2.C=C={tk:tk,key:key,corr:corr,por:por,g:g};k0=0}
  var corr=C.corr.slice(k0),por=C.por.slice(k0),g=C.g;
  /* the end: the target if it is on the goal triangle, else the goal triangle's middle */
@@ -1599,7 +1599,7 @@ function bestNote(list){if(!list.length||Date.now()-bstart<1500)return;jload();v
  list.forEach(function(e){if(bestNow[e.name]||!e.name||/^Enemy \d/.test(e.name))return;var q=reward(e.s);if(!q)return;bestNow[e.name]=1;var o=BEST[e.name]||(BEST[e.name]={h:0,x:q.exp,g:q.gold,d:[],s:st,n:0});
   o.n++;o.h=Math.max(o.h,e.mhp||0);o.x=q.exp;o.g=q.gold;o.d=q.drops.map(function(d){return [d.n,d.p]});ch=true});if(ch)LS.set('best',JSON.stringify(BEST))}
 function fmtT(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)}
-function journalView(){jload();var h='<div class="row">'+[['prog','PROGRESS'],['best','BESTIARY']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
+function journalView(){hwStage('journal');jload();var h='<div class="row">'+[['prog','PROGRESS'],['best','BESTIARY']].map(function(t){return '<span onclick="jsub(\''+t[0]+'\')">'+T(JSUB===t[0]?'['+t[1]+']':' '+t[1]+' ',JSUB===t[0]?'y':'g')+'</span>'}).join('')+'</div><div class="sep"></div>';
  var v=u16(A.STORY),c=window.CHAPTERS||[];
  if(JSUB==='prog'){var pct=v==null?0:Math.min(100,Math.round(v*100/350)),ci=-1;for(var i=0;i<c.length&&v!=null&&c[i][0]<=v;i++)ci=i;var pt=u32(A.PTIME);
   h+='<div class="row">'+T(v!=null&&v>=249?'DISC 2':'DISC 1','c')+T('  '+(ci>=0?c[ci][1]:'-'))+'<span class="sp"></span>'+T(pct+'%','n')+'</div>';
@@ -1641,7 +1641,7 @@ function encInfo(){var w,n,c,base,max,i,v,best=null,sig=u32(A.SIG);
    over EXITS (exits.js); nothing when the hint is done here or no way is known. Doors keep their height (exits.js) so the line ends
    on the right floor. */
 var RTM={key:'',v:null};
-function routeTo(f,p){var E=window.EXITS&&EXITS[f]||[];
+function routeTo(f,p){hwStage('route');var E=window.EXITS&&EXITS[f]||[];
  /* v2.0.0.15: a tapped door belongs to the room it was tapped in. It was kept by its place in the list, so after a room change the
     line went to whatever door had that place in the new room (Jack, 20 Oct: Lahan pointed at the RPS Maniac's house, not the Mountain Path) */
  if(exitTap!=null&&exitTapF!==f)exitTap=null;
@@ -1778,7 +1778,7 @@ function hintRoomNow(){var s=u32(A.SIG);return s===4?(lastField>=0?lastField:nul
 function hintSetPage(hn,pg,auto){pg=Math.max(0,Math.min(hintPages(hn)-1,pg|0));
  if(!HPG||HPG.key!==hn.key||HPG.pg!==pg){HPG={key:hn.key,pg:pg};LS.set('hintpg',JSON.stringify(HPG));var mc=document.getElementById('mapcv');if(mc)mc._sig=null;RTM.key='';if(auto)HF.flash=Date.now();else if(HF.key===hn.key)HF.manual=hintRoomNow()}
  if(HF.key===hn.key&&HF.pg!==pg){HF.pg=pg;HF.near=HF.talk=false;HF.nearR=null}}
-function hintFollow(){if(!CFG.follow||!CFG.hint)return;var hn=hintNext();if(!hn)return;var f=hintRoomNow();if(f==null)return;
+function hintFollow(){hwStage('hint follow');if(!CFG.follow||!CFG.hint)return;var hn=hintNext();if(!hn)return;var f=hintRoomNow();if(f==null)return;
  var rooms=hintRooms(hn),R=rooms.length,pg=hintSavedPage(hn);
  if(HF.key!==hn.key){HF.key=hn.key;HF.pg=pg==null?0:pg;HF.near=HF.talk=false;HF.nearR=null;HF.manual=null}
  if(pg==null){hintSetPage(hn,0,false);HF.manual=null;pg=0}
@@ -1943,7 +1943,13 @@ function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/
    One pass decides the mode (movie, dialogue or scene, battle, field) and writes the three parts of the page. */
 var ffOn=false;
 /* draw the whole screen from what was last read */
-function render(){if(!fontReady)return;bootStep();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
+/* hang watch (v2.0.0.18, Android): each stage of a redraw tells the app where it is; if the page stops for 4 s the app keeps the last
+   stage and the next start shows it (Native.lastHang), so a freeze can be traced to the part of the app that caused it */
+var STG='';function hwStage(s){STG=s;if(HAS_NATIVE&&window.Native.beat)try{window.Native.beat(s+' @'+(u32(A.SIG)||0)+'/'+((u16(A.FIELD)||0)&0x7FF))}catch(e){}}
+var hangShown=false;function hangReport(){if(hangShown||!HAS_NATIVE||!window.Native.lastHang)return;hangShown=true;var h='';try{h=window.Native.lastHang()}catch(e){}if(!h)return;
+ var q=h.split('|'),at=+q[1],wh=at?new Date(at):null;setTimeout(function(){popup('<div class="row">'+T('THE APP FROZE LAST TIME','r')+'</div><div class="sep"></div>'+wrap('It stopped while: '+q[0]+(wh?' ('+wh.toLocaleString()+')':'')+'. Send a photo of this to Claude.',40).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join(''),260)},1500)}
+function render(){renderInner();if(STG!=='idle')hwStage('idle')}
+function renderInner(){if(!fontReady)return;hwStage('render');bootStep();if(booted)hangReport();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
  document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){if(lastMd)fadeMain();lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
  var lo=document.getElementById('lost'),lsec=Date.now()-lastOk;if(booted&&!TEST&&lsec>3000&&!setOpen()){lo.style.display='flex';var lh=win(linkHelp('LINK LOST',lsec),'card');if(lo._h!==lh){lo._h=lh;lo.innerHTML=lh}}else if(lo.style.display!=='none'){lo.style.display='none';lo._h=''}
  var dot=document.getElementById('dot');dot.className=linked?'ok':'';dot.style.display=CFG.dot?'':'none';

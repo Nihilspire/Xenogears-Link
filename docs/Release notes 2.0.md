@@ -95,3 +95,8 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.17
 
 - **3D map froze in rooms 164 and 165** (Gebler airship corridor, Elly's room). One of their sprite sheets is stored in a different layout; the app read its picture count as about 3.7 billion and kept looping. Bad counts are now skipped (the room viewer had the same freeze and the same fix).
+
+## 2.0.0.18
+
+- **Freeze report (Android).** The page tells the app which part it is working on as it draws (battle, enemy names, map, 3D map, route, hint follow...). If the page stops for 4 seconds, the app keeps that part; on the next start a card says "THE APP FROZE LAST TIME" and where. For tracking the "isn't responding" Jack saw in the first Lahan fight with the recomp (2.0.0.17).
+- Guards: the guide line's path search (2D and 3D) gives up instead of looping when its chain is broken, and the link stops draining old replies after 500 (in case something keeps sending).

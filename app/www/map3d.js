@@ -258,7 +258,7 @@ function aStar(M,s,g){var gen=++M.gen,G=M.g,st=M.st,cx=M.cx,cy=M.cy,cz=M.cz,hk=[
  while(hk.length&&n++<30000){var c=pop();if(c===g)break;var A=M.adj[c];
   for(var q=0;q<A.length;q+=3){var nb=A[q],dx=cx[nb]-cx[c],dy=cy[nb]-cy[c],dz=cz[nb]-cz[c],ng=G[c]+Math.sqrt(dx*dx+dy*dy+dz*dz);if(st[nb]===gen&&G[nb]<=ng)continue;
    st[nb]=gen;G[nb]=ng;M.came[nb]=c;M.ca[nb]=A[q+1];M.cb[nb]=A[q+2];var hx=gx-cx[nb],hy=gy-cy[nb],hz=gz-cz[nb];push(ng+Math.sqrt(hx*hx+hy*hy+hz*hz),nb)}}
- if(st[g]!==gen)return null;var corr=[g],por=[],cur=g;while(cur!==s){por.push([M.ca[cur],M.cb[cur]]);cur=M.came[cur];corr.push(cur)}corr.reverse();por.reverse();return {corr:corr,por:por}}
+ if(st[g]!==gen)return null;var corr=[g],por=[],cur=g,gd=0;while(cur!==s){if(cur==null||cur<0||++gd>20000)return null;por.push([M.ca[cur],M.cb[cur]]);cur=M.came[cur];corr.push(cur)}   /* v2.0.0.18: a broken chain (NaN heights) gave up instead of looping forever */corr.reverse();por.reverse();return {corr:corr,por:por}}
 /* the funnel: the shortest line from p through the portals from corridor index k on to q, as [x, y, z] corners */
 function funnel(M,R,k,p,q){var F=M.F,P=[[p.x,p.y,p.z],[p.x,p.y,p.z]];
  for(var i=k;i<R.por.length;i++){var a=R.por[i][0],b=R.por[i][1],t=R.corr[i],dx=M.cx[R.corr[i+1]]-M.cx[t],dz=M.cz[R.corr[i+1]]-M.cz[t],

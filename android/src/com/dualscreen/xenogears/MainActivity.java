@@ -39,6 +39,9 @@ public class MainActivity extends Activity {
     private ParcelFileDescriptor discPfd;   // guarded by discLock
     private FileChannel discCh;
     private String discOpenFor = "";
+    /* hang watch (v2.0.0.18): the page calls beat(stage) as it works; if no beat comes for 4 s while the app is in front, the stage it
+       was last in is kept, and the page shows it on the next start (Native.lastHang) */
+    private volatile String beatStage = ""; private volatile long beatAt = 0; private volatile boolean resumed = false, hangKept = false;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -60,8 +63,21 @@ public class MainActivity extends Activity {
         setContentView(web);
         web.loadUrl("file:///android_asset/www/index.html");
         immersive();
+        Thread wd = new Thread(new Runnable() { public void run() {
+            while (true) {
+                try { Thread.sleep(1000); } catch (InterruptedException e) { return; }
+                long now = System.currentTimeMillis();
+                if (resumed && beatAt > 0 && !hangKept && now - beatAt > 4000) {
+                    hangKept = true;
+                    getSharedPreferences("diag", MODE_PRIVATE).edit().putString("hang", beatStage + "|" + beatAt).commit();
+                }
+            }
+        } });
+        wd.setDaemon(true); wd.start();
     }
 
+    @Override protected void onResume() { super.onResume(); resumed = true; beatAt = System.currentTimeMillis(); }
+    @Override protected void onPause() { super.onPause(); resumed = false; }
     @Override public void onWindowFocusChanged(boolean f) { super.onWindowFocusChanged(f); if (f) immersive(); }
 
     private void immersive() {
@@ -141,6 +157,8 @@ public class MainActivity extends Activity {
                 else { web.clearFocus(); getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE); }
             } });
         }
+        @JavascriptInterface public void beat(String stage) { beatStage = stage == null ? "" : stage; beatAt = System.currentTimeMillis(); hangKept = false; }
+        @JavascriptInterface public String lastHang() { SharedPreferences p = getSharedPreferences("diag", MODE_PRIVATE); String h = p.getString("hang", ""); p.edit().remove("hang").commit(); return h; }
         /** Fire-and-forget command such as FAST_FORWARD. */
         @JavascriptInterface public void send(final String host, final int port, final String cmd) {
             io.execute(new Runnable() { public void run() {
