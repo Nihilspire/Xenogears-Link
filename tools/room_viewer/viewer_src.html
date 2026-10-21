@@ -104,13 +104,13 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
 .amap{position:absolute;inset:0;z-index:20;background:var(--ground,#0b0e13);display:flex;flex-direction:column}.amap[hidden]{display:none}
 .amhd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}.amhd b{font:600 15px var(--body)}
 .amleg{display:flex;align-items:center;gap:6px}.amleg .lg{display:inline-block;width:18px;height:0;border-top:2px solid var(--line);margin-left:8px}.amleg .lg.one{border-top:2px dashed var(--warn)}.amleg .lg.rt{border-top:3px solid var(--hint)}.amleg .lg.ext{border-top:2px dotted #5a6472}
-#amSvg{flex:1;width:100%;min-height:0}
+#amSvg{flex:1;width:100%;min-height:0;touch-action:none;cursor:grab}#amSvg.drag{cursor:grabbing}.amz{display:flex;gap:4px}.amz button{min-width:30px}
 .ame{stroke:#6d7a8c;stroke-width:2}.ame.ext{stroke:#4a5361;stroke-dasharray:2 4}.ame.one{stroke:var(--warn);stroke-dasharray:7 5}.ame.rt{stroke:var(--hint);stroke-width:4;stroke-dasharray:none}
 .amn{cursor:pointer}.amn rect{fill:#18202b;stroke:#3a4656;stroke-width:1.5}.amn:hover rect{stroke:var(--ink)}.amn text{fill:var(--ink);font:12px var(--body)}.amn text.no{font:600 12px var(--mono);fill:var(--brass)}
 .amn.ext rect{fill:#11161d;stroke:#2d3540;stroke-dasharray:3 3}.amn.ext text{fill:var(--dim);font-size:10px}.amn.ext text.no{fill:var(--dim);font-size:10px}
 .amn.hint rect{stroke:var(--hint);stroke-width:2.5}.amn.cur rect{stroke:var(--brass);stroke-width:3;fill:#2a2414}.amn.lone rect{stroke:#ff7a66;stroke-width:2.5}
 .hnav{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--line);border-radius:6px;background:#0f141b}
-.hnt{font:600 12px var(--mono);color:var(--hint);text-align:center;min-width:0}
+.hnt{font:600 12px var(--mono);color:var(--hint);text-align:center;min-width:0;flex:1 1 0}.hnt .hnn{display:block;font-weight:400;font-size:10px;color:var(--dim)}.hnav>.row{flex-wrap:nowrap}
 .hnav .chip.hint{font-size:12px;padding:4px 9px;border-radius:5px}.hnav .chip.hint:hover{background:#13261c}
 .lab.fold{cursor:pointer;user-select:none}.lab.fold:hover{color:var(--ink)}.lab.fold::before{content:"\25BE";display:inline-block;width:13px;letter-spacing:0}
 .sec.shut>.lab.fold::before{content:"\25B8"}.sec.shut>:not(.lab.fold){display:none!important}
@@ -321,7 +321,7 @@ details.tip{font-size:12px;color:var(--dim)}details.tip summary{cursor:pointer;c
   <div class="empty" id="empty"><div><div class="ring"></div><h2>No disc open</h2>Open your own Xenogears disc 1 image (US). The page reads the rooms straight from the file in this browser; nothing is uploaded and no game files ship with the page.<br><br>Drag the room to turn it, scroll or pinch to zoom, right-drag to pan. Click a person to read what they say and see why they are there, a way out to walk through it, or the floor to pin its x, z.<br><br><span class="keys"><kbd>[</kbd> <kbd>]</kbd> room &nbsp; <kbd>,</kbd> <kbd>.</kbd> story step &nbsp; <kbd>Backspace</kbd> back</span></div></div>
   <div class="busy" id="busy" hidden></div>
   <div class="utoast" id="uToast" hidden></div>
-  <div class="amap" id="amap" hidden><div class="amhd"><b id="amTitle"></b><span class="note" id="amNote"></span><span class="grow"></span><span class="note amleg"><i class="lg one"></i>no way back <i class="lg rt"></i>hint way <i class="lg ext"></i>other area</span><button id="amClose">Close</button></div><svg id="amSvg" role="img" aria-label="Area map"></svg></div>
+  <div class="amap" id="amap" hidden><div class="amhd"><b id="amTitle"></b><span class="note" id="amNote"></span><span class="grow"></span><span class="note amleg"><i class="lg one"></i>no way back <i class="lg rt"></i>hint way <i class="lg ext"></i>other area</span><span class="amz"><button id="amOut" title="Zoom out (-)" aria-label="Zoom out">&minus;</button><button id="amIn" title="Zoom in (+)" aria-label="Zoom in">+</button><button id="amFit" title="Whole area (0)">Fit</button></span><button id="amClose">Close</button></div><svg id="amSvg" role="img" aria-label="Area map"></svg></div>
   <div class="xzr" id="xzr" hidden><span class="lbl">x, z</span><span id="xzHover">move over the room</span><span class="pin" id="xzPin" hidden></span><button id="xzCopy" hidden title="Copy in the hint sheet's form: room (x, z)">Copy</button></div>
  </main>
 </div>
@@ -624,7 +624,7 @@ function testText(t){if(t[0]==='var'&&t[3]===2)t=['entrance',t[1].replace(/^0002
 function renderPanel(){var s=state.step;
  $('stepRange').value=s;$('stepIn').value=s;$('stepNum').textContent=s;
  var ch=chapterOf(s);$('stepLabel').innerHTML='<b>'+esc(ch)+'</b>';
- var nx=nextHint(),NQ=navPos(),nparts=nx?(XD.HSPLIT[nx.k]||[]).length:0;$('hNavT').textContent=nx?'Hint '+nx.k+(nparts?' \u00b7 part '+((nx.part||0)+1)+'/'+(nparts+1):'')+' \u00b7 '+(NQ.i+1)+' of '+NQ.L.length:'No more hints';
+ var nx=nextHint(),NQ=navPos(),nparts=nx?(XD.HSPLIT[nx.k]||[]).length:0;$('hNavT').innerHTML=nx?'Hint '+nx.k+(nparts?' \u00b7 part '+((nx.part||0)+1)+'/'+(nparts+1):'')+'<span class="hnn">'+(NQ.i+1)+' of '+NQ.L.length+'</span>':'No more hints';
  $('hNx').disabled=!nx||NQ.i>=NQ.L.length-1;$('hPrev').disabled=nx?NQ.i<=0:false;$('nextBox').hidden=!nx;if(nx){var here=nx.rooms.some(function(q){return q[0]===cur.f});
   $('nextBox').innerHTML='<div>'+(nx.note?esc(nx.note):'<span class="note">No note</span>')+(nx.part?' <span class="note">(part '+(nx.part+1)+')</span>':'')+'</div><div class="chips">'+nx.rooms.map(function(q){return '<span class="chip hint'+(q[0]===cur.f?' cur':'')+'" data-r="'+q[0]+'" title="Open '+(q[0]<0?'the world map':esc(roomName(q[0])||areaOf(q[0])))+'">'+(q[0]<0?'World map':q[0]+' '+esc((roomName(q[0])||areaOf(q[0])||'').slice(0,22)))+(q[1].length?' \u25CF':'')+'</span>'}).join('')+'</div>'+(here?'<div class="note">You are in one of its rooms: green rings mark the spot.</div>':'<div class="note">Click a room to open it.</div>')+routeHtml(nx.k,nx.rooms)}
  if(AM.on){AM.area=areaOf(cur.f)||AM.area;amDraw()}
@@ -1214,12 +1214,30 @@ function amDraw(){var G=amBuild(AM.area),S=190,W=160,H=54,minx=1e9,miny=1e9,maxx
   var cls='amn'+(n.in?'':' ext')+(n.f===cur.f?' cur':'')+(rset[n.f]?' hint':'')+(n.lone?' lone':'');
   svg+='<g class="'+cls+'" data-r="'+n.f+'" transform="translate('+(n.px-w/2).toFixed(1)+','+(n.py-h/2).toFixed(1)+')"><title>'+esc(rName(n.f)+(n.in?'':' ('+(n.f<0?'':areaOf(n.f))+')')+(n.lone?' · no way in or out':''))+'</title><rect width="'+w+'" height="'+h+'" rx="5"/>'
    +'<text x="7" y="'+(n.in?15:13)+'" class="no">'+(n.f<0?'○':n.f)+(n.in?'':' · '+esc((n.f<0?'':areaOf(n.f)).slice(0,12)))+'</text>'+ln.map(function(t,i){return '<text x="7" y="'+(n.in?33+i*14:29)+'" class="nm">'+esc(t)+'</text>'}).join('')+'</g>'});
- var pad=90;$('amSvg').setAttribute('viewBox',(minx-pad)+' '+(miny-pad)+' '+(maxx-minx+pad*2)+' '+(maxy-miny+pad*2));$('amSvg').innerHTML=svg;
+ var pad=90;AM.base=[minx-pad,miny-pad,maxx-minx+pad*2,maxy-miny+pad*2];if(!AM.vb||AM.vbArea!==AM.area){AM.vb=AM.base.slice();AM.vbArea=AM.area}$('amSvg').innerHTML=svg;amVB();
  $('amTitle').textContent=AM.area+' · '+G.R.length+' room'+(G.R.length===1?'':'s');
  $('amNote').innerHTML=[one?'<span class="warn">'+one+' door'+(one===1?'':'s')+' with no way back</span>':'',lone?'<span class="bad">'+lone+' room'+(lone===1?'':'s')+' with no way in or out</span>':'',nx&&Object.keys(route).length?'<span class="hintc">hint '+nx.k+' way</span>':''].filter(Boolean).join(' · ')}
 function amOpen(on){AM.on=on;$('amap').hidden=!on;$('bArea').classList.toggle('on',on);if(on){AM.area=areaOf(cur.f)||AM.area;amDraw()}}
 $('bArea').onclick=function(){amOpen(!AM.on)};$('amClose').onclick=function(){amOpen(false)};
-$('amSvg').onclick=function(e){var g=e.target.closest('[data-r]');if(!g)return;var f=+g.dataset.r;if(f<0){amOpen(false);worldOn(true);return}
+/* zoom and pan (Jack, 21 Oct): scroll wheel or pinch to zoom at the pointer, drag to move, + / - / 0 keys and the buttons */
+function amVB(){var v=AM.vb;$('amSvg').setAttribute('viewBox',v.map(function(x){return x.toFixed(1)}).join(' '))}
+function amPt(cx,cy){var r=$('amSvg').getBoundingClientRect(),v=AM.vb,k=Math.max(v[2]/r.width,v[3]/r.height),ox=v[0]+(v[2]-r.width*k)/2,oy=v[1]+(v[3]-r.height*k)/2;return {x:ox+(cx-r.left)*k,y:oy+(cy-r.top)*k,k:k}}
+function amZoom(f,cx,cy){var r=$('amSvg').getBoundingClientRect();if(cx==null){cx=r.left+r.width/2;cy=r.top+r.height/2}var p=amPt(cx,cy),v=AM.vb,b=AM.base,w=v[2]*f,h=v[3]*f;
+ if(w>b[2]*1.6&&f>1)return;if(w<120&&f<1)return;AM.vb=[p.x-(p.x-v[0])*f,p.y-(p.y-v[1])*f,w,h];amVB()}
+$('amIn').onclick=function(){amZoom(1/1.4)};$('amOut').onclick=function(){amZoom(1.4)};$('amFit').onclick=function(){AM.vb=AM.base.slice();amVB()};
+$('amSvg').addEventListener('wheel',function(e){e.preventDefault();amZoom(Math.pow(1.0015,e.deltaY*(e.deltaMode===1?30:1)),e.clientX,e.clientY)},{passive:false});
+var AMP={},AMD=null;
+$('amSvg').addEventListener('pointerdown',function(e){AMP[e.pointerId]={x:e.clientX,y:e.clientY};var ids=Object.keys(AMP);
+ if(ids.length===1)AMD={x:e.clientX,y:e.clientY,vb:AM.vb.slice(),moved:false};else if(ids.length===2){var a=AMP[ids[0]],b=AMP[ids[1]];AMD={pinch:Math.hypot(a.x-b.x,a.y-b.y),vb:AM.vb.slice(),moved:true}}});
+$('amSvg').addEventListener('pointermove',function(e){if(!AMP[e.pointerId]||!AMD)return;AMP[e.pointerId]={x:e.clientX,y:e.clientY};var ids=Object.keys(AMP);
+ if(ids.length>=2&&AMD.pinch){var a=AMP[ids[0]],b=AMP[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<1)return;AM.vb=AMD.vb.slice();amZoom(AMD.pinch/d,(a.x+b.x)/2,(a.y+b.y)/2);return}
+ var dx=e.clientX-AMD.x,dy=e.clientY-AMD.y;if(!AMD.moved&&Math.hypot(dx,dy)<5)return;AMD.moved=true;$('amSvg').classList.add('drag');try{$('amSvg').setPointerCapture(e.pointerId)}catch(x){}
+ var k=amPt(0,0).k;AM.vb=[AMD.vb[0]-dx*k,AMD.vb[1]-dy*k,AMD.vb[2],AMD.vb[3]];amVB()});
+function amUp(e){delete AMP[e.pointerId];$('amSvg').classList.remove('drag');if(!Object.keys(AMP).length){AM.dragged=AMD&&AMD.moved;AMD=null}else AMD=null}
+$('amSvg').addEventListener('pointerup',amUp);$('amSvg').addEventListener('pointercancel',amUp);
+document.addEventListener('keydown',function(e){if(!AM.on||e.ctrlKey||e.metaKey||e.altKey)return;var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;
+ if(e.key==='+'||e.key==='='){amZoom(1/1.4);e.preventDefault()}else if(e.key==='-'||e.key==='_'){amZoom(1.4);e.preventDefault()}else if(e.key==='0'){AM.vb=AM.base.slice();amVB();e.preventDefault()}});
+$('amSvg').onclick=function(e){if(AM.dragged){AM.dragged=false;return}var g=e.target.closest('[data-r]');if(!g)return;var f=+g.dataset.r;if(f<0){amOpen(false);worldOn(true);return}
  if(areaOf(f)!==AM.area){goTo(f);AM.area=areaOf(f);setTimeout(amDraw,50);return}amOpen(false);goTo(f)};
 document.addEventListener('keydown',function(e){if(e.ctrlKey||e.metaKey||e.altKey||!D||cur.f==null)return;var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='SELECT'||t==='TEXTAREA')return;
  if(e.key==='m'||e.key==='M'){amOpen(!AM.on);e.preventDefault()}else if(e.key==='Escape'&&AM.on)amOpen(false)});
