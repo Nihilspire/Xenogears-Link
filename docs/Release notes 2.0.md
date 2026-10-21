@@ -104,3 +104,9 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.19
 
 - **H&S Badge (Bledavik) fixed (Jack).** It was tied to flag 130 bit 4, which the well key talk sets, and its spot was where the hide-and-seek kid stands after he has quit. It now counts as taken when the kid's counter (script variable 0xBE) reaches 5, the moment he hands it over, and the spot is where you find him the fifth time, (1040, -1430). Pickups can now use a counter as well as a single bit.
+
+## 2.0.0.20 (cleanup and streamlining)
+- **Start screen**: the long switch list is gone; a short line points to SETTINGS instead.
+- **Settings**: one look for every switch (lit = on, tap to change), grouped under GENERAL, BATTLE, MAP, HINTS and EXPERIMENTAL; no more ON/OFF labels.
+- **Map tab**: the 3D and EYE buttons sit in a column on the right; the treasure legend is one row; the room header no longer repeats the area name.
+- **Code**: removed the old dialogue scanner and teach mode, unused styles and dead helpers. Packets after a link restart are ignored.

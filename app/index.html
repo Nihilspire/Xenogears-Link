@@ -71,15 +71,15 @@ body{font-size:1rem;color:#efefef;font-family:monospace}
 #set.show{display:flex}
 #set .win{flex:1;overflow:auto}
 #set .in{margin:2rem 4rem;display:flex;flex-direction:column;gap:2.5rem}
-.opt{display:flex;align-items:center;gap:6rem;min-height:14rem}
-.sgrp.shut>.opt:not(.sethd){display:none}.setver{margin-top:8rem;min-height:16rem}.sethd{cursor:pointer;min-height:19rem;margin-top:5rem;border-bottom:1rem solid #524a31}.sethd .t{transform:scale(1.5);transform-origin:left center}
+.opt{display:flex;align-items:center;flex-wrap:wrap;gap:0 6rem;min-height:14rem}
+.sgrp.shut>.opt:not(.sethd){display:none}.setver{margin-top:8rem;min-height:16rem}.sethd{cursor:pointer;min-height:16rem;margin-top:5rem;border-bottom:1rem solid #524a31}.sethd .t{transform:scale(1.5);transform-origin:left center}
 .chip{border:1rem solid #8c7352;padding:3rem 4rem;background:#211810}
 .chip.on{background:#635a39;border-color:#efefef}
 input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monospace;padding:2rem;width:110rem;user-select:text;-webkit-user-select:text}
 .list{flex:1;min-height:0;overflow-y:auto}
 .list .in{margin:1rem 2rem;display:grid;grid-template-columns:1fr 1fr;column-gap:8rem;row-gap:3rem}
 .it{display:flex;justify-content:space-between}
-.lg{width:6rem;height:6rem;flex:none;margin-right:4rem;align-self:center;box-sizing:border-box}.lgs{background:#ff6ad0;border:1rem solid #fff}.lgi,.lgg{background:#e0a878;border-radius:50%;border:1rem solid #100808}.lgg{border-color:#c8c8d8}.hcols{display:flex;gap:14rem;justify-content:center}.hcol{display:flex;flex-direction:column;gap:3rem;min-width:0}
+.lg{width:6rem;height:6rem;flex:none;margin-right:4rem;align-self:center;box-sizing:border-box}
 .hpic{position:relative;width:104rem;height:104rem;align-self:center;background:#0b0b1c;border:1rem solid #524a31;overflow:hidden;flex:none}.hpic img{position:absolute;display:block}
 .hone{display:flex;gap:10rem;align-items:center;margin:3rem 0}.hpic.big{width:132rem;height:132rem}.hside{display:flex;flex-direction:column;min-width:0}
 
@@ -112,13 +112,11 @@ input{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monos
 .btn.big>.in{flex-direction:column;gap:26rem}
 #pop .in{margin:2rem 4rem;display:flex;flex-direction:column;gap:3rem}
 .mapw>.in{flex-direction:column;align-items:stretch;gap:1rem;justify-content:flex-start}
-.m3btn{position:absolute;right:3rem;top:2rem;z-index:4;background:rgba(11,11,28,.8);border:1px solid #5a4a28;padding:3rem 6rem;cursor:pointer}.m3btn .t{transform:scale(1.2);transform-origin:center}.m3btn.eye{top:21rem}
-.m3btn.on{border-color:#ffd23c}
 .btlrow{display:flex;gap:4rem;flex:2;min-height:0}.btlrow>*{flex:1 1 0;min-width:0}.btls{flex:1}.btlr .bigbar{height:18rem}.btlr .bar.big{flex:1;width:auto;height:14rem;margin:0}.btlr .bn{height:14rem}.btlr .bn .t{transform:scale(1.5);transform-origin:left center}.btlr .bar.heat{flex:1;width:auto;height:8rem}.bar.heat>i{background:linear-gradient(#ff6a4a,#c41010)}
 .hpgr{position:absolute;right:3rem;bottom:3rem;z-index:4;display:flex;align-items:center;gap:2rem;background:rgba(11,11,28,.8);border:1px solid #5a4a28}.hpgr>.ha{padding:5rem 6rem;cursor:pointer}
 .mcoord{position:absolute;right:3rem;top:40rem;z-index:3;pointer-events:none;background:rgba(11,11,28,.75);padding:1rem 2rem}
 .mapbox{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
-.mside{position:absolute;left:0;top:0;display:flex;flex-direction:column;gap:3rem}
+.mside{position:absolute;left:0;top:0;display:flex;flex-direction:column;gap:3rem;z-index:4}.mside.r{left:auto;right:0}.mside.r .mbtn{padding:5rem 0}
 .mbtn{width:30rem;padding:3rem 0 2rem;border:1rem solid #8c7352;background:rgba(33,24,16,.92);display:flex;flex-direction:column;align-items:center;gap:2rem}
 .mbtn.on{background:#635a39;border-color:#efefef}
 .mic{width:22rem;height:15rem;display:flex;align-items:center;justify-content:center;flex:none}.mic img{image-rendering:pixelated;display:block}.mic img.sm{image-rendering:auto}
@@ -327,7 +325,7 @@ function s16(a){var v=u16(a);return v==null?null:(v<<16)>>16}
 /* a hex string from the link as bytes */
 function hexToBytes(h){var n=h.length>>1,o=new Uint8Array(n);for(var i=0;i<n;i++)o[i]=parseInt(h.substr(i*2,2),16);return o}
 /* called back from the Android side with {seq,ok:{pageHex:dataHex},sent,got,err} */
-window.onMem=function(r){hwStage('reply');if(r.seq>=1000000){if(scan)scan(r);return}busy=false;lastReply=r.got+'/'+r.sent+(r.err?' '+r.err:'');var n=0;for(var k in r.ok){var pk=parseInt(k,16);pages[pk]=hexToBytes(r.ok[k]);n++;if(DUMP)dumpTake(pk,pages[pk])}if(DUMP)dumpCheck();
+window.onMem=function(r){hwStage('reply');if(r.seq>=1000000)return;busy=false;lastReply=r.got+'/'+r.sent+(r.err?' '+r.err:'');var n=0;for(var k in r.ok){var pk=parseInt(k,16);pages[pk]=hexToBytes(r.ok[k]);n++;if(DUMP)dumpTake(pk,pages[pk])}if(DUMP)dumpCheck();
  if(n){lastOk=Date.now();if(linkMode)goodPolls++;if(!linkMode)linkMode=MODES[probeIdx]}else if(CFG.mode==='auto'&&Date.now()-lastOk>1500){linkMode=null;probeIdx=(probeIdx+1)%3}
  pollDone();render()};
 /* Pacing. A poll costs about one emulator frame, so the wait between polls is what limits how fresh the screen is.
@@ -376,17 +374,13 @@ function linkHelp(title,ms){var t=Math.floor(ms/1000),h='<div class="lh">'+'<div
  return h}
 function linkRetry(){bootAt=Date.now();lastTry=0;busy=false;poll();render()}
 var lastTry=0;
-/* The start screen (SHOW AT START, on by default): how to connect, the options most people will want to set once, and START.
-   With it switched off the app opens on the plain logo and START button; either way nothing is read until START is pressed. */
-/* every switch the app has, grouped, with a few words each (the start screen scrolls; SET has the same switches and the dev ones) */
-var START_OPTS=[['HINTS'],['hint','STORY HINT','Tap chapter'],['hdot','HINT SPOTS','Green spots'],['route','GUIDE LINE','Path to spot'],['follow','FOLLOW PATH','Pages move on'],
- ['MAP'],['plan','MAP ART','Room pictures'],['maprot','MAP TURNS','Up is camera'],['tre','TREASURE','Chests, taken'],['gift','GIFT SPOTS','Items given'],['places','PLACES','Cubes, shops'],['enl','ENEMY LIST','Room enemies'],['exits','EXITS','Doors, way in'],
- ['BATTLE'],['enc','BATTLE COUNTDOWN','Next fight bar'],['boss','BOSS CARDS','Boss tips'],['turns','TURN ORDER','Who acts next'],['seq','COMBO KEYS','Deathblow keys'],['dball','ALL DEATHBLOWS','Locked too'],
- ['SHOPS'],['advise','SHOP ADVISOR','Gains shown']];
+/* The start screen (SHOW AT START, on by default): how to connect, what the app does, and START; every switch is in SETTINGS
+   (v2.0.0.20: the option list that used to follow was the same as SETTINGS). With it switched off the app opens on the plain logo
+   and START button; either way nothing is read until START is pressed. */
 /* v2.0: what the app does, a line each, at the top of the start screen's list */
 var START_ABOUT=[['STATUS','Party, gears, HP and fuel live'],['EQUIP','Gear, deathblows, descriptions'],['MAP','Room maps, chests, doors, shops'],['HINTS','Next story step and guide line'],
  ['BATTLE','Enemies, turn order, boss tips'],['SHOPS','Prices and what beats your gear'],['JOURNAL','Story progress and bestiary'],['3D','Rooms in 3D and EYE (SETTINGS)']];
-/* the first-launch screen: how to link, the main switches, START */
+/* the first-launch screen: how to link, what the app does, START */
 function startScreen(){var h='<div class="st-top"><img class="st-logo" src="img/title.png"><div class="st-how">'
   +'<div class="row">'+T('Xenogears Link','y')+'<span class="sp"></span>'+T(VERSION,'g')+'</div>'
   +'<div class="row">'+T('USE RETROARCH NIGHTLY','c')+'</div>'
@@ -398,22 +392,13 @@ function startScreen(){var h='<div class="st-top"><img class="st-logo" src="img/
  var o='<div class="row">'+T('A SECOND SCREEN FOR XENOGEARS','y')+'</div>';
  wrap('A utility that hooks with the emulator to display useful information.',40).forEach(function(l){o+='<div class="row">'+T(l,'g')+'</div>'});
  START_ABOUT.forEach(function(a){o+='<div class="row">'+T(padr(a[0],8),'c')+T(a[1])+'</div>'});
- o+='<div class="row" style="height:13rem">'+T('OPTIONS','c')+'<span class="sp"></span>'+T('TAP TO CHANGE','g')+'</div>';
- /* the room maps come from the player's own disc: say so first, with the button to build them */
- if(false)o+='<div class="st-opt">'+T('ROOM MAPS','c')+'<span class="sp"></span>'+(GEN.building?T('BUILDING '+GEN.building.done+'/'+GEN.building.total,'y'):GEN.ready?(GEN.man.v<XB.VERSION?chip('REBUILD (NEWER)',true,'genAsk()'):T('BUILT','n')):window.BUNDLED?T('IN APP (TEST)','n'):chip('BUILD FROM DISC',true,'discPick()'))+'</div>';
- if(false)o+='<div class="st-opt">'+T('Pick your Xenogears disc 1','g')+'</div><div class="st-opt" style="margin-top:-8rem">'+T('(.chd, .bin or .iso) once.','g')+'</div>';
- /* size first, so it stays in reach if a size too big for the screen was picked */
- o+='<div class="st-opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(z){return chip(String(z),CFG.scale===z,"sv('scale',"+z+")")}).join('')+'</div>';
- START_OPTS.forEach(function(q){if(q.length===1){o+='<div class="row" style="height:11rem">'+T(q[0],'c')+'</div>';return}var on=CFG[q[0]];
-  o+='<div class="st-opt" onclick="sv(\''+q[0]+'\',\''+(on?0:1)+'\')"><span class="chip st-sw'+(on?' on':'')+'">'+T(on?'ON':'OFF',on?'y':'g')+'</span>'+T(padr(q[1],16),on?'w':'g')+'<span class="sp"></span>'+T(q[2],'g')+'</div>'});
- o+='<div class="row" style="height:11rem">'+T('MORE','c')+'</div><div class="st-opt">'+T('Size, link and developer','g')+'</div><div class="st-opt" style="margin-top:-8rem">'+T('readouts: SETTINGS.','g')+'</div>';
- o+='<div class="st-opt">'+T('TAP','y')+T(' names and the map for details','g')+'</div>';
+ o+='<div class="row" style="height:13rem"></div><div class="row">'+T('Every switch is in ','g')+T('SETTINGS','c')+T(', and tap names','g')+'</div><div class="row">'+T('and the map for details.','g')+'</div>';
  h+=win(o,'st-win');
  h+='<div class="st-bot"><span class="st-side" onclick="openSet()">'+T('SETTINGS','g')+'</span>'+win(T('START','y'),'btn boot','onclick="bootStart()"')
   +'<span class="st-side" onclick="sv(\'intro\',\''+(CFG.intro?0:1)+'\')"><span class="st-box'+(CFG.intro?' on':'')+'"></span>'+T('SHOW AT START',CFG.intro?'w':'g')+'</span></div>';
  bootDraw(h,'start')}
 /* one round trip to RetroArch: ask for the wanted pages, then store them and redraw (onMem is the reply) */
-function poll(){if(!bootGo){render();return}if(scan||(teach&&teach.busy))return;if(busy&&!TEST&&Date.now()-busyAt<1500){render();return}
+function poll(){if(!bootGo){render();return}if(busy&&!TEST&&Date.now()-busyAt<1500){render();return}
  var set={};try{plan(set);dumpPlan(set)}catch(e){lastErr='plan: '+String(e&&e.message||e).slice(0,50);fullKey='';want(set,A.MODE,4);want(set,A.SIG,4);want(set,A.PARTY,3)}
  pollAt=Date.now();if(TEST){TestKit.poll(set);pollDone();render();return}
  if(!HAS_NATIVE){render();return}
@@ -425,33 +410,6 @@ function poll(){if(!bootGo){render();return}if(scan||(teach&&teach.busy))return;
    Text boxes are read directly (boxOpen). The older "taught" method is kept as an extra under DEV OPTIONS > EXTRA SIGNALS:
    it snapshots the room program's working memory while walking and while a text box is up, twice each, keeps the bytes
    that are 0 when walking and non-zero in dialogue both times, and counts dialogue as "most of those bytes are non-zero". */
-var DLG=null;try{DLG=JSON.parse(LS.get('dlg','null'))}catch(e){}
-var SCAN_RANGES=[[0x59000,0x5A000],[0xAD000,0xC5000]],scan=null,teach=null;
-/* the page list for a full snapshot (EXTRA SIGNALS teaching) */
-function scanPages(){var l=[];SCAN_RANGES.forEach(function(r){for(var p=r[0]>>8;p<r[1]>>8;p++)l.push(p)});return l}
-/* read every page of scanPages once, retrying the ones that failed */
-function snapshot(done){var list=scanPages(),got={},tries=0;
- function step(){var miss=list.filter(function(p){return !got[p]});if(!miss.length||tries>40){scan=null;done(got,miss.length);return}tries++;
-  var batch=miss.slice(0,40);
-  if(TEST){batch.forEach(function(p){got[p]=TestKit.page(p)});setTimeout(step,5);return}
-  scan=function(r){for(var k in r.ok)got[parseInt(k,16)]=hexToBytes(r.ok[k]);step()};
-  Native.poll(CFG.host,CFG.port,linkMode||'m80',batch.map(function(p){return p.toString(16)}).join(','),1000000+tries)}
- step()}
-/* three snapshots a moment apart; a byte that moves between them is marked unstable (-1) */
-function capture(done){var snaps=[];(function next(){snapshot(function(g,miss){snaps.push(g);if(snaps.length<3){setTimeout(next,350);return}
-  var out={};scanPages().forEach(function(p){var a=snaps[0][p],b=snaps[1][p],c=snaps[2][p];if(!a||!b||!c)return;var o=new Int16Array(256);for(var i=0;i<256;i++)o[i]=(a[i]===b[i]&&b[i]===c[i])?a[i]:-1;out[p]=o});done(out)})})()}
-var TEACH_STEPS=[['Walk around freely','with no text on screen.'],['Talk to someone. While','the text box is open:'],['Close it and walk','around again.'],['Talk to someone else.','With the text box open:']];
-/* EXTRA SIGNALS > TEACH: start the four-step lesson (walking, then a text box open, twice over) */
-function teachStart(){if(u32(A.SIG)!==4&&!TEST){teach={msg:'Do this on a field map.'};drawSet();return}teach={step:0,caps:[]};drawSet()}
-/* take the snapshot for the current lesson step */
-function teachTap(){if(!teach||teach.busy)return;teach.busy=true;drawSet();capture(function(c){teach.caps.push(c);teach.busy=false;teach.step++;if(teach.step>=4)teachFinish();drawSet()})}
-/* keep the bytes that were set in both "dialogue open" snapshots and clear in both "closed" ones */
-function teachFinish(){var c=teach.caps,same=[],diff=[];
- Object.keys(c[0]).forEach(function(p){var w1=c[0][p],d1=c[1][p],w2=c[2][p],d2=c[3][p];if(!d1||!w2||!d2)return;
-  for(var i=0;i<256;i++)if(w1[i]===0&&w2[i]===0&&d1[i]>0&&d2[i]>0)(d1[i]===d2[i]?same:diff).push(p*256+i)});
- var pick=same.length>=4?same:same.concat(diff);if(pick.length>32){var st=pick.length/32,o=[];for(var k=0;k<32;k++)o.push(pick[Math.floor(k*st)]);pick=o}
- if(pick.length){DLG={a:pick};LS.set('dlg',JSON.stringify(DLG));teach={msg:'Learned. '+pick.length+' signals saved.'}}else teach={msg:'Nothing found. Try again.'}}
-/* forget the taught dialogue bytes */
 /* ================= story snapshots (DEV, Windows) =================
    SAVE NOW writes the story step, where the party is and the whole 1 KB script variable bank (story and room flags; live copy
    0x800C3A68 in a room, else the saved copy 0x8006EF64) to Documents\Xenogears Link\Story snapshots, as a text file to read and a
@@ -489,7 +447,6 @@ function snapTake(){var bk=snapBank();if(!bk){snapMsg='NO DATA YET, TRY AGAIN';d
  if(String(r).slice(0,4)==='ERR:')snapMsg='NOT SAVED: '+String(r).slice(4,40).toUpperCase();
  else{LS.set('snapprev',JSON.stringify({step:step,room:f,saved:S.saved,note:note,vars:V}));snapMsg='SAVED '+base.toUpperCase();snapNote=''}
  lastSet='';drawSet()}
-function teachClear(){DLG=null;LS.set('dlg','null');teach=null;drawSet()}
 /* the field program keeps four text boxes; a box is on screen when its order is not 0xFFFF and its visibility word is 0 */
 function boxOpen(){if(u32(A.SIG)!==4)return false;for(var i=0;i<4;i++){var b=A.TBOX+i*TBREC,o=u16(b+0x410),v=u16(b+0x40E);if(o!=null&&o!==0xFFFF&&v===0)return true}return false}
 /* stay hidden for a short while after the last text box closes, so the gaps between boxes in one conversation do not flash the party screen */
@@ -509,7 +466,7 @@ function inEvent(){if(!CFG.cut||!rawEvent()){evtSince=0;return false}var now=Dat
    as it is; see "Dialogue: walk-away talk vs cutscenes" in the RAM map. */
 function inDialogue(){if(u32(A.SIG)!==4)return false;if(inEvent())return true;if(!CFG.dlg)return false;var now=Date.now();if(rawDialogue()&&rawEvent()){dlgSeen=now;return true}return now-dlgSeen<CFG.grace}
 /* is a text box open right now (the box records, or most of the taught bytes)? */
-function rawDialogue(){if(boxOpen())return true;if(!DLG||!DLG.a.length||u32(A.SIG)!==4)return false;var n=0,t=0;for(var i=0;i<DLG.a.length;i++){var v=u8(DLG.a[i]);if(v==null)continue;t++;if(v)n++}return t>0&&n*10>=t*6}
+function rawDialogue(){return boxOpen()}
 /* ================= game state ================= */
 var tab=LS.get('tab','status'),tick=0,namesAt=0;if(['status','equip','items','map','journal'].indexOf(tab)<0)tab='status';
 /* is the battle program loaded? */
@@ -622,8 +579,7 @@ function plan(set){tick++;var key=u32(A.SIG)+'/'+u16(A.FIELD);
   if(room&&CFG.speed&&(u16(A.FIELD)&0x7FF)===321){want(set,A.SVAR+2,2);want(set,A.SVAR+0x194,2);want(set,A.SVAR+0x412,0x18);want(set,A.SVAR+0x4B6,0x6C)}
   if(room&&CFG.rps&&(u16(A.FIELD)&0x7FF)===7){want(set,A.SVAR+0x408,12);want(set,A.SVAR+0x2CE,2);want(set,A.SVAR+0x2DE,2)}
   if(room){want(set,A.EVT,1);want(set,A.MENU,4);want(set,A.MARG,1);if(shopOpen())want(set,A.INV,0x578);if(discEndOpen()){want(set,A.SVAR,0x400);for(var dj=0;dj<=10;dj++)want(set,A.CHAR+dj*REC,REC)}var ppk=partyPickOpen();if(ppk)ppk.forEach(function(id){want(set,A.CHAR+id*REC,REC);want(set,A.SKILL+id*0x20,0x20);var g=u8(A.CHAR+id*REC+0xA0);if(g!=null&&g<20)want(set,A.GEAR+g*REC,REC)});if(setOpen()){want(set,A.EVT2,2);want(set,A.SCENEFL,4)}if(snapOn()){want(set,A.SVAR,0x400);want(set,A.WALKB,4)}
-   for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}
-   if(DLG)DLG.a.forEach(function(a){want(set,a,1)})}}}
+   for(i=0;i<4;i++)want(set,A.TBOX+i*TBREC+0x40E,4);wantPlayer(set);want(set,A.CAMEYE,32);if(tab==='map'){livePlan(set);wantPeople(set,true)}}}}
 /* one letter of a name in the game's own letter codes (two encodings: one byte, and 16-bit 'wide') */
 function gch(c,wide){return c>=0x20&&c<=0x39?String.fromCharCode(65+c-0x20):c>=0x3D&&c<=0x56?String.fromCharCode(97+c-0x3D):wide&&c===0x1A?'-':wide&&c>=0x10&&c<=0x19?String(c-0x10):!wide&&c>=0x16&&c<=0x1F?String(c-0x16):!wide&&c===0x13?'-':!wide&&c===0x10?' ':'?'}
 /* names are stored one byte per letter in a running game (two bytes in the disc's new-game image); accept either, else fall back to the built-in name */
@@ -1422,12 +1378,12 @@ function mapView(){if(u32(A.SIG)===5){var wl=worldList(),wb='',wp='';
  if(f!=null&&window.LEVELS&&LEVELS[f]&&CFG.plan&&mapsReady()&&!map3on){var lvc=mapLevel(f);btn+='<div class="mbtn'+(lvlPick[f]!=null?' on':'')+'" onclick="lvlTap('+f+')"><span class="mic">'+T('LV','c')+'</span>'+T(lvlName(f,lvc),lvlPick[f]!=null?'y':'w')+'</div>'}   /* lit = picked by hand */
  if(mk){btn+='<div class="mbtn'+(mapSide==='x'?' on':'')+'" onclick="sideTap(\'x\')"><span class="mic">'+MARK_ICON+'</span>'+T(String(mk.length),'w')+'</div>'}
  if(mapSide==='x'&&mk){pan='<div class="row">'+T('PLACES','y')+'</div>';var mc={s:0,i:0,g:0};mk.forEach(function(e){mc[e[2]]++});[['s','Memory Cube'],['i','Item Shop'],['g','Gear Shop']].forEach(function(q){if(mc[q[0]])pan+='<div class="row"><span class="lg lg'+q[0]+'"></span>'+T(q[1],q[0]==='s'?'r':'o')+'<span class="sp"></span>'+T(mc[q[0]]>1?'    x'+mc[q[0]]:'  HERE','n')+'</div>'})}
- if(mapSide==='t'&&tl){pan='<div class="row"><span class="lg lgt"></span>'+T('TREASURE','y')+'</div>';if(tl.some(function(t){return t.gift&&t.x!=null}))pan+='<div class="row"><span class="lg lgf"></span>'+T('GIFT SPOT','c')+'</div>';if(tl.some(function(t){return t.miss&&t.got===false}))pan+='<div class="row"><span class="lg lgm"></span>'+T('MISSABLE','o')+'</div>';tl.forEach(function(t){var n=t.n.length>20?t.n.slice(0,19)+'.':t.n;pan+='<div class="row">'+T(n,t.got?'g':t.miss?'o':'w')+'<span class="sp"></span>'+T(t.got==null?'   ?':t.got?' GOT':t.gift?'GIFT':'HERE',t.got?'n':t.got==null?'g':t.gift?'c':'y')+'</div>';
+ if(mapSide==='t'&&tl){pan='<div class="row"><span class="lg lgt"></span>'+T('TREASURE','y')+(tl.some(function(t){return t.gift&&t.x!=null})?'<span class="lg lgf" style="margin-left:8rem"></span>'+T('GIFT','c'):'')+(tl.some(function(t){return t.miss&&t.got===false})?'<span class="lg lgm" style="margin-left:8rem"></span>'+T('MISSABLE','o'):'')+'</div>';tl.forEach(function(t){var n=t.n.length>20?t.n.slice(0,19)+'.':t.n;pan+='<div class="row">'+T(n,t.got?'g':t.miss?'o':'w')+'<span class="sp"></span>'+T(t.got==null?'   ?':t.got?' GOT':t.gift?'GIFT':'HERE',t.got?'n':t.got==null?'g':t.gift?'c':'y')+'</div>';
    if(t.miss&&!t.got){var mw=t.miss.length>21?t.miss.slice(0,20)+'.':t.miss;pan+='<div class="row">'+T(' LOST: ','o')+T(mw,'g')+'</div>'}})}
  if(mapSide==='e'&&en&&en.length){pan='<div class="row">'+T('ENEMIES','y')+(anyRiding()?'<span class="sp"></span>'+T('IN GEARS','n'):'')+'</div>';en.forEach(function(e){pan+='<div class="erow"><span class="mic">'+(e.p?sprImg(e.p,22,15):'')+'</span>'+T(e.n,'r')+'</div>'})}
  var rn=f!=null&&window.ROOMS&&ROOMS[f],hd=a?a.n:'',pp=CFG.dev&&f!=null?playerPos():null;   /* DEV: x, z under the room number, for placing hint spots */
- if(rn){var mx=Math.max(14,Math.floor((remSize()[0]-46)/7)-('ROOM '+f).length-2);hd=(a?a.s+': ':'')+rn;if(hd.length>mx)hd=rn;if(hd.length>mx)hd=hd.slice(0,mx-2)+'..'}   /* room name when one is known, shortened to fit beside the number */
- return win('<div class="row">'+T(hd,'y')+'<span class="sp"></span>'+T(f==null?'':'ROOM '+f,'g')+'</div><div class="mapbox">'+MAPCV+(f!=null&&mapsReady()&&CFG.x3d?'<div class="m3btn'+(map3on?' on':'')+'" onclick="toggle3d(event)">'+T('3D',map3on?'y':'w')+'</div>'+(map3on&&CFG.xeye?'<div class="m3btn eye'+(map3eye?' on':'')+'" onclick="toggleEye(event)">'+T('EYE',map3eye?'y':'w')+'</div>':''):'')+(pp?'<div class="mcoord">'+T(pp.x+', '+pp.z,'g')+'</div>':'')+hintPager()+(btn?'<div class="mside">'+btn+'</div>':'')+(pan?'<div class="mpanel" onclick="sideTap(mapSide)">'+pan+'</div>':'')+'</div>','card mapw')}
+ if(rn){var mx=Math.max(14,Math.floor((remSize()[0]-46)/7)-('ROOM '+f).length-2);hd=(a&&rn.toLowerCase().indexOf(a.s.toLowerCase())!==0?a.s+': ':'')+rn;if(hd.length>mx)hd=rn;if(hd.length>mx)hd=hd.slice(0,mx-2)+'..'}   /* room name when one is known, shortened to fit beside the number */
+ return win('<div class="row">'+T(hd,'y')+'<span class="sp"></span>'+T(f==null?'':'ROOM '+f,'g')+'</div><div class="mapbox">'+MAPCV+(f!=null&&mapsReady()&&CFG.x3d?'<div class="mside r"><div class="mbtn'+(map3on?' on':'')+'" onclick="toggle3d(event)">'+T('3D',map3on?'y':'w')+'</div>'+(map3on&&CFG.xeye?'<div class="mbtn'+(map3eye?' on':'')+'" onclick="toggleEye(event)">'+T('EYE',map3eye?'y':'w')+'</div>':'')+'</div>':'')+(pp?'<div class="mcoord">'+T(pp.x+', '+pp.z,'g')+'</div>':'')+hintPager()+(btn?'<div class="mside">'+btn+'</div>':'')+(pan?'<div class="mpanel" onclick="sideTap(mapSide)">'+pan+'</div>':'')+'</div>','card mapw')}
 var mapSide='';   /* which side list is open: '', 't' (treasure), 'e' (enemies) or 'x' (places: memory cubes and shops in a room, the places list on the world map) */
 /* side-button icons: PLACE_ICON for the world map's places list, MARK_ICON for a room's memory cubes and shops.
    (Room exits were shown here up to v1.38; the data is still made by fld/mkexits.py but no longer ships in the app.) */
@@ -1849,7 +1805,6 @@ function showHint(lv,pg){var hn=hintNext(),f=u32(A.SIG)===4?u16(A.FIELD):null;f=
  if(txt)wrap(txt,Math.max(26,Math.min(52,Math.floor((remSize()[0]-64)/8)))).forEach(function(l){h+='<div class="row">'+T(l,unv?'g':'w')+'</div>'});   /* the app's own pixel font (v1.84; 1.80-1.83 used a plain font) */
  if(n>1)h+='<div class="row" style="height:16rem">'+(pg>0?chip('< BACK',false,'event.stopPropagation();showHint(1,'+(pg-1)+')'):'')+'<span class="sp"></span>'+(pg<n-1?chip('NEXT >',true,'event.stopPropagation();showHint(1,'+(pg+1)+')'):'')+'</div>';
  popup(h,230)}
-function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 /* pop-up with the fight log (dev) */
 function showLog(){if(setOpen())closeSet();popup('<div class="row">'+T('FIGHT LOG','y')+'</div><pre>'+(blog.length?'slot name hp  st=KO word  rm=removal byte\n'+blog.slice(-22).join('\n'):'Nothing recorded yet.')+'</pre>',230)}
 /* RPS HELPER (v2.0.0.5, DEV OPTIONS, off unless switched on): the rock-paper-scissors man in Lahan (room 7, see the RAM map). His hand
@@ -1991,7 +1946,6 @@ var lastSet='';
 /* a small tappable label; on = lit */
 function chip(label,on,js){return '<span class="chip'+(on?' on':'')+'" onclick="'+js+'">'+T(label,on?'y':'w')+'</span>'}
 /* a settings row with ON and OFF chips for one switch */
-function onoff(label,key,on){return '<div class="opt">'+T(label,'c')+chip('ON',on,"sv('"+key+"','1')")+chip('OFF',!on,"sv('"+key+"','0')")+'</div>'}
 /* open the settings panel */
 function openSet(){lastSet='';document.getElementById('set').className='show';drawSet()}
 /* let the app take keyboard focus (only while typing the host or port) */
@@ -2017,9 +1971,8 @@ function readout(){var f=u16(A.FIELD),world=u32(A.SIG)===5,o=[];f=f==null?null:f
  o.push('walk layer '+dash(playerLayer())+'  seen here '+((layerSeen[u16(A.FIELD)&0x7FF]|0)>>1).toString(2));o.push('scene lock menu '+dash(ev)+' ctl '+(ctl==null?'-':ctl.toString(16))+' flags '+(sf==null?'-':(sf>>>0).toString(16))+'  in scene '+rawEvent());
  o.push('text boxes '+[0,1,2,3].map(function(i){var a=u16(A.TBOX+i*TBREC+0x410),v=u16(A.TBOX+i*TBREC+0x40E);return a==null?'-':a.toString(16)+'/'+v.toString(16)}).join(' ')+'  open '+boxOpen());
  if(lastErr)o.push('error '+lastErr);
- o.push('dialogue '+(DLG?DLG.a.length+' signals, now '+inDialogue():'no extra signals'));
+ o.push('dialogue now '+inDialogue());
  if(blog.length)o=o.concat(['fight log (slot name hp st rm):'],blog.slice(-18));
- if(DLG)o.push('signals (address=value now):',DLG.a.map(function(a){var v=u8(a);return a.toString(16)+'='+(v==null?'--':(v<16?'0':'')+v.toString(16))}).join(' '));
  return o}
 /* fill the settings panel */
 /* v2.0.0.14: each group folds: tap its heading (kept in LS 'setc'). The panel is opened in drawSet and each heading closes the group
@@ -2033,48 +1986,35 @@ var SET_KEYS=['mode','poll','fast','dot','intro','dev','scale','maprot','plan','
 function setReset(){popup('<div class="row">'+T('RESET SETTINGS','y')+'</div><div class="sep"></div>'+wrap('Every switch goes back to how the app ships. The link (host and port), the journal, the bestiary and your notes are kept.',40).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join('')
  +'<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip('RESET',true,'event.stopPropagation();setResetGo()')+'</div>',240);document.getElementById('pop').style.zIndex=6}
 function setResetGo(){SET_KEYS.forEach(function(k){try{localStorage.removeItem('xg_'+k)}catch(e){}});location.reload()}
-function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"></span>'+chip('CLOSE',false,'closeSet()')+'</div><div>';
+function drawSet(){var h='<div class="opt">'+T('SETTINGS','y')+'<span class="sp"></span>'+chip('CLOSE',false,'closeSet()')+'</div>'
+  +'<div class="opt">'+T('Lit = on. Tap a switch to change it.','g')+'</div><div>';
+ /* v2.0.0.20: one chip per switch (lit = on), related switches on one row, instead of an ON / OFF pair per line */
+ function sw(label,key){return chip(label,!!CFG[key],"sv('"+key+"','"+(CFG[key]?0:1)+"')")}
  h+=setHd('GENERAL');
  h+='<div class="opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(s){return chip(String(s),CFG.scale===s,"sv('scale',"+s+")")}).join('')+'</div>';
- h+=onoff('START SCREEN','intro',CFG.intro);
- h+='<div class="opt">'+T('APP TOUR','c')+chip('SHOW ME AROUND',false,'closeSet();tourGo(0)')+'</div>';
- h+='<div class="opt">'+T('ALL SETTINGS','c')+chip('RESET TO DEFAULTS',false,'setReset()')+'</div>';
+ h+='<div class="opt">'+sw('START SCREEN','intro')+chip('APP TOUR',false,'closeSet();tourGo(0)')+chip('RESET ALL',false,'setReset()')+'</div>';
  h+=setHd('BATTLE');
- h+=onoff('BATTLE COUNTDOWN','enc',CFG.enc);
- h+=onoff('BOSS CARDS','boss',CFG.boss);
- h+=onoff('SHOP ADVISOR','advise',CFG.advise);
- h+='<div class="opt">'+T('IN BATTLE','c')+chip('TURN ORDER',CFG.turns,"sv('turns','"+(CFG.turns?0:1)+"')")+chip('COMBO KEYS',CFG.seq,"sv('seq','"+(CFG.seq?0:1)+"')")+'</div>';
- h+='<div class="opt">'+T('DEATHBLOWS','c')+chip('LEARNED',!CFG.dball,"sv('dball','0')")+chip('SHOW ALL',CFG.dball,"sv('dball','1')")+'</div>';
+ h+='<div class="opt">'+sw('COUNTDOWN','enc')+sw('BOSS CARDS','boss')+sw('TURN ORDER','turns')+'</div>';
+ h+='<div class="opt">'+sw('COMBO KEYS','seq')+sw('LOCKED DEATHBLOWS','dball')+sw('SHOP ADVISOR','advise')+'</div>';
  h+=setHd('MAP');
- h+='<div class="opt">'+T('VIEW','c')+chip('CAMERA',CFG.maprot,"sv('maprot','1')")+chip('FIXED',!CFG.maprot,"sv('maprot','0')")+chip('ART',CFG.plan,"sv('plan','"+(CFG.plan?0:1)+"')")+'</div>';
- h+='<div class="opt">'+T('MARKS','c')+chip('TREASURE',CFG.tre,"sv('tre','"+(CFG.tre?0:1)+"')")+chip('GIFTS',CFG.gift,"sv('gift','"+(CFG.gift?0:1)+"')")+chip('PLACES',CFG.places,"sv('places','"+(CFG.places?0:1)+"')")+'</div>';
- h+='<div class="opt">'+T('LISTS','c')+chip('ENEMIES',CFG.enl,"sv('enl','"+(CFG.enl?0:1)+"')")+chip('EXITS',CFG.exits,"sv('exits','"+(CFG.exits?0:1)+"')")+'</div>';
+ h+='<div class="opt">'+sw('TURN WITH CAMERA','maprot')+sw('ROOM ART','plan')+'</div>';
+ h+='<div class="opt">'+sw('TREASURE','tre')+sw('GIFTS','gift')+sw('PLACES','places')+sw('ENEMIES','enl')+sw('EXITS','exits')+'</div>';
  h+=setHd('HINTS');
- h+=onoff('STORY HINT','hint',CFG.hint);
- h+='<div class="opt">'+T('HINT MAPS','c')+chip('GREEN SPOTS',CFG.hdot,"sv('hdot','1')")+chip('PICTURE ONLY',!CFG.hdot,"sv('hdot','0')")+'</div>';
- h+=onoff('GUIDE LINE','route',CFG.route);
- h+=onoff('FOLLOW PATH','follow',CFG.follow);
+ h+='<div class="opt">'+sw('STORY HINT','hint')+sw('GREEN SPOTS','hdot')+sw('GUIDE LINE','route')+sw('FOLLOW PATH','follow')+'</div>';
  h+=setHd('EXPERIMENTAL');
- h+='<div class="opt">'+T('3D MAP','c')+chip('ON',CFG.x3d,CFG.x3d?'':"expAsk('x3d')")+chip('OFF',!CFG.x3d,"sv('x3d','0')")+'</div>';
- if(CFG.x3d)h+='<div class="opt">'+T('EYE MODE','c')+chip('ON',CFG.xeye,CFG.xeye?'':"expAsk('xeye')")+chip('OFF',!CFG.xeye,"sv('xeye','0')")+'</div>';
- if(CFG.x3d){h+=onoff('SMOOTH 3D','smooth',CFG.smooth);if(CFG.xeye)h+=onoff('SKY IN EYE','sky',CFG.sky)}
+ h+='<div class="opt">'+chip('3D MAP',CFG.x3d,CFG.x3d?"sv('x3d','0')":"expAsk('x3d')")+(CFG.x3d?chip('EYE MODE',CFG.xeye,CFG.xeye?"sv('xeye','0')":"expAsk('xeye')")+sw('SMOOTH 3D','smooth')+(CFG.xeye?sw('SKY IN EYE','sky'):''):'')+'</div>';
  if(CFG.dev){h+=setHd('DEVELOPER');
  /* everything below is for setting up and debugging the link; hidden unless DEV OPTIONS is switched on */
- h+='<div class="opt">'+T('DEV OPTIONS','c')+chip('SHOW',CFG.dev,"sv('dev','1')")+chip('HIDE',!CFG.dev,"sv('dev','0')")+'</div>';
+ h+='<div class="opt">'+chip('DEV OPTIONS',CFG.dev,"sv('dev','0')")+T('tap to hide','g')+'</div>';
  if(CFG.dev){
  h+='<div class="opt">'+T('HOST','c')+'<input id="ih" ontouchstart="kb(1)" onmousedown="kb(1)" value="'+CFG.host+'" onchange="sv(\'host\',this.value)">'+T('PORT','c')+'<input id="ip" ontouchstart="kb(1)" onmousedown="kb(1)" style="width:50rem" value="'+CFG.port+'" onchange="sv(\'port\',this.value)"></div>';
  h+='<div class="opt">'+T('LINK','c')+['auto','m80','m00','ram'].map(function(m){return chip(m.toUpperCase(),CFG.mode===m,"sv('mode','"+m+"')")}).join('')+'</div>';
- h+='<div class="opt">'+T('STATUS DOT','c')+chip('SHOW',CFG.dot,"sv('dot','1')")+chip('HIDE',!CFG.dot,"sv('dot','0')")+'</div>';
- h+=onoff('FAST MAP','fast',CFG.fast);
- h+=onoff('RPS HELPER','rps',CFG.rps);
- h+=onoff('SPEED HELPER','speed',CFG.speed);
+ h+='<div class="opt">'+sw('STATUS DOT','dot')+sw('FAST MAP','fast')+sw('RPS HELPER','rps')+sw('SPEED HELPER','speed')+'</div>';
  if(window.Native&&Native.snapSave){h+='<div class="opt">'+T('STORY SNAPSHOT','c')+chip('SAVE NOW',false,'snapTake()')+chip('FOLDER',false,'Native.snapOpen()')+'</div>';
   h+='<div class="opt">'+T('NOTE','c')+'<input id="isn" style="width:200rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="snapNote=this.value" placeholder="what just happened" value="'+snapNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>';if(snapMsg)h+='<div class="opt">'+T(snapMsg.slice(0,44),'g')+'</div>'}
  if(dumpOn()){h+='<div class="opt">'+T('RAM DUMP','c')+chip(DUMP?'READING...':'SAVE NOW',false,DUMP?'':'dumpStart()')+chip('FOLDER',false,'Native.ramOpen()')+'</div>';if(dumpMsg)h+='<div class="opt">'+T(dumpMsg.slice(0,44),dumpMsg.indexOf('NOT')===0?'r':'g')+'</div>'}
- h+='<div class="opt">'+T('ROOM LOG','c')+chip('ON',CFG.xlog,"sv('xlog','1')")+chip('OFF',!CFG.xlog,"sv('xlog','0')")+chip('VIEW',false,'closeSet();rlogView()')+(window.Native&&Native.exitLogOpen?chip('FOLDER',false,'Native.exitLogOpen()'):'')+(window.Native&&Native.exitLogShare?chip('SHARE',false,'Native.exitLogShare()'):'')+T(xlogN+' THIS RUN','g')+'</div>';
+ h+='<div class="opt">'+sw('ROOM LOG','xlog')+chip('VIEW',false,'closeSet();rlogView()')+(window.Native&&Native.exitLogOpen?chip('FOLDER',false,'Native.exitLogOpen()'):'')+(window.Native&&Native.exitLogShare?chip('SHARE',false,'Native.exitLogShare()'):'')+T(xlogN+' THIS RUN','g')+'</div>';
  h+='<div class="opt">'+T('FIGHT LOG','c')+chip('SHOW',false,'showLog()')+T(blog.length?blog.length+' LINES':'EMPTY','g')+'</div>';
- if(teach){if(teach.msg)h+='<div class="opt">'+T(teach.msg,'y')+'</div>';else{var ts=TEACH_STEPS[teach.step];
-  h+='<div class="opt">'+T('STEP '+(teach.step+1)+'/4','y')+'</div><div class="opt">'+T(ts[0])+'</div><div class="opt">'+T(ts[1])+'</div><div class="opt">'+(teach.busy?T('Reading...','c'):chip('TAP HERE NOW',true,'teachTap()'))+'</div>'}}
  h+='<pre>'+readout().join('\n')+'</pre>'}}
  h+='</div><div class="opt setver" onclick="devTap()">'+T('XENOGEARS LINK '+VERSION,'g')+(!CFG.dev&&devTaps?T('  '+(5-devTaps)+' MORE FOR DEV','g'):'')+'</div>';
  if(h!==lastSet){lastSet=h;document.getElementById('setin').innerHTML=h}}
@@ -2087,7 +2027,7 @@ function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T(
 function sv(k,v){if(k==='host')v=okHost(v);if(k==='port')v=okPort(v);LS.set(k,v);if(k==='scale')v=+v;if(k==='quiet'){v=String(v)==='1';CFG.quiet=CFG.dlg=CFG.cut=v}
  if(k==='dot'||k==='maprot'||k==='mapmir'||k==='plan'||k==='dev'||k==='enc'||k==='tre'||k==='turns'||k==='places'||k==='seq'||k==='dball'||k==='gift'||k==='enl'||k==='hint'||k==='exits'||k==='fast'||k==='intro'||k==='hdot'||k==='x3d'||k==='xeye'||k==='xlog'||k==='route'||k==='follow'||k==='rps'||k==='speed'||k==='advise'||k==='boss'||k==='smooth'||k==='sky')v=String(v)==='1';if(k==='route'||k==='smooth'||k==='sky'){var mc=document.getElementById('mapcv');if(mc)mc._sig=null}CFG[k]=v;
  if((k==='x3d'||k==='xeye')&&!v){if(k==='x3d'&&map3on){map3on=false;LS.set('map3d','0')}if(map3eye){map3eye=false;LS.set('map3eye','0')}last={};render()}
- if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){if(!v)teach=null;last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
+ if(k==='mode'){linkMode=v==='auto'?null:v;probeIdx=0}if(k==='scale')fit();if(k==='dev'){last={};render()}if(!booted)bootStep();if(setOpen())drawSet()}
 setInterval(function(){if(Date.now()-pollAt>=CFG.poll-30)poll();if(setOpen()&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))drawSet()},CFG.poll);
 poll();
 </script></body></html>
