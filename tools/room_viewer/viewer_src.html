@@ -624,7 +624,8 @@ function testText(t){if(t[0]==='var'&&t[3]===2)t=['entrance',t[1].replace(/^0002
 function renderPanel(){var s=state.step;
  $('stepRange').value=s;$('stepIn').value=s;$('stepNum').textContent=s;
  var ch=chapterOf(s);$('stepLabel').innerHTML='<b>'+esc(ch)+'</b>';
- var nx=nextHint();$('hNavT').textContent=nx?'Hint '+nx.k+' \u00b7 '+(HKEYS.indexOf(nx.k)+1)+' of '+HKEYS.length:'No more hints';if(nx){$('hNx').disabled=HKEYS.indexOf(nx.k)>=HKEYS.length-1;$('hPrev').disabled=HKEYS.indexOf(nx.k)<=0}else{$('hNx').disabled=true;$('hPrev').disabled=false}$('nextBox').hidden=!nx;if(nx){var here=nx.rooms.some(function(q){return q[0]===cur.f});
+ var nx=nextHint(),NQ=navPos(),nparts=nx?(XD.HSPLIT[nx.k]||[]).length:0;$('hNavT').textContent=nx?'Hint '+nx.k+(nparts?' \u00b7 part '+((nx.part||0)+1)+'/'+(nparts+1):'')+' \u00b7 '+(NQ.i+1)+' of '+NQ.L.length:'No more hints';
+ $('hNx').disabled=!nx||NQ.i>=NQ.L.length-1;$('hPrev').disabled=nx?NQ.i<=0:false;$('nextBox').hidden=!nx;if(nx){var here=nx.rooms.some(function(q){return q[0]===cur.f});
   $('nextBox').innerHTML='<div>'+(nx.note?esc(nx.note):'<span class="note">No note</span>')+(nx.part?' <span class="note">(part '+(nx.part+1)+')</span>':'')+'</div><div class="chips">'+nx.rooms.map(function(q){return '<span class="chip hint'+(q[0]===cur.f?' cur':'')+'" data-r="'+q[0]+'" title="Open '+(q[0]<0?'the world map':esc(roomName(q[0])||areaOf(q[0])))+'">'+(q[0]<0?'World map':q[0]+' '+esc((roomName(q[0])||areaOf(q[0])||'').slice(0,22)))+(q[1].length?' \u25CF':'')+'</span>'}).join('')+'</div>'+(here?'<div class="note">You are in one of its rooms: green rings mark the spot.</div>':'<div class="note">Click a room to open it.</div>')+routeHtml(nx.k,nx.rooms)}
  if(AM.on){AM.area=areaOf(cur.f)||AM.area;amDraw()}
  $('stepChips').innerHTML=stepTests.length?stepTests.map(function(v){return '<span class="chip'+(v===s?' cur':'')+'" data-s="'+v+'">'+v+'</span>'}).join(''):'<span class="note">none: this room looks the same at every step</span>';
@@ -679,9 +680,17 @@ function hintSpotFocus(){var nx=nextHint();if(!nx||cur.f==null)return;var q=null
  if(q)focusAt(q[0],-ctl.target.y,q[1])}
 async function hintRoom(f){if(f==null)return;if(f<0){worldOn(true);return}if(WV&&WV.on)worldOn(false);
  if(f!==cur.f){hist.push(cur.f);$('backBtn').disabled=false;state.keepStep=true;await loadRoom(f)}hintSpotFocus()}
-async function hintGo(d){var nx=nextHint(),i=nx?HKEYS.indexOf(nx.k):HKEYS.length,j=Math.max(0,Math.min(HKEYS.length-1,i+d));if(nx&&j===i)return;
- var K=HKEYS[j];state.step=Math.max(0,K-1);store('xgv.step',String(state.step));$('stepIn').value=state.step;
- if(state.hedit)hLoad(K);var P=XD.HROOMS[K]||[],f=hintRoomPick(P);
+/* the navigator also stops at each later part of a hint (HSPLIT: the hint text and rooms change when a switch is set during the
+   step, as in the Kislev sewers). Going to a part sets those switches (shown under Other switches); leaving puts them back. */
+function navList(){var L=[];HKEYS.forEach(function(k){L.push([k,0]);(XD.HSPLIT[k]||[]).forEach(function(r,j){L.push([k,j+1])})});return L}
+var NAVF={};
+function navFlags(k,p){Object.keys(NAVF).forEach(function(v){if(NAVF[v]===undefined)delete state.vars[v];else state.vars[v]=NAVF[v]});NAVF={};
+ var sp=XD.HSPLIT[k]||[];for(var j=0;j<p&&j<sp.length;j++)sp[j][0].forEach(function(f){var v=f[0];if(!(v in NAVF))NAVF[v]=state.vars[v];state.vars[v]=((state.vars[v]|0)|f[1])&0xFFFF})}
+function navPos(){var nx=nextHint(),L=navList(),i;if(!nx)return {L:L,i:L.length};
+ for(i=0;i<L.length;i++)if(L[i][0]===nx.k&&L[i][1]===(nx.part||0))return {L:L,i:i};for(i=0;i<L.length;i++)if(L[i][0]===nx.k)return {L:L,i:i};return {L:L,i:-1}}
+async function hintGo(d){var Q=navPos(),j=Math.max(0,Math.min(Q.L.length-1,Q.i+d));if(Q.i<Q.L.length&&j===Q.i)return;
+ var K=Q.L[j][0];navFlags(K,Q.L[j][1]);state.step=Math.max(0,K-1);store('xgv.step',String(state.step));$('stepIn').value=state.step;
+ if(state.hedit)hLoad(K);var hh=hintFor(K),P=hh?hh.rooms:(XD.HROOMS[K]||[]),f=hintRoomPick(P);
  if(f==null||f===cur.f){if(WV&&WV.on&&f!=null&&f>=0)worldOn(false);setStep(state.step);hintSpotFocus();return}
  if(f<0)setStep(state.step);await hintRoom(f)}
 $('hPrev').onclick=function(){hintGo(-1)};$('hNx').onclick=function(){hintGo(1)};
