@@ -114,3 +114,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.21
 - **Kislev sewers hint**: the sewer part of hint 114 now walks the whole trail instead of pointing at Sewers 1 only: the writing in blood (Sewer Entrance), Gramps (Sewers 1), the broken rat-sweeper robot with the Sewer Keys (Sewers 2), the sewage plant door by the east waterfall and the bell inside, then the drain at the north end of Sewers 1 where the bell brings out Redrum. Spots are taken from the room scripts (the actors that start each scene).
 - **Room viewer**: hint route, door pairs, area map, undo and redo (see the viewer).
+
+## 2.0.0.22
+- **Rooms in separate parts**: in a room made of parts that do not join (340 Refugee Rooms, 341 Clergy Rooms, the Ethos stairwells, Latina's Bar, the Battle Arena reception and about 20 more), the map fits the part the party is in instead of the whole room. A part only counts when it stands clear of the others and is more than a small ledge, so ordinary rooms with a roof or ledge piece are unchanged. The 3D map fits the same way.
+- **Doors**: Jack's edits for the Goliath Factory (260, 261, 264, 268), the Yggdrasil Gun Hall (282) and Samson's Pod (522).

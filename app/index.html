@@ -1431,13 +1431,29 @@ function drawMap(){hwStage('map');var cv=document.getElementById('mapcv');if(!cv
  var lvis=1|(layerSeen[f]|0);if(m.lv!==lvis){m.lv=lvis;m.wk=null}
  function shown(i){return lvis>>((m.fl[i]>>5)&3)&1}
  if(!m.wk){m.wk=new Uint8Array(m.nv);var any=0;for(i=0;i<m.nt;i++)if((m.fl[i]&3)!==2&&shown(i)){m.wk[m.tr[i*3]]=m.wk[m.tr[i*3+1]]=m.wk[m.tr[i*3+2]]=1;any=1}if(!any)m.wk.fill(1)}
- var x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(i=0;i<m.nv;i++){var u=pu(m.vx[i],m.vz[i]),v=pv(m.vx[i],m.vz[i]);m.sx[i]=u;m.sy[i]=v;if(!m.wk[i])continue;if(u<x0)x0=u;if(u>x1)x1=u;if(v<y0)y0=v;if(v>y1)y1=v}
+ /* a room made of separate parts (Jack, 21 Oct: 340, the refugee rooms, one part per way in): the view fits the part the party is in,
+    when that part stands clear of the others (bounding boxes 100 units apart) and is not a small ledge (under 300 across) */
+ if(m.cvL!==lvis){m.cvL=lvis;m.cv=new Int32Array(m.nv).fill(-1);var PU=new Int32Array(m.nv);for(i=0;i<m.nv;i++)PU[i]=i;
+  var FD=function(x){while(PU[x]!==x)x=PU[x]=PU[PU[x]];return x},UN=function(a,b){a=FD(a);b=FD(b);if(a!==b)PU[a]=b},KY={};
+  for(i=0;i<m.nv;i++){var ky=m.vx[i]+','+m.vz[i];if(KY[ky]!=null)UN(i,KY[ky]);else KY[ky]=i}
+  for(i=0;i<m.nt;i++)if((m.fl[i]&3)!==2&&shown(i)){UN(m.tr[i*3],m.tr[i*3+1]);UN(m.tr[i*3],m.tr[i*3+2])}
+  var CB={};for(i=0;i<m.nt;i++)if((m.fl[i]&3)!==2&&shown(i)){var rr=FD(m.tr[i*3]),bb=CB[rr]||(CB[rr]={n:0,x0:1e9,x1:-1e9,z0:1e9,z1:-1e9});bb.n++;
+   for(var kk=0;kk<3;kk++){var vv=m.tr[i*3+kk];m.cv[vv]=rr;if(m.vx[vv]<bb.x0)bb.x0=m.vx[vv];if(m.vx[vv]>bb.x1)bb.x1=m.vx[vv];if(m.vz[vv]<bb.z0)bb.z0=m.vz[vv];if(m.vz[vv]>bb.z1)bb.z1=m.vz[vv]}}
+  m.cb=CB;m.cbN=Object.keys(CB).filter(function(r){return CB[r].n>=4}).length}
+ var fc=-1;if(p&&m.cbN>1){for(i=0;i<m.nt&&fc<0;i++){if((m.fl[i]&3)===2||!shown(i))continue;var ta=m.tr[i*3],tb=m.tr[i*3+1],tc=m.tr[i*3+2],
+    d1=(p.x-m.vx[tb])*(m.vz[ta]-m.vz[tb])-(m.vx[ta]-m.vx[tb])*(p.z-m.vz[tb]),d2=(p.x-m.vx[tc])*(m.vz[tb]-m.vz[tc])-(m.vx[tb]-m.vx[tc])*(p.z-m.vz[tc]),d3=(p.x-m.vx[ta])*(m.vz[tc]-m.vz[ta])-(m.vx[tc]-m.vx[ta])*(p.z-m.vz[ta]);
+    if(!((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0)))fc=m.cv[ta]}
+  if(fc<0){var nd=300;for(i=0;i<m.nv;i++)if(m.cv[i]>=0){var dd=Math.hypot(m.vx[i]-p.x,m.vz[i]-p.z);if(dd<nd){nd=dd;fc=m.cv[i]}}}
+  if(fc>=0){var FB=m.cb[fc],fok=FB&&FB.n>=4&&Math.hypot(FB.x1-FB.x0,FB.z1-FB.z0)>=300;
+   if(fok)for(var cr in m.cb){if(+cr===fc)continue;var OB=m.cb[cr];if(OB.n<4)continue;if(OB.x0<FB.x1+100&&OB.x1>FB.x0-100&&OB.z0<FB.z1+100&&OB.z1>FB.z0-100){fok=false;break}}
+   if(!fok)fc=-1}}
+ var x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(i=0;i<m.nv;i++){var u=pu(m.vx[i],m.vz[i]),v=pv(m.vx[i],m.vz[i]);m.sx[i]=u;m.sy[i]=v;if(!m.wk[i]||(fc>=0&&m.cv[i]!==fc))continue;if(u<x0)x0=u;if(u>x1)x1=u;if(v<y0)y0=v;if(v>y1)y1=v}
  if(x0>x1)return;var pad=14*dpr,sc=Math.min((W-2*pad)/Math.max(x1-x0,1),(H-2*pad)/Math.max(y1-y0,1)),cx=(x0+x1)/2,cy=(y0+y1)/2;
  if(mapZoom&&p){sc*=3;cx=pu(p.x,p.z);cy=pv(p.x,p.z)}
  for(i=0;i<m.nv;i++){m.sx[i]=W/2+(m.sx[i]-cx)*sc;m.sy[i]=H/2+(m.sy[i]-cy)*sc}
  /* icon places: flat map, or with 3D on the room drawn in 3D and each spot put on the floor under it nearest the party's height */
  var py3=pr?pr.y:0,PJ={};
- if(on3){if(M3.fitKey!==f+'/'+lvis){M3.fitKey=f+'/'+lvis;var fxs=[],fzs=[];for(i=0;i<m.nv;i++)if(m.wk[i]){fxs.push(m.vx[i]);fzs.push(m.vz[i])}M3.fit(fxs,fzs)}
+ if(on3){if(M3.fitKey!==f+'/'+lvis+'/'+fc){M3.fitKey=f+'/'+lvis+'/'+fc;var fxs=[],fzs=[];for(i=0;i<m.nv;i++)if(m.wk[i]&&(fc<0||m.cv[i]===fc)){fxs.push(m.vx[i]);fzs.push(m.vz[i])}M3.fit(fxs,fzs)}
   hwStage('map 3D');M3.follow(f);M3.firstPerson(map3eye);M3.smooth=CFG.smooth;M3.sky=CFG.sky;hwStage('route 3D');var rtg=CFG.route&&p?routeTo(f,p):null;hwStage('map 3D draw');if(CFG.route&&!rtg)M3.routeWarm();else M3.setRoute(CFG.route&&p&&pr?{x:p.x,y:pr.y,z:p.z}:null,rtg);if(map3eye){var lv3=liveVars();if(lv3)M3.peopleSetup(u16(A.STORY)|0,lv3);M3.people(livePeople())}M3.draw(W,H,p&&pr?{x:p.x,y:pr.y,z:p.z}:null,[fx,fz]);
   /* the map's own outline, each edge on its triangle's walk layer; edges on a floor above the cut are left out */
   var OY={};g.beginPath();if(!M3.isFP())for(i=0;i<m.nt;i++){var e3=(m.fl[i]>>2)&7;if(!e3||!shown(i))continue;var ly=(m.fl[i]>>5)&3;
