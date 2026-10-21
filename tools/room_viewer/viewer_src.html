@@ -13,6 +13,7 @@
  --teal:#5fb7b0;        /* floor outline, "here" */
  --rust:#c8674f;        /* removed / failed test */
  --hint:#86d08c;        /* next story step's spot */
+ --warn:#e9a23b;        /* needs a look */
  --cube:#8fb3ff;        /* memory cube */
  --shop:#cf9fe8;        /* shop */
  --deep:#10151c;        /* inset fields */
@@ -96,6 +97,18 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
 .rq{border:1px solid var(--line);border-radius:4px;padding:6px;display:grid;gap:6px;margin:6px 0}.rq select{width:100%}.li.ex.chk .n2::after{content:' \2713';color:var(--hint)}
 .exout{width:100%;height:240px;font:11px var(--mono);background:#0e1116;color:var(--ink);border:1px solid var(--line)}
 .li .n2{min-width:0;overflow-wrap:anywhere}
+.pb{font:600 10px var(--mono);margin-left:6px;padding:0 4px;border-radius:3px;vertical-align:1px}.pb.ok{color:var(--hint)}.pb.no{color:#fff;background:#b4472e}.pb.far{color:#1b1206;background:var(--warn)}
+.pair{border-left:2px solid var(--line);padding-left:8px;display:flex;flex-direction:column;gap:6px}.warn{color:var(--warn)}.bad{color:#ff7a66}.hintc{color:var(--hint)}
+.route{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:6px}.leg{display:flex;flex-wrap:wrap;align-items:center;gap:3px}.leg .chip{font-size:10px;padding:1px 6px}.leg.pre{opacity:.7}.leg .chip.via{border-style:dashed}.leg.gap .chip{border-color:var(--warn);color:var(--warn)}.leg .arr{color:var(--dim)}
+.utoast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:#1d2430;border:1px solid var(--line);border-radius:5px;padding:6px 12px;font-size:12px;z-index:6}
+.amap{position:absolute;inset:0;z-index:20;background:var(--ground,#0b0e13);display:flex;flex-direction:column}.amap[hidden]{display:none}
+.amhd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}.amhd b{font:600 15px var(--body)}
+.amleg{display:flex;align-items:center;gap:6px}.amleg .lg{display:inline-block;width:18px;height:0;border-top:2px solid var(--line);margin-left:8px}.amleg .lg.one{border-top:2px dashed var(--warn)}.amleg .lg.rt{border-top:3px solid var(--hint)}.amleg .lg.ext{border-top:2px dotted #5a6472}
+#amSvg{flex:1;width:100%;min-height:0}
+.ame{stroke:#6d7a8c;stroke-width:2}.ame.ext{stroke:#4a5361;stroke-dasharray:2 4}.ame.one{stroke:var(--warn);stroke-dasharray:7 5}.ame.rt{stroke:var(--hint);stroke-width:4;stroke-dasharray:none}
+.amn{cursor:pointer}.amn rect{fill:#18202b;stroke:#3a4656;stroke-width:1.5}.amn:hover rect{stroke:var(--ink)}.amn text{fill:var(--ink);font:12px var(--body)}.amn text.no{font:600 12px var(--mono);fill:var(--brass)}
+.amn.ext rect{fill:#11161d;stroke:#2d3540;stroke-dasharray:3 3}.amn.ext text{fill:var(--dim);font-size:10px}.amn.ext text.no{fill:var(--dim);font-size:10px}
+.amn.hint rect{stroke:var(--hint);stroke-width:2.5}.amn.cur rect{stroke:var(--brass);stroke-width:3;fill:#2a2414}.amn.lone rect{stroke:#ff7a66;stroke-width:2.5}
 .hnav{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--line);border-radius:6px;background:#0f141b}
 .hnt{font:600 12px var(--mono);color:var(--hint);text-align:center;min-width:0}
 .hnav .chip.hint{font-size:12px;padding:4px 9px;border-radius:5px}.hnav .chip.hint:hover{background:#13261c}
@@ -258,6 +271,7 @@ details.tip{font-size:12px;color:var(--dim)}details.tip summary{cursor:pointer;c
    <details class="tip"><summary>More</summary>Any surface works, walls and ledges too; its height is the height you click. <kbd>Shift</kbd>-drag a door to lift or lower it, or type x, z and y. <kbd>Shift</kbd>-click a surface to add a new way out there, to the room typed in “to room”. On a room with several levels use Cut or the level buttons to reach the right one first.</details>
    <div class="list" id="exList"></div>
    <div class="row" id="exPos" hidden><span class="note">x</span><input type="number" id="exX" style="width:70px" aria-label="x"><span class="note">z</span><input type="number" id="exZ" style="width:70px" aria-label="z"><span class="note">y</span><input type="number" id="exY" style="width:64px" aria-label="Height (smaller is higher)"><button id="exUp" title="Raise 10 (PageUp; Shift for 50)" aria-label="Raise">▲</button><button id="exDn" title="Lower 10 (PageDown; Shift for 50)" aria-label="Lower">▼</button><button id="exFloor" title="Drop it onto the surface below">Floor</button></div>
+   <div class="pair" id="exPair" hidden></div>
  <div class="row"><input type="number" id="exDest" min="-1" max="729" placeholder="to room" aria-label="Destination room (-1 world map)" style="width:84px"><button id="exAdd">Add way out</button><button id="exRevert">Undo this room</button></div>
    <div class="lab" style="margin-top:8px">Treasure, saves and shops</div>
    <div class="list" id="mkList"></div>
@@ -295,8 +309,10 @@ details.tip{font-size:12px;color:var(--dim)}details.tip summary{cursor:pointer;c
      <button id="bSky" title="Sky domes and far backdrops">Sky</button>
      <label class="vlight" title="Brightness">Light <input type="range" id="bright" min="1" max="3" step="0.1" value="1"></label>
     </div></div>
+   <button id="bArea" title="Every room of this area and how its doors join them (M)">Area map</button>
    <button id="bTop" title="Look straight down">Top</button>
    <button id="bEdit" title="Place and move ways out, treasure, saves and shops (with their height), then export them for the app">Edit places</button>
+   <button id="bUndo" title="Undo the last edit (Ctrl+Z)" aria-label="Undo" disabled>&#8630;</button><button id="bRedo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled>&#8631;</button>
    <button id="bReset" title="Back to the starting view">Reset</button>
    <button id="bPng" title="Save this view with its labels as a picture, for marking up">Save picture</button>
    <span class="levels" id="levels"></span>
@@ -304,6 +320,8 @@ details.tip{font-size:12px;color:var(--dim)}details.tip summary{cursor:pointer;c
   </div>
   <div class="empty" id="empty"><div><div class="ring"></div><h2>No disc open</h2>Open your own Xenogears disc 1 image (US). The page reads the rooms straight from the file in this browser; nothing is uploaded and no game files ship with the page.<br><br>Drag the room to turn it, scroll or pinch to zoom, right-drag to pan. Click a person to read what they say and see why they are there, a way out to walk through it, or the floor to pin its x, z.<br><br><span class="keys"><kbd>[</kbd> <kbd>]</kbd> room &nbsp; <kbd>,</kbd> <kbd>.</kbd> story step &nbsp; <kbd>Backspace</kbd> back</span></div></div>
   <div class="busy" id="busy" hidden></div>
+  <div class="utoast" id="uToast" hidden></div>
+  <div class="amap" id="amap" hidden><div class="amhd"><b id="amTitle"></b><span class="note" id="amNote"></span><span class="grow"></span><span class="note amleg"><i class="lg one"></i>no way back <i class="lg rt"></i>hint way <i class="lg ext"></i>other area</span><button id="amClose">Close</button></div><svg id="amSvg" role="img" aria-label="Area map"></svg></div>
   <div class="xzr" id="xzr" hidden><span class="lbl">x, z</span><span id="xzHover">move over the room</span><span class="pin" id="xzPin" hidden></span><button id="xzCopy" hidden title="Copy in the hint sheet's form: room (x, z)">Copy</button></div>
  </main>
 </div>
@@ -529,7 +547,7 @@ function renderPlaces(){var L=marks,box=$('places');$('placeSec').hidden=!L.leng
  $('placeHead').textContent='In this room · '+[c.exit+' way'+(c.exit===1?'':'s')+' out',c.tre?c.tre+' treasure':'',c.cube?c.cube+' save':'',c.shop?c.shop+' shop'+(c.shop===1?'':'s'):''].filter(Boolean).join(' · ');
  box.innerHTML='';var ord={hint:0,exit:1,tre:2,gift:2,cube:3,shop:4,arr:5};
  L.slice().sort(function(a,b){return ord[a.kind]-ord[b.kind]}).forEach(function(m){var row=document.createElement('div');row.className='li'+(m.taken?' taken':'')+(m.lost?' miss':'');
-  row.innerHTML='<span class="k '+m.kind+'"></span><span class="n2">'+esc(m.label)+'</span><span class="x">'+(m.x==null?(m.kind==='exit'?'no fixed spot':''):m.x+', '+m.z)+'</span>';
+  row.innerHTML='<span class="k '+m.kind+'"></span><span class="n2">'+esc(m.label)+(m.kind==='exit'&&m.ei!=null?pairBadge(pairOf(cur.f,exitsOf(cur.f)[m.ei])):'')+'</span><span class="x">'+(m.x==null?(m.kind==='exit'?'no fixed spot':''):m.x+', '+m.z)+'</span>';
   row.title=KN[m.kind]+(m.kind==='exit'&&m.dest>=0?': click to go there':'');
   row.onclick=function(){if(state.edit&&m.kind==='exit'){exPick(m.ei);return}if(state.edit&&(m.ti||m.mi!=null)){mkPick(m);return}if((m.kind==='exit'&&m.dest>=0)||m.kind==='arr')goTo(m.kind==='arr'?m.from:m.dest);else if(m.x!=null)focusAt(m.x,m.y,m.z)};box.appendChild(row)})}
 function focusAt(x,y,z){var d=cam.position.clone().sub(ctl.target);ctl.target.set(x,-y,-z);cam.position.copy(ctl.target).add(d.multiplyScalar(0.6))}
@@ -607,7 +625,8 @@ function renderPanel(){var s=state.step;
  $('stepRange').value=s;$('stepIn').value=s;$('stepNum').textContent=s;
  var ch=chapterOf(s);$('stepLabel').innerHTML='<b>'+esc(ch)+'</b>';
  var nx=nextHint();$('hNavT').textContent=nx?'Hint '+nx.k+' \u00b7 '+(HKEYS.indexOf(nx.k)+1)+' of '+HKEYS.length:'No more hints';if(nx){$('hNx').disabled=HKEYS.indexOf(nx.k)>=HKEYS.length-1;$('hPrev').disabled=HKEYS.indexOf(nx.k)<=0}else{$('hNx').disabled=true;$('hPrev').disabled=false}$('nextBox').hidden=!nx;if(nx){var here=nx.rooms.some(function(q){return q[0]===cur.f});
-  $('nextBox').innerHTML='<div>'+(nx.note?esc(nx.note):'<span class="note">No note</span>')+(nx.part?' <span class="note">(part '+(nx.part+1)+')</span>':'')+'</div><div class="chips">'+nx.rooms.map(function(q){return '<span class="chip hint'+(q[0]===cur.f?' cur':'')+'" data-r="'+q[0]+'" title="Open '+(q[0]<0?'the world map':esc(roomName(q[0])||areaOf(q[0])))+'">'+(q[0]<0?'World map':q[0]+' '+esc((roomName(q[0])||areaOf(q[0])||'').slice(0,22)))+(q[1].length?' \u25CF':'')+'</span>'}).join('')+'</div>'+(here?'<div class="note">You are in one of its rooms: green rings mark the spot.</div>':'<div class="note">Click a room to open it.</div>')}
+  $('nextBox').innerHTML='<div>'+(nx.note?esc(nx.note):'<span class="note">No note</span>')+(nx.part?' <span class="note">(part '+(nx.part+1)+')</span>':'')+'</div><div class="chips">'+nx.rooms.map(function(q){return '<span class="chip hint'+(q[0]===cur.f?' cur':'')+'" data-r="'+q[0]+'" title="Open '+(q[0]<0?'the world map':esc(roomName(q[0])||areaOf(q[0])))+'">'+(q[0]<0?'World map':q[0]+' '+esc((roomName(q[0])||areaOf(q[0])||'').slice(0,22)))+(q[1].length?' \u25CF':'')+'</span>'}).join('')+'</div>'+(here?'<div class="note">You are in one of its rooms: green rings mark the spot.</div>':'<div class="note">Click a room to open it.</div>')+routeHtml(nx.k,nx.rooms)}
+ if(AM.on){AM.area=areaOf(cur.f)||AM.area;amDraw()}
  $('stepChips').innerHTML=stepTests.length?stepTests.map(function(v){return '<span class="chip'+(v===s?' cur':'')+'" data-s="'+v+'">'+v+'</span>'}).join(''):'<span class="note">none: this room looks the same at every step</span>';
  var list=cur.run.E.filter(function(e){return e.kind==='npc'}),here=list.filter(function(e){return !e.hidden&&!e.deleted}).length;
  $('peopleHead').textContent='People · '+here+' here of '+list.length;
@@ -868,12 +887,12 @@ window.addEventListener('pointerup',function(){if(!DRAG)return;var D2=DRAG;DRAG=
 function exRender(){if(cur.f==null)return;var L=exitsOf(cur.f),box=$('exList');box.innerHTML='';
  if(!L.length)box.innerHTML='<div class="note">No ways out listed for this room.</div>';
  L.forEach(function(e,i){var row=document.createElement('div');row.className='li ex'+(i===exSel?' sel':'');
-  row.innerHTML='<span class="k exit"></span><span class="n2">'+esc(exName(e[2]))+'</span><span class="x">'+(e[0]==null?'no spot':e[0]+', '+e[1]+(e[3]!=null?' · y '+e[3]:''))+'</span><button class="del" title="Remove this way out" aria-label="Remove">✕</button>';
+  row.innerHTML='<span class="k exit"></span><span class="n2">'+esc(exName(e[2]))+pairBadge(pairOf(cur.f,e))+'</span><span class="x">'+(e[0]==null?'no spot':e[0]+', '+e[1]+(e[3]!=null?' · y '+e[3]:''))+'</span><button class="del" title="Remove this way out" aria-label="Remove">✕</button>';
   row.onclick=function(ev){if(ev.target.classList.contains('del')){var A=exEditable(cur.f);A.splice(i,1);exSel=exSel===i?-1:exSel>i?exSel-1:exSel;exSave();buildMarks();return}
    exPick(i);if(exSel>=0&&e[0]!=null)focusAt(e[0],e[3]!=null?e[3]:markY(e[0],e[1]),e[1])};box.appendChild(row)});
  var se=exSel>=0?L[exSel]:null;$('exPos').hidden=!se;if(se){$('exX').value=se[0]==null?'':se[0];$('exZ').value=se[1]==null?'':se[1];$('exY').value=se[3]==null?(se[0]==null?'':Math.round(markY(se[0],se[1]))):se[3]}
  mkRender();$('exNote').textContent=mkSel?'Click the floor to put \u201c'+mkSel.n+'\u201d there.':exSel>=0?'Click the floor to put “'+exName(L[exSel][2])+'” there.':EXED[cur.f]||TRED[cur.f]||MKED[cur.f]?'This room has your changes.':'';
- $('exRevert').disabled=!(EXED[cur.f]||TRED[cur.f]||MKED[cur.f]);exCount()}
+ $('exRevert').disabled=!(EXED[cur.f]||TRED[cur.f]||MKED[cur.f]);exCount();pairBox()}
 $('bEdit').onclick=function(){state.edit=!state.edit;this.classList.toggle('on',state.edit);document.body.classList.toggle('editing',state.edit);$('exSec').hidden=!state.edit;exSel=-1;
  if(state.edit&&!state.marks){state.marks=true;$('bMarks').classList.add('on')}buildMarks();if(state.edit)$('exSec').scrollIntoView({block:'nearest'})};
 $('exAdd').onclick=function(){var d=parseInt($('exDest').value,10);if(isNaN(d)||d<-1||d>729){$('exNote').textContent='Type the room it leads to (0 to 729, or -1 for the world map).';return}
@@ -962,7 +981,7 @@ $('hPath').onclick=function(e){var t=e.target,k=hCur();if(t.dataset.go!=null){va
 function hAddSpot(p){var k=hCur(),E=hEditable(k),f=cur.f,q=null;E.path.forEach(function(r){if(r[0]===f)q=r});if(!q){q=[f,[]];E.path.push(q)}q[1].push([Math.round(p.x),Math.round(-p.z)]);hApply(k);hSave();hPath();buildMarks()}
 $('hEdit').onclick=function(){state.hedit=!state.hedit;exSel=-1;mkSel=null;this.classList.toggle('on',state.hedit);$('hEd').hidden=!state.hedit;if(state.hedit){var nx=nextHint();hLoad(nx?nx.k:state.step)}else buildMarks()};
 $('hStep').onchange=function(){hLoad(hCur())};
-function hText(){var k=hCur(),E=hEditable(k),t=$('hText').value.trim();E.note=($('hOk').checked?'':'?')+t;hApply(k);hSave();hPath();rerun()}
+function hText(){uMark.tag='t'+hCur();var k=hCur(),E=hEditable(k),t=$('hText').value.trim();E.note=($('hOk').checked?'':'?')+t;hApply(k);hSave();hPath();rerun()}
 var hT=0;$('hText').oninput=function(){clearTimeout(hT);hT=setTimeout(hText,500)};$('hText').onchange=function(){clearTimeout(hT);hText()};$('hOk').onchange=hText;
 $('hAddRoom').onclick=function(){if(cur.f==null)return;var k=hCur(),E=hEditable(k);if(!E.path.some(function(q){return q[0]===cur.f}))E.path.push([cur.f,[]]);hApply(k);hSave();hPath();buildMarks()};
 $('hAddWorld').onclick=function(){var k=hCur(),E=hEditable(k);if(!E.path.some(function(q){return q[0]===-1}))E.path.push([-1,[]]);hApply(k);hSave();hPath()};
@@ -1076,5 +1095,124 @@ $('rqSnap').onclick=function(){var q=RQ[rqK][1][rqI];if(!q||q[1]!=='spot')return
 $('rqAccept').onclick=function(){var q=RQ[rqK][1][rqI];if(!q||q[1]!=='door')return;if(cur.f!==q[0])return;suggAccept([q[0],q[2],q[3],q[4]]);rqDone()};
 rqFill();
 $('dropSave').onclick=function(){state.saveVars=null;state.vars={};state.party=[0];$('saveNote').textContent='Without a save, every flag starts off and only the story step changes who is here.';rerun();buildMarks()};
+/* ---------- undo / redo (Jack, 21 Oct) ----------
+   Every edit (ways out, treasure, saves and shops, hint notes, rooms and spots) is saved in this browser as it is made; each save
+   also keeps the state before it, so Ctrl+Z steps back and Ctrl+Shift+Z (or Ctrl+Y) forward again, up to 200 changes. Typing in a
+   hint note counts as one change until you stop for a moment. */
+var UNDO=[],REDO=[],ULAST=null,UTAG=null,UTAGT=0,UBUSY=false;
+function uSnap(){return JSON.stringify({x:EXED,t:TRED,m:MKED,h:HED})}
+function uMark(){if(UBUSY)return;var s=uSnap();if(ULAST==null){ULAST=s;return}if(s===ULAST)return;
+ var now=Date.now(),join=UTAG&&UTAG===uMark.tag&&now-UTAGT<2500;UTAG=uMark.tag;UTAGT=now;uMark.tag=null;
+ if(!join){UNDO.push(ULAST);if(UNDO.length>200)UNDO.shift()}REDO=[];ULAST=s;uBtns()}
+function uRestore(s){UBUSY=true;var o=JSON.parse(s),old=Object.keys(HED);EXED=o.x;TRED=o.t;MKED=o.m;HED=o.h;
+ old.concat(Object.keys(HED)).forEach(function(k){hApply(k)});store('xgv.exitEdits',JSON.stringify(EXED));mkSave();hSave();ULAST=s;UTAG=null;
+ exSel=-1;mkSel=null;if(state.hedit){hLoad(hCur())}buildMarks();if(cur.run)renderPanel();UBUSY=false;uBtns()}
+function uUndo(){if(!UNDO.length)return;REDO.push(ULAST);uRestore(UNDO.pop());uSay('Undone')}
+function uRedo(){if(!REDO.length)return;UNDO.push(ULAST);uRestore(REDO.pop());uSay('Redone')}
+function uBtns(){$('bUndo').disabled=!UNDO.length;$('bRedo').disabled=!REDO.length}
+var uST=0;function uSay(t){var el=$('uToast');el.textContent=t+(UNDO.length?' · '+UNDO.length+' more to undo':'');el.hidden=false;clearTimeout(uST);uST=setTimeout(function(){el.hidden=true},1400)}
+(function(){var e0=exSave,m0=mkSave,h0=hSave;exSave=function(){e0();uMark()};mkSave=function(){m0();uMark()};hSave=function(){h0();uMark()}})();
+ULAST=uSnap();uBtns();
+$('bUndo').onclick=uUndo;$('bRedo').onclick=uRedo;
+document.addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)return;var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;
+ var k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){uUndo();e.preventDefault()}else if((k==='z'&&e.shiftKey)||k==='y'){uRedo();e.preventDefault()}});
+
+/* ---------- door pairs (Jack, 21 Oct) ----------
+   A way out from room f to room d should have a way back from d to f, standing near where the game puts you when you come into d
+   from f (the arrival spots), and this door should stand near where you land in f coming back. Half of all doors are within 66 units of
+   their arrival spot and 95% within about 360, so more than 400 is called far. */
+var PAIRFAR=400;
+function arrIn(f,from){var a=XD.ARR[f]&&XD.ARR[f][from];return a&&a.length?a:null}
+function nearest(L,x,z){var b=null,bd=1e9;(L||[]).forEach(function(p){var d=Math.hypot(p[0]-x,p[1]-z);if(d<bd){bd=d;b=p}});return b?{p:b,d:Math.round(bd)}:null}
+function pairOf(f,e){var d=e[2];if(d==null||d<0||d===f)return null;var B=[];exitsOf(d).forEach(function(x,i){if(x[2]===f)B.push(i)});
+ var aThere=arrIn(d,f),aHere=arrIn(f,d),r={d:d,back:B,bi:B.length?B[0]:-1,arrThere:aThere?aThere[0]:null,st:'ok',why:[]};
+ if(!B.length){r.st='none';r.why.push('no way back from '+d+' to '+f);return r}
+ if(aThere){var bb=null,bd=1e9;B.forEach(function(i){var x=exitsOf(d)[i];if(x[0]==null)return;var q=nearest(aThere,x[0],x[1]);if(q&&q.d<bd){bd=q.d;bb=i}});
+  if(bb!=null){r.bi=bb;r.backD=bd;if(bd>PAIRFAR){r.st='far';r.why.push('the door back stands '+bd+' from where you land in '+d)}}}
+ if(aHere&&e[0]!=null){var q=nearest(aHere,e[0],e[1]);r.hereD=q.d;if(q.d>PAIRFAR){r.st='far';r.why.push('this door stands '+q.d+' from where you land here coming back')}}
+ return r}
+function pairBadge(p){if(!p)return '';return p.st==='ok'?'<span class="pb ok" title="Door back in '+p.d+' matches">⇄</span>':p.st==='none'?'<span class="pb no" title="'+esc(p.why.join('; '))+'">no way back</span>':'<span class="pb far" title="'+esc(p.why.join('; '))+'">far</span>'}
+function pairBox(){var box=$('exPair');if(!state.edit||exSel<0||cur.f==null){box.hidden=true;return}var e=exitsOf(cur.f)[exSel],p=e&&pairOf(cur.f,e);if(!p){box.hidden=true;return}
+ var h='<div class="lab">Its pair in '+esc(exName(p.d))+'</div>';
+ if(p.st==='none')h+='<div class="note warn">No way back from '+p.d+' to '+cur.f+'.'+(p.arrThere?' You land at '+p.arrThere[0]+', '+p.arrThere[1]+' there.':'')+'</div>';
+ else{var b=exitsOf(p.d)[p.bi];h+='<div class="note">Door back at '+(b[0]==null?'no spot':b[0]+', '+b[1])+(p.backD!=null?' · '+p.backD+' from the arrival spot':'')+(p.hereD!=null?' · this door '+p.hereD+' from where you land here':'')+'</div>';
+  if(p.st==='far')h+='<div class="note warn">'+esc(p.why.join('; '))+'</div>'}
+ h+='<div class="row"><button id="pairGo">'+(p.st==='none'?'Open '+p.d:'Open its pair')+'</button>'+(p.st==='none'&&p.arrThere?'<button id="pairAdd" class="ok" title="Add a door in '+p.d+' leading back here, at the spot the game puts you">Add door back</button>':'')+'</div>';
+ box.innerHTML=h;box.hidden=false;
+ $('pairGo').onclick=function(){if(p.bi>=0){var b=exitsOf(p.d)[p.bi];rqWant=[p.d,p.bi,cur.f,b[0]==null?0:b[0],b[1]==null?0:b[1]]}goTo(p.d)};
+ if($('pairAdd'))$('pairAdd').onclick=function(){var f=cur.f,A=exEditable(p.d);A.push([p.arrThere[0],p.arrThere[1],f]);exSave();rqWant=[p.d,A.length-1,f,p.arrThere[0],p.arrThere[1]];goTo(p.d)}}
+
+/* ---------- hint route (Jack, 21 Oct) ----------
+   The way through doors between one page of the hint and the next, and from where the hint before it ended. The world map counts as a
+   room: a way out marked -1 leads onto it, and its places lead into their rooms. A leg with no way through doors is shown in orange. */
+var WROOMS=null;function worldRooms(){if(!WROOMS){var s={};['a','b'].forEach(function(k){(XD.WPLACES[k]||[]).forEach(function(p){if(p[2]>0)s[p[2]]=1})});WROOMS=Object.keys(s).map(Number)}return WROOMS}
+function nbrs(f){if(f===-1)return worldRooms();var o=[];exitsOf(f).forEach(function(e){if(e[2]!==f&&o.indexOf(e[2])<0)o.push(e[2])});return o}
+function wayBetween(a,b){if(a===b)return [a];var prev={},q=[a],seen={};seen[a]=1;while(q.length){var r=q.shift();var N=nbrs(r);for(var i=0;i<N.length;i++){var g=N[i];if(seen[g])continue;seen[g]=1;prev[g]=r;
+   if(g===b){var p=[b];while(p[0]!==a)p.unshift(prev[p[0]]);return p}q.push(g)}}return null}
+function hintLegs(k,rooms){var R=rooms.map(function(q){return q[0]}),L=[],i=HKEYS.indexOf(k),pk=i>0?HKEYS[i-1]:null,pr=pk!=null?(XD.HROOMS[pk]||[]):[];
+ if(pr.length&&R.length){var a=pr[pr.length-1][0];if(a!==R[0])L.push({a:a,b:R[0],w:wayBetween(a,R[0]),pre:pk})}
+ for(var j=1;j<R.length;j++)if(R[j]!==R[j-1])L.push({a:R[j-1],b:R[j],w:wayBetween(R[j-1],R[j])});return L}
+function rName(f){return f<0?'World map':f+' '+((roomName(f)||areaOf(f)||'').replace(/^[^-]*- /,'').slice(0,18))}
+function routeHtml(k,rooms){var L=hintLegs(k,rooms);if(!L.length)return '';var h='<div class="route"><div class="note">Way through doors'+(L.some(function(l){return !l.w&&l.pre==null})?' · <span class="warn">gaps</span>':'')+'</div>';
+ L.forEach(function(l){h+='<div class="leg'+(l.pre!=null?' pre':'')+(l.w?'':l.pre!=null?' scene':' gap')+'">'+(l.pre!=null?'<span class="note">from hint '+l.pre+'</span> ':'');
+  if(!l.w&&l.pre!=null)h+='<span class="note">'+esc(rName(l.a))+', then a scene moves you?</span>';
+  else if(!l.w)h+='<span class="chip" data-r="'+l.a+'">'+esc(rName(l.a))+'</span> <span class="warn">✗ no way to</span> <span class="chip" data-r="'+l.b+'">'+esc(rName(l.b))+'</span>';
+  else h+=l.w.map(function(f,i){return '<span class="chip'+(i&&i<l.w.length-1?' via':'')+(f===cur.f?' cur':'')+'" data-r="'+f+'">'+esc(rName(f))+'</span>'}).join('<span class="arr">›</span>');
+  h+='</div>'});return h+'</div>'}
+
+/* ---------- area map (Jack, 21 Oct) ----------
+   Every room of an area as a box, laid out by where its doors stand (a door on a room's north side puts the next room to the north),
+   joined by its ways out. Rooms of other areas it leads to are small grey boxes. A door with no way back is a dashed orange arrow;
+   a room with no way in or out has a red edge; the hint's way through doors is drawn in green. Click a box to open that room. */
+var AM={on:false,area:null};
+function amBuild(area){var R=[];for(var f=1;f<=729;f++)if(areaOf(f)===area&&!/debug/i.test(roomName(f)||''))R.push(f);
+ var N={},E={},ins={};R.forEach(function(f){N[f]={id:String(f),f:f,x:0,y:0,in:1,deg:0}});
+ function node(g){var id=R.indexOf(g)>=0?String(g):'x'+g;if(!N[id])N[id]={id:id,f:g,x:0,y:0,in:0,deg:0};return N[id]}
+ R.forEach(function(f){var X=exitsOf(f).filter(function(e){return e[0]!=null}),cx=0,cz=0;X.forEach(function(e){cx+=e[0];cz+=e[1]});if(X.length){cx/=X.length;cz/=X.length}
+  exitsOf(f).forEach(function(e){var g=e[2];if(g===f)return;var a=N[f],b=node(g),key=a.id<b.id?a.id+'|'+b.id:b.id+'|'+a.id,ed=E[key]||(E[key]={a:a.id<b.id?a:b,b:a.id<b.id?b:a,ab:0,ba:0,dx:0,dy:0,nd:0});
+   if(ed.a===a)ed.ab=1;else ed.ba=1;a.deg++;if(b.in)ins[b.id]=1;
+   if(X.length>1&&e[0]!=null){var vx=e[0]-cx,vy=-(e[1]-cz),l=Math.hypot(vx,vy);if(l>1){vx/=l;vy/=l;if(ed.a!==a){vx=-vx;vy=-vy}ed.dx+=vx;ed.dy+=vy;ed.nd++}}})});
+ var EL=Object.keys(E).map(function(k){return E[k]}),NL=Object.keys(N).map(function(k){return N[k]});
+ EL.forEach(function(e){if(e.nd){var l=Math.hypot(e.dx,e.dy)||1;e.dx/=l;e.dy/=l}});
+ /* first placing: walk out from the first room, each room put in the direction of its door */
+ var placed={},q=[],ang=0;NL.forEach(function(n){if(placed[n.id])return;if(!n.in&&NL.some(function(m){return m.in&&!placed[m.id]}))return;n.x=ang*3;n.y=0;ang++;placed[n.id]=1;q.push(n);
+  while(q.length){var c=q.shift();EL.forEach(function(e){var o=e.a===c?e.b:e.b===c?e.a:null;if(!o||placed[o.id])return;var s=e.a===c?1:-1,len=o.in&&c.in?1:0.7;
+    var dx=e.nd?e.dx*s:Math.cos(ang*2.4),dy=e.nd?e.dy*s:Math.sin(ang*2.4);ang++;o.x=c.x+dx*len;o.y=c.y+dy*len;placed[o.id]=1;q.push(o)})}});
+ NL.forEach(function(n){if(!placed[n.id]){n.x=ang*1.5;n.y=2;ang++}});
+ for(var it=0;it<500;it++){var k=0.12*(1-it/600);
+  EL.forEach(function(e){var len=e.a.in&&e.b.in?1:0.7,tx,ty;if(e.nd){tx=e.a.x+e.dx*len;ty=e.a.y+e.dy*len}else{var vx=e.b.x-e.a.x,vy=e.b.y-e.a.y,l=Math.hypot(vx,vy)||1;tx=e.a.x+vx/l*len;ty=e.a.y+vy/l*len}
+   var fx=(tx-e.b.x)*k,fy=(ty-e.b.y)*k;e.b.x+=fx;e.b.y+=fy;e.a.x-=fx;e.a.y-=fy});
+  for(var i=0;i<NL.length;i++)for(var j=i+1;j<NL.length;j++){var A=NL[i],B=NL[j],dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy),mn=(A.in&&B.in?0.95:0.7);
+   if(d<0.001){dx=Math.random()-.5;dy=Math.random()-.5;d=0.01}var ox=Math.abs(dx)/0.85,oy=Math.abs(dy)/0.38;if(Math.max(ox,oy)<mn){var p=(mn-Math.max(ox,oy))*0.25;A.x-=dx/d*p;A.y-=dy/d*p;B.x+=dx/d*p;B.y+=dy/d*p}}}
+ NL.forEach(function(n){n.lone=n.in&&!n.deg&&!ins[n.id]});
+ return {R:R,N:N,NL:NL,EL:EL}}
+function amName(f,area){if(f<0)return 'World map';var n=roomName(f)||'',a=(area||'').toLowerCase();if(a&&n.toLowerCase().indexOf(a)===0&&/^\s*-\s/.test(n.slice(a.length)))n=n.slice(a.length).replace(/^\s*-\s*/,'');return n||areaOf(f)||''}
+function amWrap(t,w,max){var o=[],l='';t.split(/\s+/).forEach(function(x){if((l+' '+x).trim().length>w&&l){o.push(l);l=x}else l=(l+' '+x).trim()});if(l)o.push(l);if(o.length>max){o=o.slice(0,max);o[max-1]=o[max-1].slice(0,w-2)+'..'}return o.map(function(x){return x.length>w?x.slice(0,w-2)+'..':x})}
+function amDraw(){var G=amBuild(AM.area),S=190,W=160,H=54,minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+ G.NL.forEach(function(n){n.px=n.x*S;n.py=n.y*S;n.w=n.in?W:W*0.8;n.h=n.in?H:H*0.72});
+ /* boxes must not overlap: push apart along the shorter overlap */
+ for(var it=0;it<400;it++){var mv=false;for(var i=0;i<G.NL.length;i++)for(var j=i+1;j<G.NL.length;j++){var A=G.NL[i],B=G.NL[j],dx=B.px-A.px,dy=B.py-A.py,
+   ox=(A.w+B.w)/2+28-Math.abs(dx),oy=(A.h+B.h)/2+24-Math.abs(dy);if(ox>0&&oy>0){mv=true;if(ox<oy){var sx=(dx<0?-1:1)*ox/2;A.px-=sx;B.px+=sx}else{var sy=(dy<0?-1:1)*oy/2;A.py-=sy;B.py+=sy}}}if(!mv)break}
+ G.NL.forEach(function(n){minx=Math.min(minx,n.px-n.w/2);maxx=Math.max(maxx,n.px+n.w/2);miny=Math.min(miny,n.py-n.h/2);maxy=Math.max(maxy,n.py+n.h/2)});
+ var nx=nextHint(),route={},rset={};if(nx){hintLegs(nx.k,nx.rooms).forEach(function(l){if(l.w)for(var i=1;i<l.w.length;i++){route[l.w[i-1]+'>'+l.w[i]]=1;route[l.w[i]+'>'+l.w[i-1]]=1}});nx.rooms.forEach(function(q){rset[q[0]]=1})}
+ var svg='<defs><marker id="amA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--warn)"/></marker></defs>';
+ function clip(a,b){var dx=b.px-a.px,dy=b.py-a.py,w=b.w/2+4,h=b.h/2+4,t=Math.min(Math.abs(dx)>0.01?w/Math.abs(dx):1e9,Math.abs(dy)>0.01?h/Math.abs(dy):1e9);return [b.px-dx*Math.min(t,0.5),b.py-dy*Math.min(t,0.5)]}
+ var one=0,lone=0;
+ G.EL.forEach(function(e){var both=e.ab&&e.ba,ext=!e.a.in||!e.b.in,onR=route[e.a.f+'>'+e.b.f];var cls='ame'+(ext?' ext':'')+(!both&&!ext?' one':'')+(onR?' rt':'');
+  if(!both&&!ext)one++;var s=e.ab?e.a:e.b,t=e.ab?e.b:e.a,p=clip(s,t),p0=clip(t,s);
+  svg+='<line class="'+cls+'" x1="'+p0[0].toFixed(1)+'" y1="'+p0[1].toFixed(1)+'" x2="'+p[0].toFixed(1)+'" y2="'+p[1].toFixed(1)+'"'+(!both&&!ext?' marker-end="url(#amA)"':'')+'><title>'+esc(rName(s.f)+' → '+rName(t.f)+(both||ext?'':' (no way back)'))+'</title></line>'});
+ G.NL.forEach(function(n){var w=n.w,h=n.h,nm=amName(n.f,n.in?AM.area:areaOf(n.f)),ln=amWrap(nm,n.in?21:16,n.in?2:1);if(n.lone)lone++;
+  var cls='amn'+(n.in?'':' ext')+(n.f===cur.f?' cur':'')+(rset[n.f]?' hint':'')+(n.lone?' lone':'');
+  svg+='<g class="'+cls+'" data-r="'+n.f+'" transform="translate('+(n.px-w/2).toFixed(1)+','+(n.py-h/2).toFixed(1)+')"><title>'+esc(rName(n.f)+(n.in?'':' ('+(n.f<0?'':areaOf(n.f))+')')+(n.lone?' · no way in or out':''))+'</title><rect width="'+w+'" height="'+h+'" rx="5"/>'
+   +'<text x="7" y="'+(n.in?15:13)+'" class="no">'+(n.f<0?'○':n.f)+(n.in?'':' · '+esc((n.f<0?'':areaOf(n.f)).slice(0,12)))+'</text>'+ln.map(function(t,i){return '<text x="7" y="'+(n.in?33+i*14:29)+'" class="nm">'+esc(t)+'</text>'}).join('')+'</g>'});
+ var pad=90;$('amSvg').setAttribute('viewBox',(minx-pad)+' '+(miny-pad)+' '+(maxx-minx+pad*2)+' '+(maxy-miny+pad*2));$('amSvg').innerHTML=svg;
+ $('amTitle').textContent=AM.area+' · '+G.R.length+' room'+(G.R.length===1?'':'s');
+ $('amNote').innerHTML=[one?'<span class="warn">'+one+' door'+(one===1?'':'s')+' with no way back</span>':'',lone?'<span class="bad">'+lone+' room'+(lone===1?'':'s')+' with no way in or out</span>':'',nx&&Object.keys(route).length?'<span class="hintc">hint '+nx.k+' way</span>':''].filter(Boolean).join(' · ')}
+function amOpen(on){AM.on=on;$('amap').hidden=!on;$('bArea').classList.toggle('on',on);if(on){AM.area=areaOf(cur.f)||AM.area;amDraw()}}
+$('bArea').onclick=function(){amOpen(!AM.on)};$('amClose').onclick=function(){amOpen(false)};
+$('amSvg').onclick=function(e){var g=e.target.closest('[data-r]');if(!g)return;var f=+g.dataset.r;if(f<0){amOpen(false);worldOn(true);return}
+ if(areaOf(f)!==AM.area){goTo(f);AM.area=areaOf(f);setTimeout(amDraw,50);return}amOpen(false);goTo(f)};
+document.addEventListener('keydown',function(e){if(e.ctrlKey||e.metaKey||e.altKey||!D||cur.f==null)return;var t=e.target&&e.target.tagName;if(t==='INPUT'||t==='SELECT'||t==='TEXTAREA')return;
+ if(e.key==='m'||e.key==='M'){amOpen(!AM.on);e.preventDefault()}else if(e.key==='Escape'&&AM.on)amOpen(false)});
 })();
 </script>
