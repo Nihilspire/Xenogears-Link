@@ -110,3 +110,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 - **Settings**: one look for every switch (lit = on, tap to change), grouped under GENERAL, BATTLE, MAP, HINTS and EXPERIMENTAL; no more ON/OFF labels.
 - **Map tab**: the 3D and EYE buttons sit in a column on the right; the treasure legend is one row; the room header no longer repeats the area name.
 - **Code**: removed the old dialogue scanner and teach mode, unused styles and dead helpers. Packets after a link restart are ignored.
+
+## 2.0.0.21
+- **Kislev sewers hint**: the sewer part of hint 114 now walks the whole trail instead of pointing at Sewers 1 only: the writing in blood (Sewer Entrance), Gramps (Sewers 1), the broken rat-sweeper robot with the Sewer Keys (Sewers 2), the sewage plant door by the east waterfall and the bell inside, then the drain at the north end of Sewers 1 where the bell brings out Redrum. Spots are taken from the room scripts (the actors that start each scene).
+- **Room viewer**: hint route, door pairs, area map, undo and redo (see the viewer).
