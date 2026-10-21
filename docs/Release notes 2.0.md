@@ -89,5 +89,5 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 
 ## 2.0.0.16
 
-- **Jack's room viewer edits imported (21 Oct).** 19 hint steps: new or moved spots (Mountain Path page for Citan's yard, the forest, the Dazil workshop/bar/rental shop, the sinking ship and crane, the cave sensors and Bal, the excavation exit, the docks, the mechanic, the tournament, the mountain top, Goliath Factory pages), a world-map spot for step 27, and text for steps 56 and 84. Doors in 21 rooms: the Aveh transport, the Stalactite Cave, Bart's hideout, Nisan, Bledavik streets and outskirts, the Bledavik bar rooms, Fatima Castle and the bottom of the mountain. Two chest spots (rooms 58 and 65).
+- **Jack's room viewer edits imported (21 Oct).** 19 hint steps: new or moved spots (Mountain Path page for Citan's yard, the forest, the Dazil workshop/bar/rental shop, the sinking ship and crane, the cave sensors and Bal, the excavation exit, the docks, the mechanic, the tournament, the mountain top, Goliath Factory pages), a world-map spot for step 27, and text for steps 56 and 84. Doors in 21 rooms: the Aveh transport, the Stalactite Cave, Bart's hideout, Nisan, Bledavik streets, outskirts and the rooms off them, Fatima Castle and the bottom of the mountain. Two chest spots (rooms 58 and 65).
 - Step 58 (mechanic) uses Jack's spot.
