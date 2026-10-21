@@ -96,6 +96,14 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
 .rq{border:1px solid var(--line);border-radius:4px;padding:6px;display:grid;gap:6px;margin:6px 0}.rq select{width:100%}.li.ex.chk .n2::after{content:' \2713';color:var(--hint)}
 .exout{width:100%;height:240px;font:11px var(--mono);background:#0e1116;color:var(--ink);border:1px solid var(--line)}
 .li .n2{min-width:0;overflow-wrap:anywhere}
+.hnav{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid var(--line);border-radius:6px;background:#0f141b}
+.hnt{font:600 12px var(--mono);color:var(--hint);text-align:center;min-width:0}
+.hnav .chip.hint{font-size:12px;padding:4px 9px;border-radius:5px}.hnav .chip.hint:hover{background:#13261c}
+.lab.fold{cursor:pointer;user-select:none}.lab.fold:hover{color:var(--ink)}.lab.fold::before{content:"\25BE";display:inline-block;width:13px;letter-spacing:0}
+.sec.shut>.lab.fold::before{content:"\25B8"}.sec.shut>:not(.lab.fold){display:none!important}
+details.tip{font-size:12px;color:var(--dim)}details.tip summary{cursor:pointer;color:var(--dim);font-size:11px}details.tip[open]{line-height:1.45}
+.vmenu{position:relative}.vpop{position:absolute;right:0;top:calc(100% + 6px);z-index:5;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;width:250px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.vpop[hidden]{display:none}.vlight{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}.vlight input{flex:1}
 .next{border-left:2px solid var(--hint);padding-left:8px;display:flex;flex-direction:column;gap:6px}
 .next b{color:var(--hint);font-weight:600}
 .chip.hint{border-color:var(--hint);color:var(--hint)}
@@ -179,7 +187,7 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
    <div class="row"><input type="number" id="hcRoomIn" min="-1" max="729" placeholder="room no." aria-label="Room for this page (-1 world map)" style="width:84px"><button id="hcSetRoom" title="Change this page to the room typed (-1 for the world map); its spot is cleared">Change room</button></div>
    <div class="row"><span class="note">Add a page:</span><button id="hcAddRoom" title="Add the room on screen as a new page of this hint, after this one">+ This room</button><button id="hcAddWorld" title="Add a world map page after this one">+ World map</button><button id="hcDelPage" title="Take this page out of the hint">Remove page</button></div>
    <div id="hcTextBox" hidden><textarea id="hcTa" rows="3" aria-label="Hint text" style="width:100%;font:12px var(--body);background:#0e1116;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px"></textarea><label class="note"><input type="checkbox" id="hcInGame"> checked in game (shows in white in the app)</label></div>
-   <div class="note">Click the room, or the world map, where the spot should be: it moves there. The page's room and story step open by themselves.</div>
+   <div class="note">Click where the spot should be: it moves there.</div>
    <div class="row"><button id="hcExport" class="on">Export hint edits</button><span class="note" id="hcNote"></span></div>
   </div>
 
@@ -194,42 +202,44 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
    <div class="lab">Story step <span class="mono" id="stepNum"></span></div>
    <div class="row"><input type="range" id="stepRange" min="0" max="360" value="0" class="grow"><input type="number" id="stepIn" min="0" max="999" value="0" style="width:68px"></div>
    <div class="step-label" id="stepLabel"></div>
-   <div class="next" id="nextBox" hidden></div>
-   <div class="row"><button id="hEdit" title="Change a step's note and the rooms and green spots it points to, then export them for the app">Edit hints</button><span class="note" id="hCount"></span></div>
+   <div class="hnav">
+    <div class="row"><button id="hPrev" aria-label="Previous hint" title="Previous hint (P)">&#9664;</button><div class="grow hnt" id="hNavT">Hint</div><button id="hNx" aria-label="Next hint" title="Next hint (N)">&#9654;</button></div>
+    <div class="next" id="nextBox" hidden></div>
+    <div class="row"><button id="hEdit" title="Change this hint's note, rooms and green spots, then export them for the app">Edit this hint</button><span class="note" id="hCount"></span></div>
+   </div>
    <div id="hEd" class="rq" hidden>
-    <div class="row"><label class="note">Step <input type="number" id="hStep" min="0" max="999" style="width:68px"></label><label class="note"><input type="checkbox" id="hOk"> checked in game</label><button id="hNext" title="The step after the current story step">Next hint</button></div>
+    <div class="row"><label class="note">Step <input type="number" id="hStep" min="0" max="999" style="width:68px"></label><label class="note"><input type="checkbox" id="hOk"> checked in game</label></div>
     <textarea id="hText" rows="3" aria-label="Hint note" style="width:100%;font:12px var(--body);background:#0e1116;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px"></textarea>
-    <div class="note">The rooms the hint points to, in order. While this is open, clicking the floor adds a green spot in this room (adding the room if it isn't listed).</div>
+    <div class="note">Rooms in order. Click the floor to add a green spot here.</div>
     <div class="list" id="hPath"></div>
     <div class="row"><button id="hAddRoom">Add this room</button><button id="hAddWorld">Add world map</button><button id="hRevert">Undo this step</button></div>
     <div class="row"><button id="hExport" class="on">Export hint edits</button><label class="filebtn">Import<input type="file" id="hImport" accept=".json"></label><button id="hClear">Clear all</button></div>
     <div class="note" id="hNote"></div>
    </div>
-   <div class="note">Steps this room's scripts check:</div>
-   <div class="chips" id="stepChips"></div>
+   <div class="row"><span class="note">Steps this room checks</span><div class="chips" id="stepChips"></div></div>
   </div>
 
   <div class="sec" id="entrySec" hidden>
    <div class="lab">Arrive by</div>
-   <select id="entrySel"></select>
+   <select id="entrySel" aria-label="Arrive by"></select>
   </div>
 
   <div class="sec" id="saveSec" hidden>
-   <div class="lab">Flags from a save (optional)</div>
+   <div class="lab">Flags from a save</div>
    <div class="row"><label class="filebtn">Open memory card<input type="file" id="cardFile" accept=".srm,.mcr,.mcd,.mc,.gme,.bin"></label><span class="note" id="cardNote">.srm or .mcr</span></div>
    <select id="slotSel" hidden></select>
    <div class="row" id="saveBtns" hidden><button id="useSave">Use this save</button><button id="dropSave">Forget it</button></div>
    <div class="row"><label class="filebtn">Open story snapshot<input type="file" id="snapFile" accept=".json"></label><span class="note">.json from the Windows app (DEV OPTIONS)</span></div>
    <div class="lab" style="margin-top:10px">Compare two snapshots</div>
    <div class="row"><label class="filebtn">Before<input type="file" id="cmpA" accept=".json"></label><label class="filebtn">After<input type="file" id="cmpB" accept=".json"></label><span class="note" id="cmpFiles"></span></div>
-   <div class="note" id="cmpNote">Open the snapshot from before something happened and the one from after it: every switch that changed, with the rooms whose scripts set or check it.</div>
+   <details class="tip" id="cmpNote"><summary>What's this</summary>Open the snapshot from before something happened and the one from after it: every switch that changed, with the rooms whose scripts set or check it.</details>
    <div class="list cmp" id="cmpList"></div>
    <div class="note" id="saveNote">Without a save, every flag starts off and only the story step changes who is here.</div>
   </div>
 
   <div class="sec" id="rvSec">
    <div class="lab">Check list</div>
-   <div class="note">Step through what needs a look, one at a time: hint spots the spot check flagged, doors that only exist on one side, and ways out to check. Each opens the room at the right story step.</div>
+   <details class="tip"><summary>What's this</summary>Step through what needs a look, one at a time: hint spots the spot check flagged, doors that only exist on one side, and ways out to check. Each opens the room at the right story step.</details>
    <div class="rq">
     <div class="row"><select id="rqSel" aria-label="Review list"></select></div>
     <div class="row"><button id="rqPrev" aria-label="Previous">◂</button><span class="mono" id="rqPos">-</span><button id="rqNext" aria-label="Next">▸</button><button id="rqOk" title="Mark this one checked and go to the next">Looks fine</button><button id="rqSnap" hidden title="Move the hint spot onto the person the check found nearest, then go to the next">Snap to this person</button><button id="rqAccept" hidden title="Add a door here, leading back to that room, then go to the next">Accept door</button><span class="note" id="rqDone"></span></div>
@@ -244,7 +254,8 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
 
   <div class="sec" id="exSec" hidden>
    <div class="lab">Edit places <span class="mono" id="exCount"></span></div>
-   <div class="note">Pick a way out, chest, save or shop, then click where it is: any surface, walls and ledges too; its height is the height you click. Doors stand in the room as door icons: drag one over the room to move it, <kbd>Shift</kbd>-drag to lift or lower it, or type x, z and y. <kbd>Shift</kbd>-click a surface to add a new way out there, to the room typed in “to room”. On a room with several levels use Cut or the level buttons to reach the right one first.</div>
+   <div class="note">Pick one, then click where it is. Drag a door to move it.</div>
+   <details class="tip"><summary>More</summary>Any surface works, walls and ledges too; its height is the height you click. <kbd>Shift</kbd>-drag a door to lift or lower it, or type x, z and y. <kbd>Shift</kbd>-click a surface to add a new way out there, to the room typed in “to room”. On a room with several levels use Cut or the level buttons to reach the right one first.</details>
    <div class="list" id="exList"></div>
    <div class="row" id="exPos" hidden><span class="note">x</span><input type="number" id="exX" style="width:70px" aria-label="x"><span class="note">z</span><input type="number" id="exZ" style="width:70px" aria-label="z"><span class="note">y</span><input type="number" id="exY" style="width:64px" aria-label="Height (smaller is higher)"><button id="exUp" title="Raise 10 (PageUp; Shift for 50)" aria-label="Raise">▲</button><button id="exDn" title="Lower 10 (PageDown; Shift for 50)" aria-label="Lower">▼</button><button id="exFloor" title="Drop it onto the surface below">Floor</button></div>
  <div class="row"><input type="number" id="exDest" min="-1" max="729" placeholder="to room" aria-label="Destination room (-1 world map)" style="width:84px"><button id="exAdd">Add way out</button><button id="exRevert">Undo this room</button></div>
@@ -273,20 +284,23 @@ button.ok{background:#2c5a34;border-color:#86d08c;color:#e8f5e9;font-weight:600}
   <div class="tags" id="tags"></div>
   <div class="hud" id="hud" hidden></div>
   <div class="tools" id="tools" hidden>
-   <button id="bWalk" class="on" title="Walkable floor outline">Floor</button>
-   <button id="bGhost" title="Show people the script hides, faded">Hidden</button>
-   <button id="bTags" class="on" title="Labels">Labels</button>
-   <button id="bSky" title="Sky domes and far backdrops">Sky</button>
-   <button id="bCut" class="on" title="Leave out walls that face away, so you can see into rooms">Cutaway</button>
+   <div class="vmenu"><button id="bView" aria-haspopup="true" aria-expanded="false" title="What the room shows">View &#9662;</button>
+    <div class="vpop" id="vPop" hidden>
+     <button id="bMarks" class="on" title="Ways out, treasure, memory cubes, shops and hint spots">Marks</button>
+     <button id="bTags" class="on" title="Labels">Labels</button>
+     <button id="bWalk" class="on" title="Walkable floor outline">Floor</button>
+     <button id="bCut" class="on" title="Leave out walls that face away, so you can see into rooms">Cutaway</button>
+     <button id="bGhost" title="Show people the script hides, faded">Hidden people</button>
+     <button id="bArr" title="Where the game puts you when you come in from each room">Arrivals</button>
+     <button id="bSky" title="Sky domes and far backdrops">Sky</button>
+     <label class="vlight" title="Brightness">Light <input type="range" id="bright" min="1" max="3" step="0.1" value="1"></label>
+    </div></div>
    <button id="bTop" title="Look straight down">Top</button>
-   <button id="bMarks" class="on" title="Ways out, treasure, memory cubes, shops and hint spots">Marks</button>
-   <button id="bArr" title="Where the game puts you when you come in from each room">Arrivals</button>
    <button id="bEdit" title="Place and move ways out, treasure, saves and shops (with their height), then export them for the app">Edit places</button>
    <button id="bReset" title="Back to the starting view">Reset</button>
    <button id="bPng" title="Save this view with its labels as a picture, for marking up">Save picture</button>
    <span class="levels" id="levels"></span>
    <label class="cutbox" title="Cut the room off above this height to see lower floors">Cut <input type="range" id="cutR" min="0" max="1000" value="1000" aria-label="Cut height"></label>
-   <label class="filebtn" title="Brightness">Light <input type="range" id="bright" min="1" max="3" step="0.1" value="1" style="position:static;opacity:1;width:70px;height:auto;vertical-align:middle"></label>
   </div>
   <div class="empty" id="empty"><div><div class="ring"></div><h2>No disc open</h2>Open your own Xenogears disc 1 image (US). The page reads the rooms straight from the file in this browser; nothing is uploaded and no game files ship with the page.<br><br>Drag the room to turn it, scroll or pinch to zoom, right-drag to pan. Click a person to read what they say and see why they are there, a way out to walk through it, or the floor to pin its x, z.<br><br><span class="keys"><kbd>[</kbd> <kbd>]</kbd> room &nbsp; <kbd>,</kbd> <kbd>.</kbd> story step &nbsp; <kbd>Backspace</kbd> back</span></div></div>
   <div class="busy" id="busy" hidden></div>
@@ -592,8 +606,8 @@ function testText(t){if(t[0]==='var'&&t[3]===2)t=['entrance',t[1].replace(/^0002
 function renderPanel(){var s=state.step;
  $('stepRange').value=s;$('stepIn').value=s;$('stepNum').textContent=s;
  var ch=chapterOf(s);$('stepLabel').innerHTML='<b>'+esc(ch)+'</b>';
- var nx=nextHint();$('nextBox').hidden=!nx;if(nx){var here=nx.rooms.some(function(q){return q[0]===cur.f});
-  $('nextBox').innerHTML='<div><b>Next: step '+nx.k+(nx.part?' (part '+(nx.part+1)+')':'')+'</b>'+(nx.note?' · '+esc(nx.note):'')+'</div><div class="chips">'+nx.rooms.map(function(q){return '<span class="chip hint'+(q[0]===cur.f?' cur':'')+'" data-r="'+q[0]+'" title="'+esc(roomName(q[0])||areaOf(q[0]))+'">'+q[0]+' '+esc((roomName(q[0])||areaOf(q[0])).slice(0,22))+'</span>'}).join('')+'</div>'+(here?'<div class="note">This room is on the way: the green rings mark the spot.</div>':'')}
+ var nx=nextHint();$('hNavT').textContent=nx?'Hint '+nx.k+' \u00b7 '+(HKEYS.indexOf(nx.k)+1)+' of '+HKEYS.length:'No more hints';if(nx){$('hNx').disabled=HKEYS.indexOf(nx.k)>=HKEYS.length-1;$('hPrev').disabled=HKEYS.indexOf(nx.k)<=0}else{$('hNx').disabled=true;$('hPrev').disabled=false}$('nextBox').hidden=!nx;if(nx){var here=nx.rooms.some(function(q){return q[0]===cur.f});
+  $('nextBox').innerHTML='<div>'+(nx.note?esc(nx.note):'<span class="note">No note</span>')+(nx.part?' <span class="note">(part '+(nx.part+1)+')</span>':'')+'</div><div class="chips">'+nx.rooms.map(function(q){return '<span class="chip hint'+(q[0]===cur.f?' cur':'')+'" data-r="'+q[0]+'" title="Open '+(q[0]<0?'the world map':esc(roomName(q[0])||areaOf(q[0])))+'">'+(q[0]<0?'World map':q[0]+' '+esc((roomName(q[0])||areaOf(q[0])||'').slice(0,22)))+(q[1].length?' \u25CF':'')+'</span>'}).join('')+'</div>'+(here?'<div class="note">You are in one of its rooms: green rings mark the spot.</div>':'<div class="note">Click a room to open it.</div>')}
  $('stepChips').innerHTML=stepTests.length?stepTests.map(function(v){return '<span class="chip'+(v===s?' cur':'')+'" data-s="'+v+'">'+v+'</span>'}).join(''):'<span class="note">none: this room looks the same at every step</span>';
  var list=cur.run.E.filter(function(e){return e.kind==='npc'}),here=list.filter(function(e){return !e.hidden&&!e.deleted}).length;
  $('peopleHead').textContent='People · '+here+' here of '+list.length;
@@ -637,7 +651,21 @@ window.addEventListener('hashchange',function(){var hs=readHash();if(!hs||!D)ret
 function readHash(){var m=/room(\d+)/.exec(location.hash),n=/step(\d+)/.exec(location.hash);return m?{room:+m[1],step:n?+n[1]:null}:null}
 $('stepRange').oninput=function(){setStep(+this.value)};$('stepIn').onchange=function(){setStep(+this.value)};
 $('stepChips').onclick=function(e){var s=e.target.getAttribute('data-s');if(s!=null)setStep(+s)};
-$('nextBox').onclick=function(e){var r=e.target.getAttribute('data-r');if(r!=null)goTo(+r)};
+$('nextBox').onclick=function(e){var t=e.target.closest('[data-r]');if(t)hintRoom(+t.dataset.r)};
+/* hint navigator (Jack, 21 Oct): step from hint to hint; each jump sets the story step just before it and opens the hint's room,
+   with the camera on its green spot. The room chips under it open that room (or the world map). */
+function hintRoomPick(P){if(cur.f!=null&&P.some(function(q){return q[0]===cur.f}))return cur.f;
+ for(var i=0;i<P.length;i++)if(P[i][0]>=0&&P[i][1].length)return P[i][0];for(var j=0;j<P.length;j++)if(P[j][0]>=0)return P[j][0];return P.length?-1:null}
+function hintSpotFocus(){var nx=nextHint();if(!nx||cur.f==null)return;var q=null;nx.rooms.forEach(function(r){if(r[0]===cur.f&&r[1].length&&!q)q=r[1][0]});
+ if(q)focusAt(q[0],-ctl.target.y,q[1])}
+async function hintRoom(f){if(f==null)return;if(f<0){worldOn(true);return}if(WV&&WV.on)worldOn(false);
+ if(f!==cur.f){hist.push(cur.f);$('backBtn').disabled=false;state.keepStep=true;await loadRoom(f)}hintSpotFocus()}
+async function hintGo(d){var nx=nextHint(),i=nx?HKEYS.indexOf(nx.k):HKEYS.length,j=Math.max(0,Math.min(HKEYS.length-1,i+d));if(nx&&j===i)return;
+ var K=HKEYS[j];state.step=Math.max(0,K-1);store('xgv.step',String(state.step));$('stepIn').value=state.step;
+ if(state.hedit)hLoad(K);var P=XD.HROOMS[K]||[],f=hintRoomPick(P);
+ if(f==null||f===cur.f){if(WV&&WV.on&&f!=null&&f>=0)worldOn(false);setStep(state.step);hintSpotFocus();return}
+ if(f<0)setStep(state.step);await hintRoom(f)}
+$('hPrev').onclick=function(){hintGo(-1)};$('hNx').onclick=function(){hintGo(1)};
 $('backBtn').onclick=goBack;
 function areaFirst(f){var A=XD.AREAS;for(var i=0;i<A.length;i++)if(f>=A[i][0]&&f<=A[i][1])return areaKey(A[i][2]);return ''}
 var AREAFIRST={};function areaKey(n){return n}
@@ -645,7 +673,16 @@ var AREAFIRST={};function areaKey(n){return n}
 $('areaSel').onchange=function(){var f=AREAFIRST[this.value];if(f!=null)goTo(f)};
 document.addEventListener('keydown',function(e){if(!D||cur.f==null)return;var t=e.target.tagName;if(t==='INPUT'||t==='SELECT'||t==='TEXTAREA'||e.ctrlKey||e.metaKey||e.altKey)return;
  if(state.edit&&exSel>=0&&(e.key==='PageUp'||e.key==='PageDown')){exNudge((e.key==='PageUp'?-1:1)*(e.shiftKey?50:10));e.preventDefault();return}
- if(e.key==='['){state.keepStep=true;loadRoom(cur.f-1)}else if(e.key===']'){state.keepStep=true;loadRoom(cur.f+1)}else if(e.key===',')setStep(state.step-1);else if(e.key==='.')setStep(state.step+1);else if(e.key==='Backspace'){goBack();e.preventDefault()}else return});
+ if(e.key==='['){state.keepStep=true;loadRoom(cur.f-1)}else if(e.key===']'){state.keepStep=true;loadRoom(cur.f+1)}else if(e.key===',')setStep(state.step-1);else if(e.key==='.')setStep(state.step+1);else if(e.key==='Backspace'){goBack();e.preventDefault()}else if((e.key==='n'||e.key==='N')&&!HC.on)hintGo(1);else if((e.key==='p'||e.key==='P')&&!HC.on)hintGo(-1);else return});
+/* View menu */
+$('bView').onclick=function(e){e.stopPropagation();var o=$('vPop').hidden;$('vPop').hidden=!o;this.setAttribute('aria-expanded',String(o));this.classList.toggle('on',o)};
+document.addEventListener('click',function(e){if(!$('vPop').hidden&&!e.target.closest('.vmenu')){$('vPop').hidden=true;$('bView').classList.remove('on');$('bView').setAttribute('aria-expanded','false')}});
+/* folding sections: click a heading to fold it; remembered in this browser */
+(function(){var shut={};try{shut=JSON.parse(store('xgv.fold')||'null')||{saveSec:1,rvSec:1,varSec:1}}catch(e){shut={saveSec:1,rvSec:1,varSec:1}}
+ ['stepSec','placeSec','peopleSec','entrySec','saveSec','rvSec','varSec'].forEach(function(id){var sec=$(id),lab=sec&&sec.querySelector(':scope>.lab');if(!lab)return;
+  lab.classList.add('fold');lab.setAttribute('role','button');lab.tabIndex=0;if(shut[id])sec.classList.add('shut');
+  function t(){var on=!sec.classList.contains('shut');sec.classList.toggle('shut',on);if(on)shut[id]=1;else delete shut[id];store('xgv.fold',JSON.stringify(shut))}
+  lab.onclick=t;lab.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){t();e.preventDefault()}}})})();
 $('entrySel').onchange=function(){state.entry=+this.value;rerun()};
 $('vars').onchange=function(e){var v=e.target.getAttribute('data-v');if(v==null)return;state.vars[+v]=(+e.target.value)&0xFFFF;rerun()};
 function tog(id,key,fn){$(id).onclick=function(){state[key]=!state[key];this.classList.toggle('on',state[key]);fn()}}
@@ -924,7 +961,7 @@ $('hPath').onclick=function(e){var t=e.target,k=hCur();if(t.dataset.go!=null){va
   hApply(k);hSave();hPath();buildMarks()}};
 function hAddSpot(p){var k=hCur(),E=hEditable(k),f=cur.f,q=null;E.path.forEach(function(r){if(r[0]===f)q=r});if(!q){q=[f,[]];E.path.push(q)}q[1].push([Math.round(p.x),Math.round(-p.z)]);hApply(k);hSave();hPath();buildMarks()}
 $('hEdit').onclick=function(){state.hedit=!state.hedit;exSel=-1;mkSel=null;this.classList.toggle('on',state.hedit);$('hEd').hidden=!state.hedit;if(state.hedit){var nx=nextHint();hLoad(nx?nx.k:state.step)}else buildMarks()};
-$('hStep').onchange=function(){hLoad(hCur())};$('hNext').onclick=function(){var nx=nextHint();if(nx)hLoad(nx.k)};
+$('hStep').onchange=function(){hLoad(hCur())};
 function hText(){var k=hCur(),E=hEditable(k),t=$('hText').value.trim();E.note=($('hOk').checked?'':'?')+t;hApply(k);hSave();hPath();rerun()}
 var hT=0;$('hText').oninput=function(){clearTimeout(hT);hT=setTimeout(hText,500)};$('hText').onchange=function(){clearTimeout(hT);hText()};$('hOk').onchange=hText;
 $('hAddRoom').onclick=function(){if(cur.f==null)return;var k=hCur(),E=hEditable(k);if(!E.path.some(function(q){return q[0]===cur.f}))E.path.push([cur.f,[]]);hApply(k);hSave();hPath();buildMarks()};
