@@ -46,7 +46,7 @@ for s in sorted(P,key=int):
                 if int(s) in ss or int(s)+1 in ss:
                     for q in I['pos'].get(a,[]):
                         d=math.hypot(q[0]-x,q[1]-z)
-                        if st is None or d<st[0]: st=(d,a,q)
+                        if st is None or st[0] is None or d<st[0]: st=(d,a,q)
                     if a not in I['pos'] and st is None: st=(None,a,None)
             zb=min([math.hypot(q[0]-x,q[1]-z) for q in I['Z']] or [None]) if I['Z'] else None
             if best:
