@@ -100,3 +100,7 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 
 - **Freeze report (Android).** The page tells the app which part it is working on as it draws (battle, enemy names, map, 3D map, route, hint follow...). If the page stops for 4 seconds, the app keeps that part; on the next start a card says "THE APP FROZE LAST TIME" and where. For tracking the "isn't responding" Jack saw in the first Lahan fight with the recomp (2.0.0.17).
 - Guards: the guide line's path search (2D and 3D) gives up instead of looping when its chain is broken, and the link stops draining old replies after 500 (in case something keeps sending).
+
+## 2.0.0.19
+
+- **H&S Badge (Bledavik) fixed (Jack).** It was tied to flag 130 bit 4, which the well key talk sets, and its spot was where the hide-and-seek kid stands after he has quit. It now counts as taken when the kid's counter (script variable 0xBE) reaches 5, the moment he hands it over, and the spot is where you find him the fifth time, (1040, -1430). Pickups can now use a counter as well as a single bit.

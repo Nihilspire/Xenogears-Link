@@ -1455,3 +1455,10 @@ Two different things put a text box on screen, and the game treats them differen
 - **Counts** (rooms 0-719): of 1,622 talk routines (routine 2) that show text, 1,095 never lock (ordinary townsfolk, shopkeepers, Kanna) and 527 run `FE54` (story talks, the Lahan RPS man); of 178 walk-into routines (routine 3), 119 are free. Many other routines show text with no `FE54` of their own because a scene that already locked the player calls them, so the live menu lock, not the routine, is what tells the two apart.
 - **Text box record** (`0x800C2698 + n × 0x498`, already used by the app): `+0x40C` flags (`0x81` box below the speaker, `1` above), `+0x40E` 0 = in use, `+0x410` order, `+0x414` 0 = closing, `+0x416` field actor, `+0x418` speaking actor.
 So "box open and `0x800B21D0` = 0" is walk-away talk, "box open and `0x800B21D0` = 1" is a cutscene (or a locked story talk).
+
+## H&S Badge (Bledavik, room 102) (20 Oct 2026, Jack + room script)
+The hide-and-seek kid (room 102 actor 41) keeps a counter in script variable `0xBE`: 0-4 = times found, and he stands at
+(-1038, 1257), (381, 1769), (-1411, -1103), (-684, 162), (1040, -1430) for counter 0-4. Finding him the fifth time (counter 4) gives
+item 77, the H&S Badge (`8C 4D80`), and sets the counter to 5 (he then stands at (-1029, -796)). Flag 130 bit 4, which the treasure
+scan had tied to the badge, is set by the well key talk instead (Jack). treasure.js now has `[190, 105, ...]`: a bit of 100 or more
+means "counter has reached bit - 100" (treGot in the app). Re-running tools/field/mktre.py would undo this; keep the override.

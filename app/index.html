@@ -578,7 +578,7 @@ function endingView(){return endScreen(0)}
 function endScreen(d1){var pt=u32(A.PTIME),g=u32(A.GOLD),av=u16(A.PARTY-4)||0,sec=pt==null?null:Math.floor(pt/60),lim=d1?612:720;
  if(d1&&sec)LS.set('d1time',String(sec));   /* kept for THE END's disc 1 / disc 2 times */
  var ft=function(x){return Math.floor(x/3600)+':'+p2(Math.floor(x/60)%60)+':'+p2(x%60)},tt=0,tg=0,mt=0,mg=0,db=0,dbt=0;
- function flag(v,b){var x=u16(A.SVAR+v);return x!=null&&(x>>b&1)===1}
+ function flag(v,b){return treGot(v,b)===true}
  if(window.TREASURE)for(var f in TREASURE){if(+f>=lim)continue;TREASURE[f].forEach(function(t){tt++;if(flag(t[0],t[1]))tg++})}
  if(window.MISS){for(var key in MISS.tag){var q=key.split(':');if(+q[0]>=lim)continue;mt++;if(flag(+q[1],+q[2]))mg++}
   for(var xf in MISS.extra){if(+xf>=lim)continue;MISS.extra[xf].forEach(function(e){if(e[0]<0)return;mt++;if(flag(e[0],e[1]))mg++})}}
@@ -1683,11 +1683,14 @@ var TKIND=['items','weapons','equipment','gear_weapons','gear_parts'];
 /* the room's treasure with a got / not got mark each, or null */
 /* missables (v2.0.0.3, missables.js): treasure entries tagged with when they are lost, plus pickups the treasure scan misses (Midori's
    Ring, the Spider, the Shevat secret room). A missable not yet taken has an orange ring on the map and its loss point under its name. */
+/* a pickup's flag: [variable, bit]; a "bit" of 100 or more means the variable is a counter that has reached bit-100 (v2.0.0.19: the
+   H&S Badge, given when the hide-and-seek kid's counter 0xBE reaches 5 in Bledavik; flag 130 bit 4 was the well key talk, Jack) */
+function treGot(v,b){var x=u16(A.SVAR+v);return x==null?null:b>=100?x>=b-100:(x>>b&1)===1}
 function treRaw(f){var l=window.TREASURE&&TREASURE[f]||[],x=window.MISS&&MISS.extra[f]||[];return x.length?l.concat(x.map(function(e){return [e[0],e[1],[],0,e[3],e[4],e[6],null,e[2],e[5]]})):l}
 function haveItem(c){var q=rd(A.IQTY,150),ids=rd(A.IID,150);if(!q||!ids)return null;for(var i=0;i<150;i++)if(ids[i]===c&&q[i]>0)return true;return false}
 function treList(f){if(!CFG.tre||f==null||!window.TREASURE)return null;var l=treRaw(f);if(!l.length)return null;if(!CFG.gift)l=l.filter(function(t){return t.length>5&&t[6]!==1});if(!l.length)return null;
  return l.map(function(t){var nm=t[8]?[t[8]]:t[2].map(function(c){return gearName(TKIND[c>>8],c&255)||['Item','Weapon','Equip','Gear weapon','Gear part'][c>>8]+' '+(c&255)});if(t[3])nm.push(t[3]+' G');
-  var got;if(t[0]<0)got=haveItem(t[1]);else{var v=u16(A.SVAR+t[0]);got=v==null?null:(v>>t[1]&1)===1}
+  var got;if(t[0]<0)got=haveItem(t[1]);else got=treGot(t[0],t[1])
   var ms=t[9]||window.MISS&&MISS.tag[f+':'+t[0]+':'+t[1]]||null;
   return{n:nm.join(' + '),got:got,x:t.length>5&&t[4]!=null?t[4]:null,z:t.length>5?t[5]:null,y:t.length>7?t[7]:null,gift:t.length<6||t[6]===1,miss:ms}})}
 /* ================= description pop-up ================= */
@@ -2002,7 +2005,7 @@ function readout(){var f=u16(A.FIELD),world=u32(A.SIG)===5,o=[];f=f==null?null:f
  o.push('native '+HAS_NATIVE,'link '+(linkMode||'probing '+MODES[probeIdx]),'replies '+(lastReply||'-')+'  '+pollRate()+' polls a second','program '+u32(A.MODE)+'  overlay '+u32(A.SIG));
  o.push('party '+Array.prototype.join.call(rd(A.PARTY,3)||[],','),'in fight '+Array.prototype.join.call(rd(A.BLIVE,11)||[],','),'turn slot '+dash(u8(A.BTURN)));
  var tl=f==null?null:window.TREASURE&&TREASURE[f];
- o.push('treasure '+(tl?tl.map(function(t){var v=u16(A.SVAR+t[0]);return t[0]+'.'+t[1]+'='+(v==null?'-':v>>t[1]&1)}).join(' '):'none here'));
+ o.push('treasure '+(tl?tl.map(function(t){var g=treGot(t[0],t[1]);return t[0]+'.'+t[1]+'='+(g==null?'-':g?1:0)}).join(' '):'none here'));
  o.push('battle timer '+(world?[s32(A.WENCC),s32(A.WENCW),s32(A.WENCN),u16(A.WENCS),u16(A.WENCS+2),s32(A.WENCON)]:[s32(A.ENC),s32(A.ENC+4),s32(A.ENC+8),u16(A.ENC+12),u16(A.ENC+14)]).map(dash).join(' '));
  o.push('field '+dash(f)+'  story step '+dash(u16(A.STORY))+' '+(chapter()||'-'));
  var q=playerPos();o.push('pos '+(q?q.x+','+q.y+','+q.z+' face '+q.face:'-')+'  cam '+dash(u16(A.CAMDIR)));
