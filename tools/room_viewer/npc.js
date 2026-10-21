@@ -26,8 +26,9 @@ XN.sprites=function(h,XB){var b=XN.block(h,3,XB);if(!b||b.length<8)return [];var
  return out};
 /* the room's own NPC sheets (block 4) go into VRAM at each slot's place when the slot says so (m6 = 0) */
 XN.uploadSheets=function(h,VR,XB){var b=XN.block(h,4,XB);if(!b||b.length<8)return;var n=u32(b,0);
- for(var i=0;i<n&&i<32;i++){if(u16(h,8*i+6)!==0)continue;var x=u16(h,8*i),y=u16(h,8*i+2),e=b.subarray(u32(b,4+4*i));var m=u32(e,0),xo=0;
-  for(var k=0;k<m;k++){var d=e.subarray(u32(e,4+4*k)),w=u16(d,0),hh=u16(d,2);
+ for(var i=0;i<n&&i<32;i++){if(u16(h,8*i+6)!==0)continue;var x=u16(h,8*i),y=u16(h,8*i+2),eo=u32(b,4+4*i);if(eo+4>b.length)continue;var e=b.subarray(eo),m=u32(e,0),xo=0;
+  if(!(m>=1&&m<=64))continue;   /* v2.0.0.17: room 164 (Gebler airship) has a sheet in another layout; its count read as ~3.7 billion and the loop never ended */
+  for(var k=0;k<m;k++){var so=u32(e,4+4*k);if(so+4>e.length)break;var d=e.subarray(so),w=u16(d,0),hh=u16(d,2);if(w>1024||hh>512||4+2*w*hh>d.length)continue;
    for(var j=0;j<hh&&y+j<512;j++)for(var q=0;q<w&&x+xo+q<1024;q++)VR[(y+j)*1024+x+xo+q]=u16(d,4+2*(j*w+q));xo+=0x40}}};
 XN.frame=function(sp,VR,fi,variant){if(!sp)return null;var pl=sp.fr[fi||0];if(!pl)return null;var s1=sp.A[1],a=sp.pal.a,P=sp.pal.P,px={},x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
  for(var k=pl.length-1;k>=0;k--){var t=pl[k][0],fl=pl[k][1],x=pl[k][2],y=pl[k][3];if(t+5>s1.length)continue;
