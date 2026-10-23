@@ -26,7 +26,7 @@ Then put your disc where the scripts look for it:
 ```bash
 mkdir -p /home/claude/disc && cp "/mnt/c/path/to/Xenogears disc 1.bin" /home/claude/disc/Xenogears_PW_CD1.bin
 export XG_DISC=/home/claude/disc/Xenogears_PW_CD1.bin    # also add this line to ~/.bashrc
-ln -sfn /home/claude/xenogears-link/app/www /home/claude/xg/v/www
+mkdir -p /home/claude/xg/v && ln -sfn /home/claude/xenogears-link/app/www /home/claude/xg/v/www
 ```
 
 ## 2. Tools
