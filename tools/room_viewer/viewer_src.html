@@ -252,10 +252,10 @@ details.tip{font-size:12px;color:var(--dim)}details.tip summary{cursor:pointer;c
 
   <div class="sec" id="rvSec">
    <div class="lab">Check list</div>
-   <details class="tip"><summary>What's this</summary>Step through what needs a look, one at a time: hint spots the spot check flagged, doors that only exist on one side, and ways out to check. Each opens the room at the right story step.</details>
+   <details class="tip"><summary>What's this</summary>Step through what needs a look, one at a time: hint spots the spot check flagged, doors that only exist on one side, and ways out to check. Each opens the room at the right story step. The two route lists are where the app's green guide line stops: ways out to the world map with no place (click where it is), and hint pages where no door leads on to the next page's room (add the door, or Looks fine when a scene takes the party there).</details>
    <div class="rq">
     <div class="row"><select id="rqSel" aria-label="Review list"></select></div>
-    <div class="row"><button id="rqPrev" aria-label="Previous">◂</button><span class="mono" id="rqPos">-</span><button id="rqNext" aria-label="Next">▸</button><button id="rqOk" title="Mark this one checked and go to the next">Looks fine</button><button id="rqSnap" hidden title="Move the hint spot onto the person the check found nearest, then go to the next">Snap to this person</button><button id="rqAccept" hidden title="Add a door here, leading back to that room, then go to the next">Accept door</button><span class="note" id="rqDone"></span></div>
+    <div class="row"><button id="rqPrev" aria-label="Previous">◂</button><span class="mono" id="rqPos">-</span><button id="rqNext" aria-label="Next">▸</button><button id="rqOk" title="Mark this one checked and go to the next">Looks fine</button><button id="rqSnap" hidden title="Move the hint spot onto the person the check found nearest, then go to the next">Snap to this person</button><button id="rqAccept" hidden title="Add a door here, leading back to that room, then go to the next">Accept door</button><button id="rqGapAdd" hidden title="Add a way out to the room the hint goes to next">Add door</button><span class="note" id="rqDone"></span></div>
     <div class="note" id="rqWhy"></div>
    </div>
   </div>
@@ -1080,11 +1080,46 @@ document.addEventListener('keydown',function(e){if(!HC.on)return;var t=e.target&
 var RQ={spots:['Hint spots the spot check flagged',(XD.SPOTCHK||[]).map(function(r,i){return [r[2],'spot',r[0],r[3],r[4],i,r[5]]}).filter(function(q){return q[0]>=0&&(q[6]==='FAR'||q[6]==='CHECK')}).sort(function(a,b){return (a[6]==='FAR'?0:1)-(b[6]==='FAR'?0:1)||a[2]-b[2]})],
  doors:['Doors on one side only (suggested)',(XD.MISSDOOR||[]).map(function(q){return [q[0],'door',q[1],q[2],q[3]]})],
  look:['Worth a look (1.99.0.3 review)',XD.REVIEW.look],far:['Several levels, far from the arrival spot',XD.REVIEW.far],noY:['Ways out with no height',XD.REVIEW.noY],noYm:['Treasure, saves, shops with no height',XD.REVIEW.noYm]},rqK='spots',rqI=-1,RQOK={};
+/* route gaps (Jack, 25 Oct): where the app's green guide line stops. The app finds the next room's door with routeHop (fewest doors,
+   over exits.js) and ends the line on a door's place, so a way out with no place, or two hint rooms no door joins, leaves no line.
+   The lists come from the shipped exits (so an entry stays put once fixed); whether it's fixed is worked out from the doors as
+   edited here. Same rules as Xenogears Dual's tests/scripts/route_audit.py. */
+function rgHop(X,f,g){var first={},q=[f],seen={};seen[f]=1;while(q.length){var r=q.shift();if(r===g)return first[r];(X(r)||[]).forEach(function(e){var d=e[2];if(d<0||seen[d])return;if(r===f&&e[0]==null)return;seen[d]=1;first[d]=r===f?d:first[r];q.push(d)})}return null}
+function rgWorld(X,f){return (X(f)||[]).some(function(e){return e[2]===-1&&e[0]!=null})}
+/* why the line stops with the party in room a and the page's room b: '' (a line is drawn), 'world' (no way out to the world map with a
+   place), 'place' (the door has no place), 'oneway' (the rooms join only if doors counted both ways: a one-way door on the way),
+   'none' (no door chain at all) */
+function rgJoined(X,a,b){var seen={},q=[a],U={};seen[a]=1;Object.keys(XD.EXITS).concat(Object.keys(EXED)).forEach(function(k){var f=+k;(X(f)||[]).forEach(function(e){if(e[2]<0)return;(U[f]=U[f]||[]).push(e[2]);(U[e[2]]=U[e[2]]||[]).push(f)})});
+ while(q.length){var r=q.shift();if(r===b)return true;(U[r]||[]).forEach(function(d){if(!seen[d]){seen[d]=1;q.push(d)}})}return false}
+function rgWhy(X,a,b){if(a===b||a<0)return '';if(b<0)return rgWorld(X,a)?'':'world';var h=rgHop(X,a,b);
+ if(h!=null)return (X(a)||[]).some(function(e){return e[2]===h&&e[0]!=null})?'':'place';if(rgWorld(X,a))return '';
+ return rgJoined(X,a,b)?'oneway':'none'}
+function rgShipped(f){return XD.EXITS[f]}
+RQ.wmx=['Route: world-map ways out with no place',Object.keys(XD.EXITS).map(Number).sort(function(a,b){return a-b}).filter(function(f){var E=XD.EXITS[f];return E.some(function(e){return e[2]===-1})&&!rgWorld(rgShipped,f)})
+ .map(function(f){return [f,XD.EXITS[f].findIndex(function(e){return e[2]===-1}),-1,null,null]})];
+/* every page break of every hint, and from each hint's last room into the next hint's first; a party room or a target room with no
+   doors at all is a scene room (the story moves the party), so it's left out */
+RQ.gaps=['Route: hint pages with no way through doors',(function(){var o=[],prev=null;Object.keys(XD.HROOMS).map(Number).sort(function(a,b){return a-b}).forEach(function(s){
+ var R=XD.HROOMS[s].map(function(q){return q[0]}),seq=(prev!=null?[prev]:[]).concat(R);
+ for(var i=1;i<seq.length;i++){var a=seq[i-1],b=seq[i];if(a===b||a<0||!XD.EXITS[a]||(b>=0&&!XD.EXITS[b]))continue;
+  var w=rgWhy(rgShipped,a,b);if(w)o.push([a,'gap',b,s,prev!=null?i-1:i,w])}
+ if(R.length)prev=R[R.length-1]});return o})()];
 try{RQOK=JSON.parse(store('xgv.reviewed')||'{}')||{}}catch(e){RQOK={}}
 function rqKey(q){return q[0]+':'+q[2]+':'+q[3]+','+q[4]}
 function rqFill(){$('rqSel').innerHTML=Object.keys(RQ).map(function(k){var L=RQ[k][1],d=L.filter(function(q){return RQOK[rqKey(q)]}).length;return '<option value="'+k+'"'+(k===rqK?' selected':'')+'>'+esc(RQ[k][0])+' · '+d+'/'+L.length+' checked</option>'}).join('');rqShow()}
 function rqShow(){var L=RQ[rqK][1],q=L[rqI];$('rqPos').textContent=(rqI<0?'-':rqI+1)+' / '+L.length;$('rqOk').disabled=!q;
- $('rqSnap').hidden=!(q&&q[1]==='spot');$('rqAccept').hidden=!(q&&q[1]==='door');
+ $('rqSnap').hidden=!(q&&q[1]==='spot');$('rqAccept').hidden=!(q&&q[1]==='door');$('rqGapAdd').hidden=!(q&&q[1]==='gap');
+ if(q&&q[1]==='gap'){var gn=function(f){return f<0?'the world map':f+' '+(roomName(f)||areaOf(f)||'')},now=rgWhy(exitsOf,q[0],q[2]);
+  $('rqDone').textContent=L.filter(function(x){return RQOK[rqKey(x)]||!rgWhy(exitsOf,x[0],x[2])}).length+' done';
+  $('rqGapAdd').disabled=!now||cur.f!==q[0];$('rqGapAdd').textContent=q[2]<0?'Add way out to the world map':'Add door to '+q[2];
+  $('rqWhy').textContent='Step '+q[3]+(q[4]?', page '+q[4]:', coming from the step before')+': the hint goes from room '+gn(q[0])+' to '+gn(q[2])+'. '
+   +(!now?'Fixed: a guide line can be drawn now.':now==='world'?'This room has no way out to the world map with a place, so the line has nowhere to go.':now==='place'?'The door that way has no place yet: click where it is.'
+     :now==='oneway'?'The rooms are joined only through a one-way door somewhere on the way (a door back exists, not one forward). If the game has a way through, add the missing door; if it really is one-way, Looks fine.'
+     :'No door leads there, not even a few rooms on. Add the missing door, or Looks fine if a scene takes the party there.')
+   +' '+(XD.HNOTE[q[3]]||'').replace(/^\?/,'').slice(0,140)+(RQOK[rqKey(q)]?' · checked':'');return}
+ if(q&&rqK==='wmx'){var pl=exitsOf(q[0]).filter(function(e){return e[2]===-1&&e[0]!=null});
+  $('rqDone').textContent=L.filter(function(x){return RQOK[rqKey(x)]||rgWorld(exitsOf,x[0])}).length+' done';
+  $('rqWhy').textContent='Room '+q[0]+' '+(roomName(q[0])||areaOf(q[0])||'')+': '+(pl.length?'placed at '+pl[0][0]+', '+pl[0][1]+'. Done.':'its way out to the world map has no place, so when a hint leaves this area the app’s line has nowhere to point. The way out is selected: click where the party walks off the map (or type X and Z).')+(RQOK[rqKey(q)]?' · checked':'');return}
  if(q&&(q[1]==='spot'||q[1]==='door')){var dn=L.filter(function(x){return RQOK[rqKey(x)]}).length;$('rqDone').textContent=dn+' checked';var rn=function(f){return f+' '+(roomName(f)||areaOf(f)||'')};
   if(q[1]==='spot'){var r=XD.SPOTCHK[q[5]];$('rqSnap').disabled=r[7]==null;
    $('rqWhy').innerHTML=esc('Step '+r[0]+', page '+r[1]+' \u00b7 room '+rn(r[2])+' \u00b7 spot '+r[3]+', '+r[4]+' \u00b7 '+(r[5]==='FAR'?'probably wrong':'worth a check'))+'<br>'+esc((XD.HNOTE[r[0]]||'').replace(/^\?/,'').slice(0,160))+'<br>'+(r[7]!=null?esc('Nearest person: #'+r[6]+' at '+r[7]+', '+r[8]+' ('+r[9]+' away)'+(r[10]?': \u201c'+r[10].slice(0,90)+'\u201d':'')):'No person nearby.')+(RQOK[rqKey(q)]?' \u00b7 checked':'')}
@@ -1093,11 +1128,14 @@ function rqShow(){var L=RQ[rqK][1],q=L[rqI];$('rqPos').textContent=(rqI<0?'-':rq
  var d=L.filter(function(q){return RQOK[rqKey(q)]}).length;$('rqDone').textContent=d+' checked';
  $('rqWhy').textContent=q?'Room '+q[0]+' '+(roomName(q[0])||areaOf(q[0])||'')+(typeof q[1]==='string'?': '+(q[1]==='tre'?'treasure':'save or shop')+' at '+q[3]+', '+q[4]+' (several floors there)':': way out #'+q[1]+' to '+exName(q[2]))+(typeof q[1]!=='string'&&q[5]?', '+q[5]+' units from where the game puts you':'')+(RQOK[rqKey(q)]?' · checked':''):'Pick a list, then ▸ to start.'}
 function rqGo(i){var L=RQ[rqK][1];if(!L.length)return;rqI=(i+L.length)%L.length;var q=L[rqI];
+ if(q[1]==='gap'){rqFocus=null;if(!state.edit)$('bEdit').onclick.call($('bEdit'));state.step=Math.max(0,q[3]-1);store('xgv.step',String(state.step));
+  if(cur.f===q[0]){rerun();buildMarks();rqShow()}else{state.keepStep=true;loadRoom(q[0]).then(rqShow)}return}
  if(q[1]==='spot'||q[1]==='door'){rqShow();rqFocus={f:q[0],x:q[3],z:q[4]};
   if(q[1]==='spot'){if(state.edit)$('bEdit').onclick.call($('bEdit'));if(!state.hedit)$('hEdit').onclick.call($('hEdit'));hLoad(q[2]);state.step=Math.max(0,q[2]-1);store('xgv.step',String(state.step))}
   else if(!state.edit)$('bEdit').onclick.call($('bEdit'));
   if(cur.f===q[0]){rerun();buildMarks()}else{state.keepStep=true;loadRoom(q[0])}return}
- rqWant=q;if(!state.edit)$('bEdit').onclick.call($('bEdit'));rqShow();
+ /* edit mode first: switching it on redraws the marks, which would use up rqWant in the room still open and then lose the selection */
+ if(!state.edit)$('bEdit').onclick.call($('bEdit'));rqWant=q;rqShow();
  if(cur.f===q[0]){exRoom=null;buildMarks()}else{state.keepStep=true;loadRoom(q[0])}}
 $('rqSel').onchange=function(){rqK=this.value;rqI=-1;rqShow()};
 $('rqPrev').onclick=function(){rqGo(rqI-1)};$('rqNext').onclick=function(){rqGo(rqI+1)};
@@ -1109,7 +1147,13 @@ $('rqSnap').onclick=function(){var q=RQ[rqK][1][rqI];if(!q||q[1]!=='spot')return
  E.path.forEach(function(pr,pi){if(done||pr[0]!==r[2])return;pr[1].forEach(function(sp,si){if(!done&&Math.abs(sp[0]-r[3])<2&&Math.abs(sp[1]-r[4])<2){pr[1][si]=[r[7],r[8]];done=true}})});
  if(!done){$('rqWhy').textContent='That spot has already been changed in your hint edits.';return}hApply(r[0]);hSave();hPath();buildMarks();rqDone()};
 $('rqAccept').onclick=function(){var q=RQ[rqK][1][rqI];if(!q||q[1]!=='door')return;if(cur.f!==q[0])return;suggAccept([q[0],q[2],q[3],q[4]]);rqDone()};
+/* Add door (route gaps): a way out from this room to the hint's next room. Where the game puts the party coming in from that room is
+   the likely place (ARR, from exit_check.js); without one it's added with no place and selected, to click into position. */
+$('rqGapAdd').onclick=function(){var q=RQ[rqK][1][rqI];if(!q||q[1]!=='gap'||cur.f!==q[0])return;var s=XD.ARR[q[0]]&&XD.ARR[q[0]][q[2]];
+ if(s&&s.length)suggAccept([q[0],q[2],s[0][0],s[0][1]]);else{var A=exEditable(q[0]);A.push([null,null,q[2]]);exSel=A.length-1;mkSel=null;exSave();buildMarks()}
+ rqShow();$('rqWhy').textContent+=s&&s.length?' · Added at the spot where the game puts you coming from there (pink ring): move it if the door is elsewhere.':' · Added with no place: click where it is.'};
 rqFill();
+window.__RVQ=function(){return {RQ:RQ,rqGo:rqGo,rqShow:rqShow,exSet:exSet,exitsOf:exitsOf,EXED:EXED,ARR:XD.ARR,state:state,f:cur&&cur.f,exSel:exSel,disc:!!D}};   /* for test_route_lists.py */
 $('dropSave').onclick=function(){state.saveVars=null;state.vars={};state.party=[0];$('saveNote').textContent='Without a save, every flag starts off and only the story step changes who is here.';rerun();buildMarks()};
 /* ---------- undo / redo (Jack, 21 Oct) ----------
    Every edit (ways out, treasure, saves and shops, hint notes, rooms and spots) is saved in this browser as it is made; each save

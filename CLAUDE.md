@@ -61,6 +61,11 @@ What changed in each build: `docs/Release notes 2.0.md`.
 - The start screen says "USE RETROARCH NIGHTLY". Stable works too, but its Network Commands setting doesn't stick on restart for
   Jack, so Nightly stays the advice.
 - 34 hint page breaks with no way through doors. Run the gap check in `docs/SETUP.md` to list them.
+  - From 25 Oct the room viewer's Check list has them as two lists, worked out live from the doors as edited: "Route: world-map
+    ways out with no place" (25 rooms, Lahan among them) and "Route: hint pages with no way through doors" (32: 17 no door,
+    9 only through a one-way door, 6 no world-map way out with a place). Add door puts the door where the game lands the party
+    coming from that room (ARR). Same rules as Xenogears Dual's `tests/scripts/route_audit.py`; `tools/room_viewer/test_route_lists.py`
+    checks the lists headless with a disc.
   - Real missing doors in rooms: 134, 199, 262, 297, 319, 312, Babel 411/408, Shevat 423/449/450/445, 504, 537, 529.
   - The rest are world-map/ship links or cutscene rooms.
 
