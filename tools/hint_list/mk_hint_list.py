@@ -29,7 +29,7 @@ def pages(text, path):   # showHint: page n = sentence n and room n, the last of
              path[min(i, len(path) - 1)][1] if path else [], i < len(s), i < len(path)] for i in range(n)]
 hints, used = [], set()
 for k in sorted(map(int, Hn['HINTS'])):
-    s = str(k); note = Hn['HNOTE'].get(s, ''); unchecked = note.startswith('?'); text = note[1:] if unchecked else note
+    s = str(k); note = Hn['HNOTE'].get(s, '')
     path = Hn['HPATH'].get(s) or []
     for r in path: used.add(r[0])
     for r in Hn['HINTS'][s]: used.add(r[0])
@@ -37,13 +37,18 @@ for k in sorted(map(int, Hn['HINTS'])):
     for sp in SP.get(s, []):
         e = {'when': sp[0], 'dropS': sp[1], 'dropP': sp[2]}
         if len(sp) > 3:
-            t2 = sp[3]; e['unchecked'] = t2.startswith('?'); e['text'] = t2[1:] if e['unchecked'] else t2; e['path'] = sp[4] if len(sp) > 4 else []
+            e['note'] = sp[3]; e['path'] = sp[4] if len(sp) > 4 else []
             for r in e['path']: used.add(r[0])
-            e['pages'] = pages(e['text'], e['path'])
         splits.append(e)
-    hints.append({'k': k, 'text': text, 'unchecked': unchecked, 'pages': pages(text, path),
+    # note and path exactly as hints.js has them (the page works out the pages, so edits preview the same way)
+    hints.append({'k': k, 'note': note, 'path': path,
                   'set': [[r[0], r[1]] + ([r[2], r[3]] if len(r) > 3 else []) for r in Hn['HINTS'][s]], 'splits': splits})
-rooms = {f: [ROOMS.get(str(f)) or '', area(f)] for f in sorted(used) if f >= 0}
+# every room, so a room typed in while editing gets its name and area too
+rooms = {int(f): [n, area(int(f))] for f, n in ROOMS.items()}
+for f in used:
+    if f >= 0 and f not in rooms: rooms[f] = ['', area(f)]
+for f in range(730):
+    if f not in rooms and area(f): rooms[f] = ['', area(f)]
 try:
     rev = subprocess.run(['git', '-C', H, 'log', '-1', '--format=%h %cs', '--', '../../app/www'], capture_output=True, text=True).stdout.strip()
 except Exception: rev = ''
@@ -52,5 +57,6 @@ src = open(os.path.join(H, 'hint_list_src.html'), encoding='utf-8').read()
 out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(H, 'xenogears-story-hints.html')
 js = json.dumps(D, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
 open(out, 'w', encoding='utf-8').write(src.replace('/*HINT_DATA*/null', js))
-np = sum(len(h['pages']) for h in hints); ns = sum(1 for h in hints for p in h['pages'] if p[4] and p[2])
-print('hints', len(hints), 'pages', np, 'pages with a spot', ns, 'unchecked', sum(h['unchecked'] for h in hints), 'rooms', len(rooms), '->', out, os.path.getsize(out), 'bytes')
+pg = [pages(h['note'].lstrip('?'), h['path']) for h in hints]
+print('hints', len(hints), 'pages', sum(map(len, pg)), 'pages with a spot', sum(1 for P in pg for p in P if p[4] and p[2]),
+      'unchecked', sum(h['note'].startswith('?') for h in hints), 'rooms', len(rooms), '->', out, os.path.getsize(out), 'bytes')

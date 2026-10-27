@@ -3,19 +3,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a working list. Sticky toolbar (view, search, step jump, filters) over either the hint cards (number rail on the left,
-   text and page table on the right) or the story-step table grouped by chapter. Same family as the Room Viewer. */
+/* Layout: a working list. Sticky toolbar (view, search, step jump, filters, export) over either the hint cards (number rail on the
+   left, text and page table on the right; a card opens into an editor in place) or the story-step table grouped by chapter.
+   Same family as the Room Viewer. */
 :root{
  --bg:#eef0f4; --panel:#ffffff; --ink:#1b202b; --dim:#5e6778; --line:#d6dae3; --soft:#f5f6f9;
  --gold:#8a6420; --gold-bg:#f6ecd8; --green:#23793a; --green-bg:#e2f2e5; --warn:#94560a; --warn-bg:#fbeedb; --flash:#fff3c9;
+ --edit:#2f5fa8; --edit-bg:#e4ecf8; --bad:#b3261e;
  --display:"Saira Condensed","Arial Narrow",sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
  --bg:#0f1218; --panel:#161b24; --ink:#dfe3ea; --dim:#8c95a6; --line:#283041; --soft:#1b212c;
- --gold:#d7a54a; --gold-bg:#2a2414; --green:#82d391; --green-bg:#16281b; --warn:#e9a23b; --warn-bg:#2b2112; --flash:#3a3016; color-scheme:dark}}
+ --gold:#d7a54a; --gold-bg:#2a2414; --green:#82d391; --green-bg:#16281b; --warn:#e9a23b; --warn-bg:#2b2112; --flash:#3a3016;
+ --edit:#8fb3f0; --edit-bg:#18243a; --bad:#ff8a80; color-scheme:dark}}
 :root[data-theme="dark"]{
  --bg:#0f1218; --panel:#161b24; --ink:#dfe3ea; --dim:#8c95a6; --line:#283041; --soft:#1b212c;
- --gold:#d7a54a; --gold-bg:#2a2414; --green:#82d391; --green-bg:#16281b; --warn:#e9a23b; --warn-bg:#2b2112; --flash:#3a3016; color-scheme:dark}
+ --gold:#d7a54a; --gold-bg:#2a2414; --green:#82d391; --green-bg:#16281b; --warn:#e9a23b; --warn-bg:#2b2112; --flash:#3a3016;
+ --edit:#8fb3f0; --edit-bg:#18243a; --bad:#ff8a80; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
@@ -31,22 +35,28 @@ h1 span{color:var(--gold)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
 .seg button{border:0;border-radius:0;background:transparent;padding:6px 12px}
 .seg button[aria-pressed="true"]{background:var(--gold);color:var(--panel)}
-button,input,select{font:500 13px var(--body);color:var(--ink)}
-button{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
-button:hover{border-color:var(--gold)}
-button:focus-visible,input:focus-visible,summary:focus-visible,tr[tabindex]:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
-input[type=search],input[type=number]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-width:0}
+button,input,select,textarea{font:500 13px var(--body);color:var(--ink)}
+button,.filebtn{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover,.filebtn:hover{border-color:var(--gold)}
+button:disabled{opacity:.45;cursor:default;border-color:var(--line)}
+button.primary{background:var(--gold);border-color:var(--gold);color:var(--panel);font-weight:600}
+.filebtn{position:relative;display:inline-flex}.filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,tr[tabindex]:focus-visible,.filebtn:focus-within{outline:2px solid var(--gold);outline-offset:1px}
+input[type=search],input[type=number],input[type=text],textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-width:0}
 #q{flex:1 1 220px}
 #jump{width:84px}
+.sp{flex:1}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12px}
 .chip[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-bg);color:var(--gold)}
 .note{color:var(--dim);font-size:12px}
 #msg{min-height:1.2em}
+#saveState.bad{color:var(--bad)}
 main{display:flex;flex-direction:column;gap:12px;padding-top:14px}
 /* hint cards */
 .hint{display:grid;grid-template-columns:128px minmax(0,1fr);gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;scroll-margin-top:150px}
 .hint.flash{background:var(--flash);transition:background .8s}
+.hint.editing{border-color:var(--edit);box-shadow:0 0 0 1px var(--edit)}
 .hk{display:flex;flex-direction:column;gap:2px}
 .hk .num{font:700 34px/1 var(--display);color:var(--gold);font-variant-numeric:tabular-nums}
 .hk .lbl{font:600 10px var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
@@ -59,7 +69,9 @@ main{display:flex;flex-direction:column;gap:12px;padding-top:14px}
 .pill.ok{background:var(--green-bg);color:var(--green)}
 .pill.no{background:var(--warn-bg);color:var(--warn)}
 .pill.n{background:var(--soft);color:var(--dim)}
-.text{margin:0;max-width:78ch;font-size:15px}
+.pill.ed{background:var(--edit-bg);color:var(--edit)}
+.meta .edbtn{margin-left:auto;padding:3px 10px;font-size:12px}
+.text{margin:0;max-width:78ch;font-size:15px;white-space:pre-line}
 .text.un{color:var(--dim)}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
 table{border-collapse:collapse;width:100%;font-size:13px}
@@ -79,6 +91,19 @@ details.more ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:col
 .split{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
 .split h3{font:600 12px var(--body);margin:0}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* editor */
+.ed{display:flex;flex-direction:column;gap:10px}
+.ed textarea{width:100%;min-height:72px;font:15px/1.45 var(--body);resize:vertical}
+.ed .lab{font:600 10px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.prow{display:grid;grid-template-columns:22px 86px minmax(110px,1fr) minmax(150px,1.3fr) auto;gap:6px;align-items:center}
+.prow .pn{font:12px var(--mono);color:var(--dim);text-align:right}
+.prow .rn{font-size:12px;color:var(--dim);min-width:0;overflow-wrap:anywhere}
+.prow .rn.badv{color:var(--bad)}
+.prow input.badv{border-color:var(--bad)}
+.prow .btns{display:flex;gap:4px}
+.prow .btns button{padding:3px 8px;font-size:12px}
+.ed .err{color:var(--bad);font-size:12px;min-height:1em}
+.check{display:inline-flex;gap:6px;align-items:center;font-size:13px}
 /* story steps table */
 #stepsView .tbl{background:var(--panel)}
 #stepsView td{white-space:nowrap}
@@ -89,14 +114,15 @@ details.more ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:col
 #stepsView tr.flash td{background:var(--flash)}
 .hl{color:var(--gold);font-weight:600}
 .empty{padding:30px;text-align:center;color:var(--dim)}
-@media (max-width:640px){.bar{position:static}.hint{grid-template-columns:1fr;gap:6px}.hk{flex-direction:row;align-items:baseline;gap:8px}.hk .cov{margin-top:0}h1{font-size:26px}}
+@media (max-width:640px){.bar{position:static}.hint{grid-template-columns:1fr;gap:6px}.hk{flex-direction:row;align-items:baseline;gap:8px}.hk .cov{margin-top:0}h1{font-size:26px}
+ .prow{grid-template-columns:22px 76px minmax(0,1fr)}.prow .sp2{grid-column:2/-1}.prow .btns{grid-column:2/-1}}
 @media (prefers-reduced-motion:reduce){.hint.flash{transition:none}}
 </style>
 
 <div class="wrap">
  <header class="top">
   <h1>Xenogears <span>Story Hints</span></h1>
-  <p class="lede">Every story step and the hint Xenogears Link shows for it. The app shows the hint whose step is the next one above the story step you're on, one page at a time: each page has one sentence of the hint and one room, with its green spot.</p>
+  <p class="lede">Every story step and the hint Xenogears Link shows for it. The app shows the hint whose step is the next one above the story step you're on, one page at a time: each page has one sentence of the hint and one room, with its green spot. Edit a hint here, then export the edits for the app.</p>
   <div class="stats" id="stats"></div>
  </header>
  <div class="bar">
@@ -105,7 +131,11 @@ details.more ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:col
    <input type="search" id="q" placeholder="Search text, room, area or chapter" aria-label="Search">
    <label class="note" for="jump">Story step</label><input type="number" id="jump" min="0" max="353" placeholder="0–353"><button id="jumpGo">Go</button>
   </div>
-  <div class="row"><div class="chips" id="filters" role="group" aria-label="Show"></div><span class="note" id="msg"></span></div>
+  <div class="row"><div class="chips" id="filters" role="group" aria-label="Show"></div><span class="sp"></span>
+   <span class="note" id="saveState"></span>
+   <label class="filebtn" id="impBtn" title="Load a hint edits file (from this page or the Room Viewer) into your edits">Import<input type="file" id="imp" accept=".json"></label>
+   <button id="exp" class="primary" disabled>Export edits</button></div>
+  <div class="row"><span class="note" id="msg"></span></div>
  </div>
  <main id="hintsView"></main>
  <main id="stepsView" hidden></main>
@@ -117,26 +147,49 @@ details.more ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:col
 var D=/*HINT_DATA*/null;
 var $=function(id){return document.getElementById(id)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
-var H=D.hints,CH=D.chapters,byK={};H.forEach(function(h){byK[h.k]=h});
-/* the steps each hint covers: from the previous hint step up to one below its own (the app: first hint step above the story step) */
-H.forEach(function(h,i){h.from=i?H[i-1].k:0;h.to=h.k-1});
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}}
+var H=D.hints,CH=D.chapters,byK={};H.forEach(function(h,i){byK[h.k]=h;h.from=i?H[i-1].k:0;h.to=h.k-1});
 function chapterOf(s){var n='';for(var i=0;i<CH.length&&CH[i][0]<=s;i++)n=CH[i][1];return n}
 function chaptersIn(a,b){var o=[];for(var s=a;s<=b;s++){var c=chapterOf(s);if(o.indexOf(c)<0)o.push(c)}return o}
 function hintFor(s){for(var i=0;i<H.length;i++)if(H[i].k>s)return H[i];return null}
+function knownRoom(f){return f===-1||(f>=0&&f<730&&!!D.rooms[f])}
 function roomName(f){if(f==null)return '';if(f<0)return 'World map';var r=D.rooms[f]||['',''];return r[0]||(r[1]?r[1]+' '+f:'Room '+f)}
 function areaName(f){if(f==null||f<0)return f<0?'World map':'';return (D.rooms[f]||['',''])[1]}
 function xz(p){return p[0]+', '+p[1]}
+/* "Bedrooms · Citan's House", or just "Mountain Path" when the room and its area share the name */
+function roomLabel(f){var n=roomName(f),a=f>=0?areaName(f):'';return a&&a!==n?n+' · '+a:n}
+/* the app's own rules (index.html hintParts / showHint): sentences split at ". ", page n = sentence n and room n, the last of
+   either carrying on; a note starting "?" is not yet checked in game */
+function parts(t){if(!t)return [];var o=[],cur='';t.split(/(\.\s+)/).forEach(function(x){cur+=x;if(/\.\s+$/.test(x)){o.push(cur.trim());cur=''}});if(cur.trim())o.push(cur.trim());return o}
+function pagesOf(text,path){var s=parts(text),n=Math.max(s.length,path.length,1),o=[];
+ for(var i=0;i<n;i++){var r=path.length?path[Math.min(i,path.length-1)]:null;o.push([s.length?s[Math.min(i,s.length-1)]:'',r?r[0]:null,r?r[1]:[],i<s.length,i<path.length])}return o}
+function splitNote(n){n=n||'';var un=n.charAt(0)==='?';return {text:un?n.slice(1):n,unchecked:un}}
 
-var view=store('xsh.view')==='steps'?'steps':'hints',filt=store('xsh.filt')||'all',q='';
-var FILTERS=[['all','All'],['un','Not checked in game'],['ok','Checked in game'],['world','Has a world map page'],['nospot','Has a page with no spot'],['split','Changes partway']];
-function pass(h){
- if(filt==='un'&&!h.unchecked)return false;if(filt==='ok'&&h.unchecked)return false;
- if(filt==='world'&&!h.pages.some(function(p){return p[1]===-1}))return false;
- if(filt==='nospot'&&!h.pages.some(function(p){return p[4]&&!p[2].length}))return false;
+/* ---------- edits: {step: {note, path}}, kept in the artifact's database on claude.ai, else in this browser ---------- */
+var EDITS={},store='local',dbc=null,writable=true,editK=null,draft=null;
+try{EDITS=JSON.parse(ls('xsh.edits')||'{}')||{}}catch(e){EDITS={}}
+function cur(h){var e=EDITS[h.k];return e?{note:e.note,path:e.path}:{note:h.note,path:h.path}}
+function view_(h){var c=cur(h),s=splitNote(c.note);return {text:s.text,unchecked:s.unchecked,path:c.path,pages:pagesOf(s.text,c.path),edited:!!EDITS[h.k]}}
+function same(a,b){return JSON.stringify(a)===JSON.stringify(b)}
+function editCount(){return Object.keys(EDITS).length}
+function stateLine(){var n=editCount(),where=store==='db'?'saved on claude.ai':'saved in this browser only';
+ $('saveState').className='note';$('saveState').textContent=n?n+' hint'+(n>1?'s':'')+' edited, '+where:(store==='db'?'Edits are saved on claude.ai':'Edits are saved in this browser');
+ $('exp').disabled=!n;$('exp').textContent=n?'Export edits ('+n+')':'Export edits'}
+async function putEdit(k,val){   /* val null = back to the original */
+ var h=byK[k];if(val&&same(val,{note:h.note,path:h.path}))val=null;
+ if(store==='db'){var ref=dbc.doc(String(k));if(val)await ref.set({note:val.note,path:val.path,updated:new Date().toISOString()});else await ref.delete()}
+ if(val)EDITS[k]={note:val.note,path:val.path};else delete EDITS[k];
+ if(store!=='db')ls('xsh.edits',JSON.stringify(EDITS))}
+
+var view=ls('xsh.view')==='steps'?'steps':'hints',filt=ls('xsh.filt')||'all',q='';
+var FILTERS=[['all','All'],['edited','Edited'],['un','Not checked in game'],['ok','Checked in game'],['world','Has a world map page'],['nospot','Has a page with no spot'],['split','Changes partway']];
+function pass(h){var v=view_(h);
+ if(filt==='edited'&&!v.edited)return false;if(filt==='un'&&!v.unchecked)return false;if(filt==='ok'&&v.unchecked)return false;
+ if(filt==='world'&&!v.pages.some(function(p){return p[1]===-1}))return false;
+ if(filt==='nospot'&&!v.pages.some(function(p){return p[4]&&!p[2].length}))return false;
  if(filt==='split'&&!h.splits.length)return false;
  if(!q)return true;
- var hay=[h.k,h.text,chaptersIn(h.from,h.to).join(' ')].concat(h.pages.map(function(p){return p[1]==null?'':p[1]+' '+roomName(p[1])+' '+areaName(p[1])})).concat(h.splits.map(function(s){return s.text||''})).join(' ').toLowerCase();
+ var hay=[h.k,v.text,chaptersIn(h.from,h.to).join(' ')].concat(v.path.map(function(p){return p[0]+' '+roomName(p[0])+' '+areaName(p[0])})).concat(h.splits.map(function(s){return s.note||''})).join(' ').toLowerCase();
  return q.split(/\s+/).every(function(w){return hay.indexOf(w)>=0})}
 
 function pagesTable(pages){
@@ -148,61 +201,148 @@ function pagesTable(pages){
    +'<td class="room'+(p[4]?'':' carry')+'">'+(f==null?'':'<span class="mono">'+f+'</span> '+esc(roomName(f)))+'</td><td>'+esc(areaName(f))+'</td><td class="xz">'+spot+'</td>'
    +'<td>'+(copy?'<button class="cp" data-copy="'+esc(copy)+'" title="Copy as: room (x, z)">Copy</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div>'}
 
+function rail(h){return '<div class="hk"><span class="lbl">Hint step</span><span class="num">'+h.k+'</span><span class="cov">story steps '+(h.from===h.to?h.from:h.from+'–'+h.to)+'</span></div>'}
 function card(h){
- var ch=chaptersIn(h.from,h.to),np=h.pages.length,ns=h.pages.filter(function(p){return p[4]&&p[2].length}).length;
- var o='<article class="hint" id="h'+h.k+'"><div class="hk"><span class="lbl">Hint step</span><span class="num">'+h.k+'</span><span class="cov">story steps '+(h.from===h.to?h.from:h.from+'–'+h.to)+'</span></div><div class="hb">'
+ if(editK===h.k)return '<article class="hint editing" id="h'+h.k+'">'+rail(h)+'<div class="hb">'+editor(h)+'</div></article>';
+ var v=view_(h),ch=chaptersIn(h.from,h.to),np=v.pages.length,ns=v.pages.filter(function(p){return p[4]&&p[2].length}).length;
+ var o='<article class="hint" id="h'+h.k+'">'+rail(h)+'<div class="hb">'
  +'<div class="meta">'+ch.map(function(c){return '<span class="ch">'+esc(c)+'</span>'}).join('')
- +(h.unchecked?'<span class="pill no">Not checked in game</span>':'<span class="pill ok">Checked in game</span>')
- +'<span class="pill n">'+np+' page'+(np>1?'s':'')+' · '+ns+' spot'+(ns===1?'':'s')+'</span></div>'
- +'<p class="text'+(h.unchecked?' un':'')+'">'+esc(h.text||'(no text)')+'</p>'+pagesTable(h.pages);
+ +(v.unchecked?'<span class="pill no">Not checked in game</span>':'<span class="pill ok">Checked in game</span>')
+ +'<span class="pill n">'+np+' page'+(np>1?'s':'')+' · '+ns+' spot'+(ns===1?'':'s')+'</span>'+(v.edited?'<span class="pill ed">Edited</span>':'')
+ +(writable?'<button class="edbtn" data-edit="'+h.k+'">Edit</button>':'')+'</div>'
+ +'<p class="text'+(v.unchecked?' un':'')+'">'+esc(v.text||'(no text)')+'</p>'+pagesTable(v.pages);
  h.splits.forEach(function(s,i){
   o+='<div class="split"><h3>Part '+(i+2)+': once '+s.when.map(function(w){return 'switch <span class="mono">'+w[0]+'</span> bit <span class="mono">0x'+w[1].toString(16).toUpperCase()+'</span>'}).join(' and ')+' is set</h3>';
-  if(s.text!=null)o+='<p class="text'+(s.unchecked?' un':'')+'">'+esc(s.text)+(s.unchecked?' <span class="pill no">Not checked in game</span>':'')+'</p>'+pagesTable(s.pages);
+  if(s.note!=null){var sn=splitNote(s.note);o+='<p class="text'+(sn.unchecked?' un':'')+'">'+esc(sn.text)+(sn.unchecked?' <span class="pill no">Not checked in game</span>':'')+'</p>'+pagesTable(pagesOf(sn.text,s.path))}
   else o+='<p class="note">The app drops '+(s.dropS.length?'sentence'+(s.dropS.length>1?'s ':' ')+s.dropS.map(function(x){return x+1}).join(', '):'no sentences')+(s.dropP.length?' and page'+(s.dropP.length>1?'s ':' ')+s.dropP.map(function(x){return x+1}).join(', '):'')+' (that part is done).</p>';
   o+='</div>'});
  o+='<details class="more"><summary>Where the game’s scripts set story step '+h.k+'</summary><ul>'+h.set.map(function(r){return '<li>Room <span class="mono">'+r[0]+'</span> '+esc(roomName(r[0]))+', script routine <span class="mono">'+r[1]+'</span>'+(r.length>3?', person at <span class="mono">'+r[2]+', '+r[3]+'</span>':', no fixed place')+'</li>'}).join('')+'</ul></details>';
  return o+'</div></article>'}
 
-function renderHints(){var L=H.filter(pass);$('hintsView').innerHTML=L.length?L.map(card).join(''):'<div class="empty">No hint steps match. Clear the search or pick All.</div>';return L.length}
+/* ---------- editor ---------- */
+function spotsText(sp){return sp.map(xz).join('; ')}
+/* "x, z; x, z" -> [[x, z]...]; null if malformed */
+function parseSpots(t){t=String(t||'').trim();if(!t)return [];var out=[];var ok=t.split(/[;\n]+/).every(function(p){p=p.trim();if(!p)return true;var m=/^(-?\d+)\s*[, ]\s*(-?\d+)$/.exec(p);if(!m)return false;out.push([+m[1],+m[2]]);return true});return ok?out:null}
+function startEdit(k){var h=byK[k],c=cur(h),s=splitNote(c.note);editK=k;draft={text:s.text,checked:!s.unchecked,rows:c.path.map(function(r){return {room:String(r[0]),spots:spotsText(r[1])}})};render();
+ var t=document.querySelector('#h'+k+' textarea');if(t)t.focus()}
+function draftVal(){var path=[],bad=null;draft.rows.forEach(function(r,i){var f=parseInt(r.room,10),sp=parseSpots(r.spots);
+  if(!(String(r.room).trim()!==''&&/^-?\d+$/.test(String(r.room).trim())&&knownRoom(f)))bad=bad||'Page '+(i+1)+': room must be 0–729, or -1 for the world map.';
+  else if(sp===null)bad=bad||'Page '+(i+1)+': spots go as x, z with a ; between two spots.';
+  else path.push([f,sp])});
+ return {bad:bad,val:{note:(draft.checked?'':'?')+draft.text.replace(/\s+/g,' ').trim(),path:path}}}
+function editor(h){var r=draftVal(),ch=chaptersIn(h.from,h.to);
+ var o='<div class="ed"><div class="meta">'+ch.map(function(c){return '<span class="ch">'+esc(c)+'</span>'}).join('')+'<span class="pill ed">Editing</span></div>'
+ +'<label class="lab" for="edText">Hint text</label><textarea id="edText" data-f="text">'+esc(draft.text)+'</textarea>'
+ +'<label class="check"><input type="checkbox" id="edChk" data-f="checked"'+(draft.checked?' checked':'')+'> Checked in game (the app shows it in white)</label>'
+ +'<div class="lab">Rooms in order, one per page</div>'
+ +draft.rows.map(function(row,i){var f=parseInt(row.room,10),okR=/^-?\d+$/.test(String(row.room).trim())&&knownRoom(f),okS=parseSpots(row.spots)!==null;
+   return '<div class="prow"><span class="pn">'+(i+1)+'</span><input type="text" inputmode="numeric" id="edRoom'+i+'" data-r="'+i+'" data-f="room" value="'+esc(row.room)+'" aria-label="Room for page '+(i+1)+'" class="'+(okR?'':'badv')+'">'
+   +'<span class="rn'+(okR?'':' badv')+'" id="edRn'+i+'">'+(okR?esc(roomLabel(f)):'Unknown room')+'</span>'
+   +'<input type="text" class="sp2'+(okS?'':' badv')+'" id="edSp'+i+'" data-r="'+i+'" data-f="spots" value="'+esc(row.spots)+'" placeholder="x, z   (blank: the room only)" aria-label="Green spots for page '+(i+1)+'">'
+   +'<span class="btns"><button data-mv="'+i+'" data-d="-1" aria-label="Move page '+(i+1)+' up"'+(i?'':' disabled')+'>↑</button><button data-mv="'+i+'" data-d="1" aria-label="Move page '+(i+1)+' down"'+(i<draft.rows.length-1?'':' disabled')+'>↓</button><button data-rm="'+i+'" aria-label="Remove page '+(i+1)+'">✕</button></span></div>'}).join('')
+ +'<div class="row"><button data-add="room">+ Room</button><button data-add="world">+ World map</button></div>'
+ +'<div class="lab">How the app will show it</div><div id="edPrev">'+pagesTable(pagesOf(draft.text.replace(/\s+/g,' ').trim(),r.val.path))+'</div>'
+ +'<div class="err" id="edErr">'+esc(r.bad||'')+'</div>'
+ +'<div class="row"><button class="primary" data-act="save">Save</button><button data-act="cancel">Cancel</button>'+(EDITS[h.k]?'<button data-act="revert" title="Back to the text and rooms in Link">Revert to original</button>':'')+'</div></div>';
+ return o}
+function refreshPreview(){var r=draftVal();$('edPrev').innerHTML=pagesTable(pagesOf(draft.text.replace(/\s+/g,' ').trim(),r.val.path));$('edErr').textContent=r.bad||'';
+ draft.rows.forEach(function(row,i){var f=parseInt(row.room,10),okR=/^-?\d+$/.test(String(row.room).trim())&&knownRoom(f),okS=parseSpots(row.spots)!==null,rn=$('edRn'+i);
+  $('edRoom'+i).classList.toggle('badv',!okR);$('edSp'+i).classList.toggle('badv',!okS);
+  rn.classList.toggle('badv',!okR);rn.textContent=okR?roomLabel(f):'Unknown room'})}
+async function edAct(a){var k=editK;
+ if(a==='cancel'){editK=null;draft=null;render();flash($('h'+k),true);return}
+ var val=null;if(a==='save'){var r=draftVal();if(r.bad){$('edErr').textContent=r.bad;return}val=r.val}
+ try{await putEdit(k,val);editK=null;draft=null;render();stateLine();flash($('h'+k),true);$('msg').textContent=a==='save'?(EDITS[k]?'Hint step '+k+' saved.':'Hint step '+k+' matches Link again, so it has no edit.'):'Hint step '+k+' is back to Link’s text and rooms.'}
+ catch(e){$('edErr').textContent=e&&e.code==='invalid_argument'?'This view can’t save edits.':e&&e.code==='quota_exceeded'?'The page’s storage is full: export your edits, then revert some.':'Couldn’t save ('+(e&&e.code||'error')+'). Try again.'}}
+
+function renderHints(){var L=H.filter(function(h){return h.k===editK||pass(h)});$('hintsView').innerHTML=L.length?L.map(card).join(''):'<div class="empty">No hint steps match. Clear the search or pick All.</div>';return L.length}
 function renderSteps(){
- var o='',cur=null,n=0;
+ var o='',c0=null,n=0;
  for(var s=0;s<D.steps;s++){var h=hintFor(s),c=chapterOf(s);
   if(filt!=='all'||q){if(!h||!pass(h))continue}
-  if(c!==cur){cur=c;var end=s;while(end+1<D.steps&&chapterOf(end+1)===c)end++;o+='<tr class="chap"><td colspan="4">'+esc(c)+' · story steps '+(s===end?s:s+'–'+end)+'</td></tr>'}
-  var p=h&&h.pages[0];n++;
-  o+='<tr class="step" id="s'+s+'" tabindex="0" data-h="'+(h?h.k:'')+'"><td class="id">'+s+'</td><td class="id">'+(h?'<span class="hl">'+h.k+'</span>':'none')+'</td>'
-   +'<td>'+(p&&p[1]!=null?'<span class="mono">'+p[1]+'</span> '+esc(roomName(p[1])):'')+'</td><td class="t">'+(h?esc(h.pages[0][0]||h.text):'Nothing more to point to.')+'</td></tr>'}
+  if(c!==c0){c0=c;var end=s;while(end+1<D.steps&&chapterOf(end+1)===c)end++;o+='<tr class="chap"><td colspan="4">'+esc(c)+' · story steps '+(s===end?s:s+'–'+end)+'</td></tr>'}
+  var v=h?view_(h):null,p=v&&v.pages[0];n++;
+  o+='<tr class="step" id="s'+s+'" tabindex="0" data-h="'+(h?h.k:'')+'"><td class="id">'+s+'</td><td class="id">'+(h?'<span class="hl">'+h.k+'</span>'+(v.edited?' <span class="pill ed">Edited</span>':''):'none')+'</td>'
+   +'<td>'+(p&&p[1]!=null?'<span class="mono">'+p[1]+'</span> '+esc(roomName(p[1])):'')+'</td><td class="t">'+(h?esc(p[0]||v.text):'Nothing more to point to.')+'</td></tr>'}
  $('stepsView').innerHTML=n?'<div class="tbl"><table><thead><tr><th>Story step</th><th>Hint step</th><th>First room</th><th>First page says</th></tr></thead><tbody>'+o+'</tbody></table></div>':'<div class="empty">No story steps match. Clear the search or pick All.</div>';return n}
+function stats(){var np=0,ns=0,un=0;H.forEach(function(h){var v=view_(h);np+=v.pages.length;ns+=v.pages.filter(function(p){return p[4]&&p[2].length}).length;if(v.unchecked)un++});
+ $('stats').innerHTML='<span><b>'+D.steps+'</b> story steps</span><span><b>'+H.length+'</b> hint steps</span><span><b>'+np+'</b> pages</span><span><b>'+ns+'</b> green spots</span><span><b>'+un+'</b> not checked in game</span><span>Link data '+esc(D.source||'')+'</span>'}
 function render(){
  $('filters').innerHTML=FILTERS.map(function(f){return '<button class="chip" data-f="'+f[0]+'" aria-pressed="'+(filt===f[0])+'">'+f[1]+'</button>'}).join('');
  $('vHints').setAttribute('aria-pressed',view==='hints');$('vSteps').setAttribute('aria-pressed',view==='steps');
  $('hintsView').hidden=view!=='hints';$('stepsView').hidden=view!=='steps';
- var n=view==='hints'?renderHints():renderSteps();
- $('msg').textContent=(filt!=='all'||q)?n+(view==='hints'?' hint steps':' story steps')+' shown':''}
+ var n=view==='hints'?renderHints():renderSteps();stats();
+ if(filt!=='all'||q)$('msg').textContent=n+(view==='hints'?' hint steps':' story steps')+' shown'}
 
 /* scroll the entry to just below the toolbar (sticky on wide screens), then highlight it */
-function flash(el){if(!el)return;el.classList.add('flash');var bar=document.querySelector('.bar'),off=getComputedStyle(bar).position==='sticky'?bar.offsetHeight+12:12;
- window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-off,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});setTimeout(function(){el.classList.remove('flash')},1600)}
-function openHint(k){if(view!=='hints'||!document.getElementById('h'+k)){view='hints';filt='all';q='';$('q').value='';store('xsh.view',view);store('xsh.filt',filt);render()}flash($('h'+k))}
+function flash(el,quiet){if(!el)return;if(!quiet)el.classList.add('flash');var bar=document.querySelector('.bar'),off=getComputedStyle(bar).position==='sticky'?bar.offsetHeight+12:12;
+ var top=el.getBoundingClientRect().top;if(quiet&&top>off&&top<innerHeight-80)return;
+ window.scrollTo({top:top+window.scrollY-off,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ setTimeout(function(){el.classList.remove('flash')},1600)}
+function openHint(k){if(view!=='hints'||!document.getElementById('h'+k)){view='hints';filt='all';q='';$('q').value='';ls('xsh.view',view);ls('xsh.filt',filt);render()}flash($('h'+k))}
 function jump(){var s=parseInt($('jump').value,10);if(!(s>=0&&s<D.steps)){$('msg').textContent='Type a story step from 0 to '+(D.steps-1)+'.';return}
  var h=hintFor(s);if(view==='steps'){filt='all';q='';$('q').value='';render();flash($('s'+s))}else if(h)openHint(h.k);
  $('msg').textContent='Story step '+s+' ('+chapterOf(s)+') shows '+(h?'hint step '+h.k+'.':'no hint: nothing more to point to.')}
 
-$('vHints').onclick=function(){view='hints';store('xsh.view',view);render()};
-$('vSteps').onclick=function(){view='steps';store('xsh.view',view);render()};
-$('filters').onclick=function(e){var b=e.target.closest('[data-f]');if(!b)return;filt=b.getAttribute('data-f');store('xsh.filt',filt);render()};
+/* ---------- export / import: the Room Viewer's hint edits format, which tools/app/import_hints.js reads ---------- */
+function exportJson(){var steps={};Object.keys(EDITS).map(Number).sort(function(a,b){return a-b}).forEach(function(k){steps[k]={note:EDITS[k].note,path:EDITS[k].path}});
+ return JSON.stringify({kind:'xenogears hint edits',from:'Xenogears Story Hints',exported:new Date().toISOString(),steps:steps},null,1)}
+async function doExport(){var data=exportJson(),name='Xenogears hint edits '+new Date().toISOString().slice(0,10)+'.json',dl=null;
+ try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){dl=null}
+ if(dl){try{await dl.save({filename:name,data:data});$('msg').textContent='Saved '+name+'. Send it to Claude, or run tools/app/import_hints.js on it.'}
+  catch(e){$('msg').textContent=e&&e.code==='declined'?'Export cancelled.':e&&e.code==='rate_limited'?'A save is already waiting for an answer.':'Couldn’t save the file here ('+(e&&e.code||'error')+').'}return}
+ try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);
+  $('msg').textContent='Saved '+name+'.'}catch(e){$('msg').textContent='Couldn’t save the file here.'}}
+async function doImport(file){var J;try{J=JSON.parse(await file.text())}catch(e){$('msg').textContent='That file isn’t a hint edits file (not JSON).';return}
+ if(!J||typeof J.steps!=='object'){$('msg').textContent='That file has no "steps": it isn’t a hint edits file.';return}
+ var done=0,skip=[],same0=0;
+ for(var k in J.steps){var h=byK[+k],e=J.steps[k];if(!h){skip.push(k);continue}
+  var val={note:String(e.note||'').trim(),path:(e.path||[]).map(function(q){return [q[0]|0,(q[1]||[]).map(function(s){return [Math.round(s[0]),Math.round(s[1])]})]})};
+  if(same(val,cur(h))){same0++;continue}
+  try{await putEdit(+k,val);done++}catch(err){$('msg').textContent='Stopped at hint step '+k+': couldn’t save ('+(err&&err.code||'error')+'). '+done+' imported.';render();stateLine();return}}
+ render();stateLine();$('msg').textContent=done+' hint'+(done===1?'':'s')+' imported'+(same0?', '+same0+' already the same':'')+(skip.length?'; not hint steps here: '+skip.join(', '):'')+'.'}
+
+/* ---------- events ---------- */
+$('vHints').onclick=function(){view='hints';ls('xsh.view',view);render()};
+$('vSteps').onclick=function(){view='steps';ls('xsh.view',view);render()};
+$('filters').onclick=function(e){var b=e.target.closest('[data-f]');if(!b)return;filt=b.getAttribute('data-f');ls('xsh.filt',filt);render()};
 var qt;$('q').oninput=function(){clearTimeout(qt);qt=setTimeout(function(){q=$('q').value.trim().toLowerCase();render()},120)};
 $('jumpGo').onclick=jump;$('jump').onkeydown=function(e){if(e.key==='Enter')jump()};
+$('exp').onclick=doExport;
+$('imp').onchange=function(){var f=this.files&&this.files[0];this.value='';if(f)doImport(f)};
 $('stepsView').onclick=function(e){var tr=e.target.closest('tr.step');if(tr&&tr.getAttribute('data-h'))openHint(+tr.getAttribute('data-h'))};
 $('stepsView').onkeydown=function(e){if(e.key==='Enter'){var tr=e.target.closest('tr.step');if(tr&&tr.getAttribute('data-h'))openHint(+tr.getAttribute('data-h'))}};
+$('hintsView').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+ if(b.hasAttribute('data-edit')){if(editK!=null&&editK!==+b.getAttribute('data-edit')){$('msg').textContent='Save or cancel hint step '+editK+' first.';flash($('h'+editK));return}startEdit(+b.getAttribute('data-edit'));return}
+ if(!draft)return;
+ if(b.hasAttribute('data-act')){edAct(b.getAttribute('data-act'));return}
+ if(b.hasAttribute('data-add')){draft.rows.push({room:b.getAttribute('data-add')==='world'?'-1':'',spots:''});render();var r=$('edRoom'+(draft.rows.length-1));if(r)r.focus();return}
+ if(b.hasAttribute('data-rm')){draft.rows.splice(+b.getAttribute('data-rm'),1);render();return}
+ if(b.hasAttribute('data-mv')){var i=+b.getAttribute('data-mv'),j=i+(+b.getAttribute('data-d'));var t=draft.rows[i];draft.rows[i]=draft.rows[j];draft.rows[j]=t;render();var f=document.querySelector('[data-mv="'+j+'"][data-d="'+b.getAttribute('data-d')+'"]');if(f&&!f.disabled)f.focus();return}});
+$('hintsView').addEventListener('input',function(e){if(!draft)return;var t=e.target,f=t.getAttribute('data-f');if(!f)return;
+ if(f==='text')draft.text=t.value;else if(f==='checked')draft.checked=t.checked;else draft.rows[+t.getAttribute('data-r')][f]=t.value;refreshPreview()});
+$('hintsView').addEventListener('change',function(e){if(draft&&e.target.getAttribute('data-f')==='checked')draft.checked=e.target.checked});
 document.addEventListener('click',function(e){var b=e.target.closest('.cp');if(!b)return;var t=b.getAttribute('data-copy');
  var done=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1200)};
  try{navigator.clipboard.writeText(t).then(done,function(){b.textContent=t})}catch(err){b.textContent=t}});
+window.addEventListener('beforeunload',function(e){if(draft){e.preventDefault();e.returnValue=''}});
 
-var np=0,ns=0,un=0;H.forEach(function(h){np+=h.pages.length;ns+=h.pages.filter(function(p){return p[4]&&p[2].length}).length;if(h.unchecked)un++});
-$('stats').innerHTML='<span><b>'+D.steps+'</b> story steps</span><span><b>'+H.length+'</b> hint steps</span><span><b>'+np+'</b> pages</span><span><b>'+ns+'</b> green spots</span><span><b>'+un+'</b> not checked in game</span><span>Link data '+esc(D.source||'')+'</span>';
-render();
+render();stateLine();
 /* #h10 opens hint step 10, #s8 story step 8 */
 var m=/^#([hs])(\d+)$/.exec(location.hash||'');if(m){if(m[1]==='h')openHint(+m[2]);else{$('jump').value=m[2];view='steps';render();jump()}}
+
+/* on claude.ai: edits live in the artifact's database (collection hintEdits, one document per hint step), shared live between
+   your devices; Claude can read them there too. Opened as a file, they stay in this browser. */
+(async function(){var db=null,user=null;try{db=window.claude&&claude.use?await claude.use('db'):null}catch(e){db=null}if(!db)return;
+ try{user=await claude.use('user')}catch(e){user=null}
+ var cw=user&&user.can?await user.can('data.write'):null;if(cw===false){writable=false;store='db';dbc=db.collection('hintEdits');}
+ else{dbc=db.collection('hintEdits');store='db'}
+ var local=EDITS,first=true;
+ dbc.onSnapshot(function(snap){var E={};snap.docs.forEach(function(d){var x=d.data();if(x&&byK[+d.id])E[+d.id]={note:String(x.note||''),path:x.path||[]}});EDITS=E;
+  if(first){first=false;var carry=Object.keys(local).filter(function(k){return !E[k]});
+   if(carry.length&&writable)$('msg').textContent=carry.length+' edit'+(carry.length>1?'s':'')+' from this browser aren’t on claude.ai yet: export them from the file copy and import them here.'}
+  if(!draft)render();stateLine()},
+  function(e){store='local';EDITS=local;writable=true;stateLine();$('saveState').className='note bad';$('saveState').textContent='Can’t reach the saved edits ('+e.code+'): changes now stay in this browser only.';render()});
+ stateLine();render()})();
 })();
 </script>

@@ -1,0 +1,58 @@
+"""Headless round trip for the Story Hints page (file copy, so edits are kept in the browser):
+edit a hint, catch a bad room, save, export, check the export with import_hints.js --dry, import it into a fresh page, revert.
+  python3 test_hint_list.py path/to/page.html [outdir]"""
+import sys, os, json, subprocess
+from playwright.sync_api import sync_playwright
+P = os.path.abspath(sys.argv[1]); out = sys.argv[2] if len(sys.argv) > 2 else '/tmp'
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+errs, res = [], {}
+def ok(n, c, x=''): res[n] = (bool(c), x)
+with sync_playwright() as p:
+    b = p.chromium.launch()
+    ctx = b.new_context(viewport={'width': 1280, 'height': 900}, accept_downloads=True)
+    pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('file://' + P + '#h10'); pg.wait_for_timeout(1200)
+    ok('starts with no edits, Export off', pg.is_disabled('#exp'), pg.inner_text('#saveState'))
+    pg.click('#h10 [data-edit]'); pg.wait_for_timeout(200)
+    ok('editor opens with the hint text', pg.input_value('#edText').startswith('Climb the Mountain Path'), pg.input_value('#edText'))
+    pg.fill('#edText', 'Climb the Mountain Path. Talk to Yui at the house. Then go round the back.')
+    pg.uncheck('#edChk')
+    pg.click('#h10 [data-add="room"]'); pg.wait_for_timeout(100)
+    n = pg.evaluate("document.querySelectorAll('#h10 .prow').length")
+    pg.fill('#edRoom%d' % (n - 1), '999'); pg.wait_for_timeout(100)
+    ok('a bad room is caught', 'room must be' in pg.inner_text('#edErr') and 'Unknown room' in pg.inner_text('#edRn%d' % (n - 1)), pg.inner_text('#edErr'))
+    pg.click('#h10 [data-act="save"]'); pg.wait_for_timeout(200)
+    ok('save refused while a room is bad', pg.evaluate("!!document.querySelector('#h10.editing')"))
+    pg.fill('#edRoom%d' % (n - 1), '18'); pg.fill('#edSp%d' % (n - 1), '-120, 300; 40,-55'); pg.wait_for_timeout(100)
+    ok('room name fills in', 'Bedrooms' in pg.inner_text('#edRn%d' % (n - 1)), pg.inner_text('#edRn%d' % (n - 1)))
+    prev = pg.inner_text('#edPrev')
+    ok('preview shows the new page and both spots', 'Then go round the back.' in prev and '-120, 300' in prev and '40, -55' in prev)
+    pg.screenshot(path=os.path.join(out, 'hl_edit.png'))
+    pg.click('#h10 [data-act="save"]'); pg.wait_for_timeout(300)
+    card = pg.inner_text('#h10')
+    ok('saved: card shows Edited and Not checked', 'EDITED' in card.upper() and 'NOT CHECKED' in card.upper(), card[:120])
+    ok('Export now on with a count', pg.inner_text('#exp') == 'Export edits (1)', pg.inner_text('#exp'))
+    with pg.expect_download() as d: pg.click('#exp')
+    f = os.path.join(out, 'hint_edits_test.json'); d.value.save_as(f); J = json.load(open(f))
+    ok('export has step 10 in the import format', list(J['steps']) == ['10'] and J['steps']['10']['note'].startswith('?Climb') and J['steps']['10']['path'][-1] == [18, [[-120, 300], [40, -55]]], J['steps'])
+    r = subprocess.run(['node', os.path.join(REPO, 'tools/app/import_hints.js'), f, '--dry'], capture_output=True, text=True)
+    ok('import_hints.js --dry reads it: 1 step changed', '1 step changed' in r.stdout, (r.stdout + r.stderr)[-300:])
+    # stays after a reload (this browser)
+    pg.reload(); pg.wait_for_timeout(800)
+    ok('edit kept after reload', 'Edited' in pg.inner_text('#h10') or 'EDITED' in pg.inner_text('#h10').upper())
+    pg.click('#filters [data-f="edited"]'); pg.wait_for_timeout(200)
+    ok('Edited filter shows just that hint', pg.evaluate("document.querySelectorAll('#hintsView .hint').length") == 1)
+    pg.click('#filters [data-f="all"]')
+    # revert
+    pg.click('#h10 [data-edit]'); pg.click('#h10 [data-act="revert"]'); pg.wait_for_timeout(300)
+    ok('revert: back to Link, no edits', 'EDITED' not in pg.inner_text('#h10').upper() and pg.is_disabled('#exp'), pg.inner_text('#saveState'))
+    # import into a fresh page
+    pg2 = b.new_context().new_page(); pg2.on('pageerror', lambda e: errs.append(str(e)))
+    pg2.goto('file://' + P); pg2.wait_for_timeout(800)
+    pg2.set_input_files('#imp', f); pg2.wait_for_timeout(500)
+    ok('import into a fresh page', '1 hint imported' in pg2.inner_text('#msg') and pg2.inner_text('#exp') == 'Export edits (1)', pg2.inner_text('#msg'))
+    pg2.click('#vSteps'); pg2.wait_for_timeout(300); pg2.fill('#jump', '8'); pg2.click('#jumpGo'); pg2.wait_for_timeout(400)
+    ok('story steps view marks it edited', 'EDITED' in pg2.inner_text('#s8').upper(), pg2.inner_text('#s8'))
+    b.close()
+for k, (v, x) in res.items(): print(('PASS ' if v else 'FAIL ') + k, '' if v else x)
+print('ERRORS:', errs or 'none')
