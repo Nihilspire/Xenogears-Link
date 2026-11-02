@@ -58,6 +58,7 @@ What changed in each build: `docs/Release notes 2.0.md`.
   - 2.0.0.18+ records a freeze report;
   - still waiting on a photo of the "THE APP FROZE LAST TIME" card or a save state.
 - Hint 114's sewer part was reordered to the walkthrough order after 2.0.0.22. It's committed and in the room viewer, but not in an APK yet.
+- App tour wording tidied (2 Nov: CHAPTER, SETTINGS, STATUS, JOURNAL, and BY ITSELF renamed ON ITS OWN). Committed, not in an APK yet.
 - The start screen says "USE RETROARCH NIGHTLY". Stable works too, but its Network Commands setting doesn't stick on restart for
   Jack, so Nightly stays the advice.
 - 34 hint page breaks with no way through doors. Run the gap check in `docs/SETUP.md` to list them.

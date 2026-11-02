@@ -1871,15 +1871,15 @@ function speedView(){if(!CFG.speed||u32(A.SIG)!==4||(u16(A.FIELD)&0x7FF)!==321)r
    WELCOME BACK: when the game is linked after 8 hours or more away, one card with the chapter, where you are, the play time, the
    party and the next hint. LS 'seen' is the last time the game was linked, written every half minute. */
 var TOUR=[[null,null,'TWO SCREENS','This screen follows your game live. Keep it beside the emulator and glance over as you play.'],
- ['#loc',null,'CHAPTER','The chapter you are in. Tap it for the story hint: where the story goes on next, room by room.'],
+ ['#loc',null,'CHAPTER','The chapter you are in. Tap it for a hint on where to go next, room by room.'],
  ['#clock',null,'PLAY TIME AND GOLD','Read straight from the game, always up to date.'],
- ['#gearbtn',null,'SETTINGS','Size, every switch, the 3D map, and the developer tools.'],
- ['#bot .btn:nth-child(1)','status','STATUS','Your party: HP, EP, Gears and fuel. Tap a card for its deathblows.'],
+ ['#gearbtn',null,'SETTINGS','Text size, all the on/off options, the 3D map and the developer tools.'],
+ ['#bot .btn:nth-child(1)','status','STATUS','Your party: HP, EP, Gears and fuel. Tap a character to see their deathblows.'],
  ['#bot .btn:nth-child(2)','equip','EQUIP AND ITEMS','What everyone wears and what you carry. Tap anything to read about it.'],
  ['#main','map','MAP','The room you are in: chests, gifts, doors, shops and the green guide line to the next hint. The side buttons list treasure and enemies.'],
- ['#bot .btn:nth-child(5)','journal','JOURNAL','Your progress by chapter, and the bestiary of every enemy you have met.'],
+ ['#bot .btn:nth-child(5)','journal','JOURNAL','Your progress chapter by chapter, and a bestiary of every enemy you have fought.'],
  ['#bot .btn:last-child',null,'FF','Fast-forward the emulator (RetroArch).'],
- [null,null,'BY ITSELF','In a fight this screen shows the enemies, turn order and boss tips. In shops it compares gear. Cutscenes dim it. Enjoy the game.']];
+ [null,null,'ON ITS OWN','In battle, this screen shows the enemies, turn order and boss tips. In shops, it compares gear. It dims during cutscenes. Enjoy the game.']];
 var tourAt=-1,tourT=0,tourTab=null;
 function tourGo(i){if(i<0)i=0;if(i>=TOUR.length){tourEnd();return}if(tourAt<0)tourTab=tab;tourAt=i;var st=TOUR[i];closePop();if(st[1]&&tab!==st[1])setTab(st[1]);
  var h='<div class="row">'+T(st[2],'y')+'<span class="sp"></span>'+T((i+1)+'/'+TOUR.length,'g')+'</div><div class="sep"></div>';
