@@ -1,0 +1,4 @@
+{
+  global: retro_*; CdromId; CdromLabel; padToggleAnalog; psxCpu; McdFlag;
+  local: *;
+};

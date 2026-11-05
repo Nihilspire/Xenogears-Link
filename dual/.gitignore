@@ -1,0 +1,17 @@
+third_party/
+work/
+core/obj/
+toolchain/sysroot/
+core/*.so
+app/gen/
+app/obj/
+app/dex/
+app/*.apk
+app/*.idsig
+app/unsigned.apk
+app/aligned.apk
+__pycache__/
+*.pyc
+tests/scripts/shots/
+releases/*.apk
+!releases/Xenogears Dual 0.25.apk

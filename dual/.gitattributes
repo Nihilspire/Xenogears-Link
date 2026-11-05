@@ -1,0 +1,8 @@
+*.so binary
+*.apk binary
+*.state binary
+*.srm binary
+*.bin binary
+*.jks binary
+*.sh text eol=lf
+android-clang text eol=lf

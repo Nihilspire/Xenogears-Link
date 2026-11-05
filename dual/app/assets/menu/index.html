@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Xenogears Dual</title>
+<style>
+/* Built from the game's own menu parts, the same ones Xenogears Link uses: the gold-bevelled window frame
+   (link/img/frame.png), the menu font atlas (link/font.js), the title logo, and the red arrow cursor.
+   1rem = one game pixel; fit() scales a 320-wide screen to the pane. */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;background:#000;overflow:hidden}
+body{font-size:1rem;color:#efefef;font-family:monospace}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:3rem;gap:2rem;
+  background:radial-gradient(ellipse at 50% 30%,#1a1a3a 0%,#0b0b1c 55%,#050509 100%)}
+.screen.on{display:flex}
+.win{border:10rem solid transparent;border-image:url(../link/img/frame.png) 64 fill / 10rem stretch;image-rendering:pixelated;position:relative}
+.win>.in{margin:-2rem;position:relative}
+.g{display:inline-block;width:8rem;height:8rem;background-size:128rem 120rem;image-rendering:pixelated;vertical-align:top}
+.t{display:inline-block;white-space:nowrap;height:8rem;line-height:0;vertical-align:top}
+.row{display:flex;align-items:center;min-height:13rem;gap:4rem}
+.row>.t{min-width:0;overflow:hidden}
+.sp{flex:1}
+.scroll{flex:1;min-height:0}
+.scroll>.in{height:calc(100% + 4rem);overflow-y:auto;display:flex;flex-direction:column;gap:1rem;padding-left:9rem}
+.hd{height:12rem;display:flex;align-items:center;flex:none}
+.sep{height:1rem;margin:3rem 0;background:#524a31;flex:none}
+/* tappable things; the focused one gets the game's red arrow */
+.nav{position:relative;cursor:pointer;outline:none}
+.nav:focus::before{content:'';position:absolute;left:-10rem;top:50%;margin-top:-4rem;width:0;height:0;
+  border-top:4rem solid transparent;border-bottom:4rem solid transparent;border-left:8rem solid #e8352a;filter:drop-shadow(1rem 1rem 0 #300)}
+.chip{border:1rem solid #8c7352;padding:2rem 4rem;background:#211810;display:inline-flex;align-items:center;flex:none}
+.chip.on{background:#635a39;border-color:#efefef}
+.chip.off{opacity:.35;pointer-events:none}
+.chip.warn{background:#4a1410;border-color:#e8352a}
+.box{width:10rem;height:10rem;border:1rem solid #8c7352;background:#100808;position:relative;flex:none;display:block}
+.box.on:after{content:'';position:absolute;inset:2rem;background:#ffd866}
+input[type=text]{background:#100808;color:#efefef;border:1rem solid #8c7352;font:8rem monospace;padding:2rem;min-width:0;flex:1;user-select:text;-webkit-user-select:text}
+/* save-state pictures (192-pixel JPEGs from the app) */
+.thumb{width:48rem;height:36rem;border:1rem solid #8c7352;background:#100808 center/cover no-repeat;flex:none}
+.thumb.none{border-color:#524a31}
+.thumb.big{width:80rem;height:60rem}
+.srow{display:flex;align-items:center;gap:5rem;min-height:40rem}
+.info{display:flex;flex-direction:column;gap:3rem;min-width:0}
+/* launcher */
+.top{display:flex;align-items:center;gap:6rem;flex:none}
+.logo{width:96rem;height:auto;image-rendering:auto;flex:none}
+.titles{flex:1;display:flex;flex-direction:column;gap:3rem}
+.big .t{transform:scale(2);transform-origin:left center}
+.big{height:16rem;display:flex;align-items:center}
+.gear{width:18rem;height:18rem;display:grid;place-items:center;color:#c9b37a;flex:none;align-self:flex-start}
+.gear svg{width:12rem;height:12rem}
+.cont{display:flex;align-items:center;gap:6rem;padding:2rem 0}
+.disc{display:flex;flex-direction:column;gap:1rem;padding:1rem 0}
+.disc .nm{padding-left:10rem}
+.tabs{display:flex;gap:2rem;flex:none;padding-left:2rem}
+.bot{display:flex;align-items:center;justify-content:space-between;flex:none;height:30rem}
+.side{display:flex;align-items:center;gap:4rem;padding:6rem 0;min-width:80rem}
+.side:last-child{justify-content:flex-end}
+.btn{display:flex;align-items:center;justify-content:center}
+.btn>.in{display:flex;align-items:center;justify-content:center;margin:-6rem -2rem}
+.boot{flex:none;width:120rem;height:30rem;cursor:pointer}
+.boot .t{transform:scale(1.5)}
+.files .nav{padding:2rem 0}
+.boot .nav:focus::before{left:-26rem}
+</style>
+<script src="../link/font.js"></script>
+<script src="xgfont.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="gear" viewBox="0 0 24 24"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4L10.7 6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></symbol>
+</defs></svg>
+<section class="screen on" id="s-launch"></section>
+<section class="screen" id="s-settings"></section>
+<section class="screen" id="s-mods"></section>
+<section class="screen" id="s-files"></section>
+<section class="screen" id="s-pause"></section>
+
+<script>
+/* 1rem = one game pixel, snapped to whole device pixels like Link does */
+function fit(){var u=Math.min(innerWidth/320,innerHeight/240),d=window.devicePixelRatio||1,n=Math.floor(u*d+0.001);if(n>=2)u=n/d;document.documentElement.style.fontSize=u+'px'}
+addEventListener('resize',function(){fit();render()});fit();
+
+/* ---------------- page state ----------------
+   S is everything the app reports (App.state(), re-read by refresh()). The rest is this page's own: which confirm
+   is armed (format, reset, delete), which panels are open, the settings tab, the screen stack, the file picker. */
+let fmtArm = false, resetArm = false, bindOpen = false, hotOpen = false, delArm = -1, tab = 'controls';
+let S = {opts:{}}, stack = ['s-launch'], pickSlot = 0, pickMode = 'disc', cwd = '', parentDir = '', fileItems = [];
+
+/* ---------------- helpers: building the screens ----------------
+   T(text, colour) draws text in the game's menu font (xgfont.js). Every tappable thing is a .nav with a stable
+   data-key, so focus survives a redraw and the controller can reach it. */
+const $ = id => document.getElementById(id);
+function win(inner, cls, attr){ return '<div class="win '+(cls||'')+'" '+(attr||'')+'><div class="in">'+inner+'</div></div>'; }
+let navSeq = 0;
+function nav(inner, js, cls, key){ return '<span class="nav '+(cls||'')+'" tabindex="0" data-nav data-key="'+(key||('k'+(navSeq++)))+'" onclick="'+js+'">'+inner+'</span>'; }
+function chip(label, on, js, dis, key, cls){ return nav(T(label, on ? 'y' : 'w'), js, 'chip'+(on?' on':'')+(dis?' off':'')+(cls?' '+cls:''), key); }
+function cut(s, n){ s = String(s); return s.length > n ? s.slice(0, n-2) + '..' : s; }
+function hd(s, col){ return '<div class="hd">'+T(s, col||'c')+'</div>'; }
+function jsq(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+/* a settings row: name, then ON and OFF chips like Link's settings */
+function sw(label, key, val, js){ const on = val !== undefined ? val : !!S.opts[key];
+  js = js || ("flip('"+key+"')");
+  return '<div class="row">'+T(cut(label,24), on?'w':'g')+'<span class="sp"></span>'+chip('ON', on, on?'':js, false, 'on-'+key)+chip('OFF', !on, on?js:'', false, 'off-'+key)+'</div>'; }
+function wrapLines(t, n){ var out=[], l=''; String(t).split(' ').forEach(function(w){ if(l && (l+' '+w).length>n){ out.push(l); l=w } else l = l ? l+' '+w : w }); if(l) out.push(l); return out; }
+function note(s){ return wrapLines(s, 34).map(l => '<div class="row" style="min-height:9rem">'+T(l,'g')+'</div>').join(''); }
+/* "TODAY 14:05", "YESTERDAY 9:12", "OCT 21 14:05" */
+const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function when(t){ if (!t) return 'EMPTY';
+  const d = new Date(t), now = new Date(), hm = d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+  const day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const ago = Math.round((day(now) - day(d)) / 864e5);
+  return ago === 0 ? 'TODAY '+hm : ago === 1 ? 'YESTERDAY '+hm : MON[d.getMonth()]+' '+d.getDate()+' '+hm; }
+function thumb(img, cls){ return '<span class="thumb'+(img?'':' none')+(cls?' '+cls:'')+'"'+(img?' style="background-image:url(\''+img+'\')"':'')+'></span>'; }
+
+/* ---------------- screens: which one is showing, and the calls the app makes ----------------
+   The app calls back(), openPause(), openLauncher(), refresh() and layoutChanged() (MainActivity.menuJs). */
+function load(){ try { S = JSON.parse(App.state()); } catch(e){ S = {opts:{}}; } S.opts = S.opts || {}; }
+function cur(){ return document.querySelector('.screen.on').id; }
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); setTimeout(focusFirst, 0); }
+function go(id){ stack.push(id); render(); show(id); }
+window.back = function(){
+  fmtArm = resetArm = false; delArm = -1;
+  if (stack.length > 1) { stack.pop(); refresh(); show(stack[stack.length-1]); return; }
+  if (cur() === 's-pause' || (cur() === 's-launch' && S.running)) App.resume();
+};
+window.openPause = function(){ stack = ['s-pause']; resetArm = false; delArm = -1; refresh(); show('s-pause'); };
+window.openLauncher = function(){ stack = ['s-launch']; refresh(); show('s-launch'); };
+window.layoutChanged = function(){ fit(); };
+window.refresh = function(){ load(); render(); };
+/* redraws every screen, keeping the focused item and each list's scroll position */
+function render(){
+  const fk = document.activeElement && document.activeElement.getAttribute ? document.activeElement.getAttribute('data-key') : null;
+  const sc = [...document.querySelectorAll('.scroll>.in')].map(e => e.scrollTop);
+  navSeq = 0;
+  renderLaunch(); renderPause(); renderSettings(); renderMods(); renderFiles();
+  document.querySelectorAll('.scroll>.in').forEach((e,i) => { if (sc[i]) e.scrollTop = sc[i]; });
+  if (fk) { const e = document.querySelector('.screen.on [data-key="'+fk+'"]'); if (e) e.focus({preventScroll:true}); }
+}
+
+/* ---------------- launcher ---------------- */
+function renderLaunch(){
+  const d = S.discs || [{},{}], boot = S.bootDisc || 0, r = S.resume, both = d[0].ok && d[1].ok;
+  let h = '<div class="top"><img class="logo" src="../link/img/title.png" alt="">'
+    + '<div class="titles"><div class="big">'+T('DUAL','y')+'</div><div>'+T('v'+(S.version||''),'g')+'</div></div>'
+    + nav('<svg><use href="#gear"/></svg>', "go('s-settings')", 'gear', 'gear') + '</div>';
+  let m = '';
+  if (!S.storage) m += '<div class="row">'+T('Allow file access first','r')+'<span class="sp"></span>'+chip('ALLOW', false, 'App.requestStorage()', false, 'allow')+'</div><div class="sep"></div>';
+  if (r && !S.running) {
+    const ok = (d[r.disc]||{}).ok;
+    m += hd('WHERE YOU LEFT OFF') + nav('<div class="cont">'+thumb(r.img, 'big')+'<div class="info">'+T('DISC '+(r.disc+1), ok?'w':'r')+T(when(r.t), 'c')
+       + (ok ? '' : T('Choose this disc again', 'r'))+'</div></div>', 'App.continueGame()', '', 'cont') + '<div class="sep"></div>';
+  }
+  m += hd('DISCS');
+  [0,1].forEach(i => {
+    const nm = d[i].name ? cut(d[i].name, 31) : 'No file chosen';
+    m += '<div class="disc"><div class="row">'+T('DISC '+(i+1), both && boot===i ? 'y' : 'w')+'<span class="sp"></span>'
+       + (both ? chip('BOOT', boot===i, boot===i?'':'App.setBootDisc('+i+');refresh()', false, 'boot'+i) : '')
+       + chip(d[i].name?'CHANGE':'CHOOSE', false, 'pickDisc('+i+')', false, 'pick'+i) + '</div>'
+       + '<div class="nm">'+T(nm, d[i].ok ? 'c' : d[i].name ? 'r' : 'g')+'</div></div>';
+  });
+  m += '<div class="sep"></div>' + modsRow();
+  h += win(m, 'scroll');
+  const canGo = (d[boot]||{}).ok || S.running;
+  /* the big button: RESUME while playing, CONTINUE when there's a place to pick up from, START otherwise */
+  const big = S.running ? ['RESUME', 'App.resume()'] : r ? ['CONTINUE', 'App.continueGame()'] : ['START', 'App.start()'];
+  h += '<div class="bot"><span class="side">'+(r && !S.running ? chip('START DISC '+(boot+1), false, 'App.start()', !canGo, 'start') : '')+'</span>'
+     + win(nav(T(big[0], canGo || r ? 'y' : 'g'), big[1], '', 'primary'), 'btn boot', 'onclick="if(event.target===this)'+big[1]+'"')
+     + '<span class="side"></span></div>';
+  $('s-launch').innerHTML = h;
+}
+
+/* one line that opens the Mods screen: what's on, at a glance */
+function modsRow(){
+  const extra = (S.mods || []).filter(m => m.group !== 'analog' && m.on).length;
+  const sum = (S.analogOn ? 'Analog on' : 'Analog off') + (extra ? ', ' + extra + ' code' + (extra > 1 ? 's' : '') : '');
+  return '<div class="row">'+T('MODS','c')+T(sum, 'g')+'<span class="sp"></span>'+chip('OPEN', false, "go('s-mods')", false, 'mods')+'</div>';
+}
+
+/* ---------------- mods ---------------- */
+function renderMods(){
+  const mods = S.mods || [], an = !!S.analogOn;
+  let m = '<div class="row">'+T('Analog controls', an?'w':'g')+'<span class="sp"></span>'
+      + chip('ON', an, an?'':"flip('analogOn')", false, 'an-on') + chip('OFF', !an, an?"flip('analogOn')":'', false, 'an-off') + '</div>';
+  if (an && S.analogState === 3) m += note('Analog controls are off: something else is in the memory they use.');
+  if (an) m += mods.filter(x => x.group === 'analog').map(x =>
+      '<div class="row" style="padding-left:8rem">'+T(short(x.name), x.on?'w':'g')+'<span class="sp"></span>'
+      + chip('ON', x.on, x.on?'':modJs(x.id,true), false, 'on-'+x.id) + chip('OFF', !x.on, x.on?modJs(x.id,false):'', false, 'off-'+x.id) + '</div>').join('');
+  const extra = mods.filter(x => x.group !== 'analog');
+  m += '<div class="sep"></div>' + hd('GAMESHARK CODES');
+  m += extra.length ? extra.map(x =>
+      '<div class="row">'+T(cut(x.name,16), x.on?'w':'g')+'<span class="sp"></span>'
+      + (x.removable ? chip('DEL', false, "App.removeMod('"+jsq(x.name)+"');setTimeout(refresh,40)", false, 'del-'+x.id) : '')
+      + chip('ON', x.on, x.on?'':modJs(x.id,true), false, 'on-'+x.id) + chip('OFF', !x.on, x.on?modJs(x.id,false):'', false, 'off-'+x.id) + '</div>').join('')
+    : note('None yet. Add one below, or put them in mods.txt in the Xenogears folder.');
+  m += '<div class="row" style="gap:3rem"><input type="text" id="mod-name" placeholder="Name" style="flex:.7"><input type="text" id="mod-code" placeholder="80012345 0001">'+chip('ADD', false, 'addMod()', false, 'addmod')+'</div>';
+  $('s-mods').innerHTML = '<div class="top">'+chip('<', false, 'back()', false, 'mback')+'<div class="big">'+T('MODS','y')+'</div></div>' + win(m, 'scroll');
+}
+function modJs(id, on){ return "App.setMod('"+jsq(id)+"',"+on+");setTimeout(refresh,40)"; }
+/* short names for the five options in Analog Controls.cht */
+function short(n){ n = String(n).toLowerCase();
+  return n.indexOf('invert') >= 0 ? 'Invert camera tilt' : n.indexOf('walks') >= 0 ? 'Walk any direction'
+       : n.indexOf('run') >= 0 ? 'Full push to run' : n.indexOf('camera (') >= 0 || n.indexOf('right stick camera') >= 0 ? 'Right stick camera'
+       : n.indexOf('l1/r1') >= 0 ? 'Smooth L1/R1 turning' : cut(cap(n), 22); }
+function cap(t){ t = String(t).replace(/\s*\(.*\)\s*$/, ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+function addMod(){
+  const n = $('mod-name').value.trim(), c = $('mod-code').value.trim();
+  if (!n || !c) { App.toast('Give the mod a name and a code'); return; }
+  if (App.addMod(n, c)) refresh();
+}
+
+/* ---------------- settings (one tab at a time) ---------------- */
+const TABS = [['controls','CONTROLS'],['screens','SCREENS'],['picture','PICTURE'],['card','CARD'],['system','SYSTEM']];
+function setTab(t){ tab = t; bindOpen = false; fmtArm = false; render(); const s = document.querySelector('#s-settings .scroll>.in'); if (s) s.scrollTop = 0; }
+function renderSettings(){
+  const o = S.opts, bios = S.bios || [];
+  const seg = (k, label, items) => '<div class="row">'+T(label)+'<span class="sp"></span>'
+     + items.map(([v,t]) => chip(t, o[k]===v, o[k]===v?'':"setInt('"+k+"',"+v+")", false, k+v)).join('') + '</div>';
+  const step = (k, label, min, max, by, def) => { const v = o[k] || def;
+     return '<div class="row">'+T(label)+'<span class="sp"></span>'+chip('-', false, "setInt('"+k+"',"+Math.max(min, v-by)+")", false, k+'-')
+       + T(String(v).padStart(3,' '), 'y') + chip('+', false, "setInt('"+k+"',"+Math.min(max, v+by)+")", false, k+'+') + '</div>'; };
+  let m = '';
+  if (tab === 'controls') {
+    m += S.analogOn ? '<div class="row">'+T('Controller')+'<span class="sp"></span>'+T('DUALSHOCK','y')+'</div>'
+                    : seg('padType', 'Controller', [[0,'DIGI'],[1,'ANLG'],[2,'DUAL']]);
+    m += sw('Stick also moves D-pad', 'stickDpad') + step('stickThreshold', 'Stick push needed', 15, 80, 5, 40);
+    m += '<div class="row">'+T('Controller buttons')+'<span class="sp"></span>'+chip(bindOpen?'CLOSE':'REBIND', bindOpen, 'bindOpen=!bindOpen;render()', false, 'bindopen')+'</div>';
+    if (bindOpen) {
+      (S.binds||[]).forEach(b => {
+        const wait = S.bindWait === b.bit;
+        m += '<div class="row" style="padding-left:8rem">'+T(b.name, wait?'y':'w')+'<span class="sp"></span>'
+           + T(wait ? 'PRESS A BUTTON' : (b.key || 'NONE'), wait ? 'y' : b.key ? 'c' : 'r')
+           + chip(wait ? 'CANCEL' : 'SET', wait, wait ? 'App.bindCancel();setTimeout(refresh,40)' : 'App.bindStart('+b.bit+');setTimeout(refresh,40)', false, 'bind'+b.bit) + '</div>';
+      });
+      m += '<div class="row"><span class="sp"></span>'+chip('RESET TO DEFAULT', false, 'App.bindReset();setTimeout(refresh,40)', false, 'bindreset')+'</div>';
+      m += note('SET, then press the controller button. Taking a used button swaps the two.');
+    }
+    m += '<div class="row">'+T('Hotkeys')+'<span class="sp"></span>'+chip(hotOpen?'CLOSE':'SET UP', hotOpen, 'hotOpen=!hotOpen;render()', false, 'hotopen')+'</div>';
+    if (hotOpen) {
+      (S.hotkeys||[]).forEach(h => {
+        const wait = S.bindWait === 100 + h.i;
+        m += '<div class="row" style="padding-left:8rem">'+T(h.name, wait?'y':'w')+'<span class="sp"></span>'
+           + T(wait ? 'PRESS A BUTTON' : (h.key || 'NONE'), wait ? 'y' : h.key ? 'c' : 'g')
+           + chip(wait ? 'CANCEL' : 'SET', wait, wait ? 'App.bindCancel();setTimeout(refresh,40)' : 'App.hotStart('+h.i+');setTimeout(refresh,40)', false, 'hot'+h.i)
+           + (h.key && !wait ? chip('CLEAR', false, 'App.hotClear('+h.i+')', false, 'hotc'+h.i) : '') + '</div>';
+      });
+      m += note('For a spare controller button. It does this while you play instead of its PlayStation button. Quick save and load use the QUICK slot in the pause menu.');
+    }
+    m += '<div class="sep"></div>' + hd('TOUCH');
+    m += sw('Touch controls', 'touch') + sw('On-screen stick', 'stick') + step('opacity', 'Opacity', 15, 100, 5, 55);
+    m += note('Drag on the picture to turn the camera. Double-tap to reset it.');
+  } else if (tab === 'screens') {
+    const lay = o.layout || 0;
+    m += sw('Xenogears Link', 'link') + seg('layout', 'Layout', [[2,'16:9'],[1,'4:3'],[0,'SECOND SCREEN']]);
+    if (lay || S.spanned || S.secondScreen || !S.opts.link) m += '';
+    if (!lay) { m += sw('Swap screens', 'swapScreens');
+      if (!S.spanned && !S.secondScreen) m += sw('Link on this screen', 'linkOnPhone', !!S.linkOnPhone, 'App.toggleLinkOnPhone()'); }
+    else if (S.spanned) m += sw('Swap screens', 'swapScreens');
+    if (lay === 2) m += note((S.wideScreen ? '' : 'This screen is not wide enough, so it uses the 4:3 layout. ') + 'The game sits in the middle with quick info either side. The arrow slides in the whole Link page. Stays on one screen even with a second display connected.');
+    else if (lay === 1) m += note('The game fills the screen. A see-through arrow on its right edge slides Link in and out. Stays on one screen even with a second display connected.');
+    else m += note(S.spanned ? 'Link is on the other half of the Duo.' : S.secondScreen ? 'Link is on the second display.' : 'Span the app across both screens to see Link.');
+  } else if (tab === 'picture') {
+    const bz = S.bezel || 'off';
+    m += '<div class="row">'+T('Bezel')+'<span class="sp"></span>'+chip('OFF', bz==='off', bz==='off'?'':"App.setBezel('off')", false, 'bz-off')
+       + chip('GAME WINDOW', bz==='window', bz==='window'?'':"App.setBezel('window')", false, 'bz-win')+'</div>';
+    (S.bezels||[]).forEach((f,i) => { m += '<div class="row" style="padding-left:8rem">'+T(cut(f.replace(/\.png$/i,''),22), bz===f?'w':'g')+'<span class="sp"></span>'
+       + chip(bz===f?'ON':'USE', bz===f, bz===f?'':"App.setBezel('"+jsq(f)+"')", false, 'bz'+i)+'</div>'; });
+    m += note('Your own bezels: PNGs with a see-through middle in the bezels folder.');
+    m += '<div class="sep"></div>' + sw('Smooth picture', 'smooth') + sw('Integer scaling', 'integer') + sw('High-res 3D', 'hires');
+    m += note('High-res 3D applies the next time the game starts.');
+  } else if (tab === 'card') {
+    const cd = S.card || {};
+    const cst = !cd.exists ? ['NEW CARD ON FIRST START','g'] : cd.formatted ? ['FORMATTED  '+(cd.blocksUsed||0)+'/15 BLOCKS','n'] : ['NOT FORMATTED','r'];
+    m += '<div class="row">'+T('Card 1')+'<span class="sp"></span>'+T(cst[0], cst[1])+'</div>';
+    (cd.saves||[]).slice(0,15).forEach(n => { m += '<div class="row" style="min-height:9rem;padding-left:8rem">'+T(cut(n,30),'c')+'</div>'; });
+    m += '<div class="row">'+(fmtArm ? chip('SURE? FORMAT', true, 'fmtArm=false;App.formatCard()', false, 'fmtgo', 'warn') + chip('CANCEL', false, 'fmtArm=false;render()', false, 'fmtno')
+                                     : chip('FORMAT', false, 'fmtArm=true;render()', false, 'fmt'))
+       + chip('IMPORT CARD', false, 'pickCard()', false, 'imp') + '</div>';
+    m += note('Both keep the old card in saves/backup. Import takes .srm .mcr .mcd and .gme cards. Do it before START, or reset the game after.');
+    m += '<div class="row">'+chip('EXPORT CARD', false, 'App.exportCard()', !cd.exists, 'expc')+'</div>';
+    m += note('Export saves a copy as saves/export/Xenogears-(date).srm, for RetroArch, DuckStation or a backup.');
+  } else {
+    m += hd('LAUNCHER') + sw('Show at start', 'showAtStart') + sw('Remember my place', 'resume');
+    m += note(S.opts.resume ? 'Leaving the game remembers where you were, and so does a quiet save every 5 minutes while you play. CONTINUE picks it up.' : 'Off: START always boots the disc.');
+    if (!S.opts.showAtStart) m += note('The game starts straight away. Pause > LAUNCHER comes back here.');
+    m += '<div class="sep"></div>' + hd('SYSTEM');
+    m += '<div class="row">'+T('BIOS')+'<span class="sp"></span>'+T(bios.length ? cut(bios.join(' '), 16) : 'BUILT-IN', bios.length?'c':'g')+chip('ADD', false, 'pickBios()', false, 'bios')+'</div>';
+    m += sw('Built-in BIOS only', 'hleBios') + sw('Mute sound', 'muted');
+    m += note('Files: ' + (S.folder || ''));
+  }
+  const tabs = '<div class="tabs">'+TABS.map(([k,t]) => chip(t, tab===k, tab===k?'':"setTab('"+k+"')", false, 'tab-'+k)).join('')+'</div>';
+  $('s-settings').innerHTML = '<div class="top">'+chip('<', false, 'back()', false, 'sback')+'<div class="big">'+T('SETTINGS','y')+'</div></div>' + tabs + win(m, 'scroll');
+}
+
+/* ---------------- pause ---------------- */
+function renderPause(){
+  const d = S.discs || [{},{}];
+  /* one save-state row; n = 0 is QUICK (the hotkeys' slot). DEL asks first, like RESET. */
+  const srow = (n, label, s) => '<div class="srow">'+thumb(s.t ? s.img : '')+'<div class="info">'+T(label, 'y')+T(when(s.t), s.t?'c':'g')+'</div><span class="sp"></span>'
+     + (delArm === n ? chip('SURE?', true, 'delArm=-1;App.deleteState('+n+')', false, 'dgo'+n, 'warn') + chip('NO', false, 'delArm=-1;render()', false, 'dno'+n)
+       : chip('SAVE', false, 'App.saveState('+n+')', false, 'sv'+n) + chip('LOAD', false, 'App.loadState('+n+')', !s.t, 'ld'+n)
+         + (s.t ? chip('DEL', false, 'delArm='+n+';render()', false, 'del'+n) : '')) + '</div>';
+  let m = hd('SAVE STATES') + srow(0, 'QUICK', S.quick || {}) + (S.slots||[{},{},{},{}]).map((s,i) => srow(i+1, 'SLOT '+(i+1), s)).join('');
+  m += '<div class="sep"></div><div class="row">';
+  if (d[0].ok && d[1].ok) m += [0,1].map(i => chip('DISC '+(i+1), S.inserted===i, S.inserted===i?'':'App.insertDisc('+i+')', false, 'disc'+i)).join('');
+  m += '<span class="sp"></span>' + chip('FAST FORWARD', !!S.fastForward, 'toggleFF()', false, 'ff') + '</div>';
+  m += modsRow();
+  m += '<div class="sep"></div><div class="row">'
+     + (resetArm ? chip('SURE? RESET', true, 'resetArm=false;App.reset()', false, 'resetgo', 'warn') + chip('NO', false, 'resetArm=false;render()', false, 'resetno')
+                 : chip('RESET', false, 'resetArm=true;render()', false, 'reset'))
+     + chip('SETTINGS', false, "go('s-settings')", false, 'psettings') + '<span class="sp"></span>' + chip('LAUNCHER', false, 'App.toLauncher()', false, 'tolaunch') + '</div>';
+  if (resetArm) m += note('Reset restarts the disc. Anything not saved is lost.');
+  $('s-pause').innerHTML = '<div class="top"><div class="big">'+T('PAUSED','y')+'</div><span class="sp"></span>'
+     + (S.inserted >= 0 ? T('DISC '+(S.inserted+1), 'c') : '') + '</div>' + win(m, 'scroll')
+     + '<div class="bot"><span class="side"></span>' + win(nav(T('RESUME','y'), 'App.resume()', '', 'resume'), 'btn boot', 'onclick="if(event.target===this)App.resume()"') + '<span class="side"></span></div>';
+}
+
+/* ---------------- file picker (discs, BIOS and memory cards only) ---------------- */
+function pickDisc(i){ pickMode = 'disc'; pickSlot = i; openPicker(localStorage.discDir || ''); }
+function pickBios(){ pickMode = 'bios'; openPicker(localStorage.biosDir || ''); }
+function pickCard(){ pickMode = 'card'; openPicker(localStorage.cardDir || ''); }
+function openPicker(dir){ if (!S.storage) { App.requestStorage(); return; } listDir(dir); go('s-files'); }
+function listDir(p){
+  let r; try { r = JSON.parse(App.listDir(p)); } catch(e){ r = {entries:[]}; }
+  cwd = r.path || ''; parentDir = r.parent || '';
+  fileItems = (r.entries||[]).filter(e => e.dir || (pickMode === 'bios' ? e.bios : pickMode === 'card' ? e.card : e.disc));
+}
+function openDir(p){ listDir(p); render(); const s = document.querySelector('#s-files .scroll>.in'); if (s) s.scrollTop = 0; document.activeElement && document.activeElement.blur && document.activeElement.blur(); setTimeout(focusFirst, 0); }
+function renderFiles(){
+  const size = n => n > 1e9 ? (n/1e9).toFixed(1)+'GB' : n > 1e6 ? Math.round(n/1e6)+'MB' : Math.round(n/1e3)+'KB';
+  let m = '<div class="row">'+T(cut(cwd, 34), 'g')+'</div><div class="sep"></div><div class="files">';
+  m += fileItems.length ? fileItems.map((e,i) => '<div class="row">'+nav(T(cut((e.dir?'> ':'')+e.name, 28), e.dir?'c':'w'), 'pickFile('+i+')', '', 'f'+i)+'<span class="sp"></span>'+(e.dir?'':T(size(e.size),'g'))+'</div>').join('')
+      : note(pickMode === 'bios' ? 'No 512 KB BIOS files here.' : pickMode === 'card' ? 'No memory card files here.' : 'No disc images here.');
+  m += '</div>';
+  $('s-files').innerHTML = '<div class="top">'+chip('<', false, 'back()', false, 'fback')+'<div class="big">'+T(pickMode==='bios'?'BIOS':pickMode==='card'?'MEMORY CARD':'DISC '+(pickSlot+1),'y')+'</div><span class="sp"></span>'+chip('UP', false, 'up()', !parentDir, 'up')+'</div>' + win(m, 'scroll');
+}
+function up(){ if (parentDir) openDir(parentDir); }
+function pickFile(i){
+  const e = fileItems[i]; if (!e) return;
+  if (e.dir) { openDir(e.path); return; }
+  if (pickMode === 'card') { localStorage.cardDir = cwd; App.importCard(e.path); back(); return; }
+  if (pickMode === 'bios') { localStorage.biosDir = cwd; App.toast(App.importBios(e.path) ? 'BIOS added' : 'That isn\u2019t a 512 KB BIOS file'); }
+  else { localStorage.discDir = cwd; App.setDisc(pickSlot, e.path); }
+  back();
+}
+
+/* ---------------- small actions: switches, numbers, fast forward, the big button ---------------- */
+function flip(k){ const v = k === 'analogOn' ? !S.analogOn : !S.opts[k]; App.setBool(k, v); if (k === 'analogOn') S.analogOn = v; else S.opts[k] = v; setTimeout(refresh, 50); }
+function setInt(k, v){ App.setInt(k, v); S.opts[k] = v; setTimeout(refresh, 50); }
+function toggleFF(){ S.fastForward = !S.fastForward; App.setFastForward(S.fastForward); render(); }
+/* START on a controller in the launcher: whatever the big button says */
+function primary(){ if (S.running) App.resume(); else if (S.resume) App.continueGame(); else App.start(); }
+
+/* ---------------- controller navigation ----------------
+   The app sends navKey('up'|'down'|'left'|'right'|'ok'|'back'|'start') for controller buttons while the menu is up.
+   Up/down and left/right both step through the screen's items in order. */
+function navItems(){ return [...document.querySelector('.screen.on').querySelectorAll('[data-nav]:not(.off), input')].filter(e => e.offsetParent); }
+function focusFirst(){ const it = navItems(); if (!it.length || document.querySelector('.screen.on').contains(document.activeElement)) return;
+  const st = document.querySelector('.screen.on [data-key="primary"], .screen.on [data-key="resume"]'); (st || it[0]).focus({preventScroll:true}); }
+window.navKey = function(k){
+  const it = navItems(); if (!it.length) return;
+  const a = document.activeElement; let i = it.indexOf(a);
+  if (k === 'ok') { if (i >= 0) a.click(); else it[0].focus(); return; }
+  if (k === 'back') { back(); return; }
+  if (k === 'start') { if (cur() === 's-pause') App.resume(); else primary(); return; }
+  const d = (k === 'down' || k === 'right') ? 1 : -1;
+  i = i < 0 ? 0 : (i + d + it.length) % it.length;
+  it[i].focus(); it[i].scrollIntoView({block:'nearest'});
+};
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.activeElement && document.activeElement.classList.contains('nav')) document.activeElement.click(); });
+
+/* ---------------- start: draw now, and again once the font atlas has loaded ---------------- */
+refresh();
+(function waitFont(){ if (window.fontReady) render(); else setTimeout(waitFont, 30); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+--- a/index.html
++++ b/index.html
+@@ -123,6 +123,29 @@
+ .mpanel{position:absolute;left:33rem;top:0;min-width:150rem;max-height:100%;overflow-y:auto;border:1rem solid #8c7352;background:rgba(11,11,28,.93);padding:3rem 5rem;display:flex;flex-direction:column;gap:2rem}
+ .erow{display:flex;align-items:center;gap:4rem;height:16rem}
+ pre{font:6rem monospace;color:#9c9;white-space:pre-wrap;user-select:text}
++/* Xenogears Dual, single 16:9 screen: quick info in the bars either side of the game, the whole page in a panel that slides in from the right */
++html.rail,html.rail body{background:transparent}
++html.rail #app{left:auto;right:0;width:320rem;transform:translateX(100%);transition:transform .26s ease-out;z-index:20}
++html.rail.railopen #app{transform:none;box-shadow:-3rem 0 8rem #000}
++#railL,#railR,#railBtn{display:none}
++html.rail #railL,html.rail #railR{display:flex;flex-direction:column;gap:1rem;position:fixed;top:0;bottom:0;width:var(--rw);padding:1rem;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#1a1a3a 0%,#0b0b1c 55%,#050509 100%)}
++#railL{left:0}#railR{right:0}html.rail #railR{padding-bottom:38rem}
++.rw{border:6rem solid transparent;border-image:url(img/frame.png) 64 fill / 6rem stretch;image-rendering:pixelated;flex:none;display:flex;flex-direction:column}
++.rw.grow{flex:1;min-height:0;overflow:hidden}
++.rw .row{height:8.5rem;min-width:0}.rw .bar{margin:0;flex:1;width:auto;height:5rem}
++.rw .col{gap:0;justify-content:flex-start}
++.rtop{display:flex;align-items:center;gap:2rem;height:30rem;flex:none}.rtop .pt{width:30rem;height:30rem}
++.rw.now{filter:brightness(1.3)}
++#railmap{display:block;width:100%;background:#0b0b1c}
++.rfoe{display:flex;align-items:center;gap:2rem;min-height:18rem;flex:none}.rfoe .es{width:18rem;height:18rem}
++html.rail #railBtn{display:flex;align-items:center;justify-content:center;position:fixed;right:1rem;bottom:1rem;width:calc(var(--rw) - 2rem);height:36rem;z-index:25;transition:right .26s ease-out,width .26s ease-out;border:6rem solid transparent;border-image:url(img/frame.png) 64 fill / 6rem stretch;image-rendering:pixelated}
++html.rail.railopen #railBtn{right:320rem;width:30rem}
++#railBtn svg{width:18rem;height:18rem;display:block;flex:none}
++/* panel only, for a 4:3 screen: no bars, just a see-through arrow on the game's right edge */
++html.panelonly #railL,html.panelonly #railR{display:none}
++html.panelonly #railBtn{right:0;bottom:auto;top:calc(50% - 22rem);width:26rem;height:44rem;opacity:.55;transition:right .26s ease-out,opacity .26s}
++html.panelonly.railopen #railBtn{right:320rem;width:26rem;opacity:.85}
++html.panelonly #railBtn svg{width:12rem;height:12rem}
+ </style></head><body>
+ <div id="app">
+  <div class="win" id="top"><div class="in"><span id="dot"></span><span id="loc"></span><span class="sp"></span><span id="clock"></span><span class="sp"></span><span id="gold"></span><span id="gearbtn"></span></div><div id="enc"></div></div>
+@@ -134,6 +157,7 @@
+  <div id="set"><div class="win"><div class="in" id="setin"></div></div></div>
+  <div id="tourhi"></div><div id="tour"></div><div id="lost"></div>
+ </div>
++<div id="railL"></div><div id="railR"></div><div id="railBtn" onclick="railToggle()"></div>
+ <script src="tables.js"></script>
+ <script src="enemies.js"></script>
+ <script src="desc.js"></script>
+@@ -188,9 +212,9 @@
+  route:LS.get('route','1')==='1',follow:LS.get('follow','1')==='1',advise:LS.get('advise','1')==='1',boss:LS.get('boss','1')==='1',smooth:LS.get('smooth','1')==='1',sky:LS.get('sky','1')==='1',   /* 3D map: the way to go, eased camera, sky in EYE (v1.99.0.5) */   /* experimental: 3D map and its EYE view, off until switched on in SETTINGS > EXPERIMENTAL */
+  enc:LS.get('enc','1')==='1',turns:LS.get('turns','1')==='1',seq:LS.get('seq','1')==='1',dball:LS.get('dball','0')==='1',
+  /* DEV, Windows: log where each room change happens (exit log) */
+- xlog:LS.get('xlog','1')==='1',rps:LS.get('rps','0')==='1',speed:LS.get('speed','0')==='1'};
++ xlog:LS.get('xlog','1')==='1',rps:LS.get('rps',window.Native&&Native.stateInfo?'1':'0')==='1',speed:LS.get('speed',window.Native&&Native.stateInfo?'1':'0')==='1'};   /* Xenogears Dual: minigame helpers on by default (each only shows during its minigame) */
+ if(MODES.indexOf(CFG.mode)<0)CFG.mode='auto';
+-var VERSION='2.0.0.22';   /* set by build.sh */
++var VERSION='2.0.0.22 DUAL';   /* set by build.sh */
+ var HAS_NATIVE=!!window.Native;
+ var TEST=!HAS_NATIVE&&!!window.TestKit;   /* off-device testing only: a kit that is not part of the app can stand in for the game */
+ /* ================= room maps built from the player's own disc =================
+@@ -247,7 +271,10 @@
+ /* ================= scaling (1rem = one game pixel) ================= */
+ /* One game pixel is snapped down to a whole number of screen pixels (when that leaves at least two), so thin lines in the window frames
+    and the font are drawn evenly; a fractional size made parts of them break up on the handheld's wide screen. */
+-function fit(){var u=Math.min(innerWidth/320,innerHeight/240)*CFG.scale/100,d=window.devicePixelRatio||1,n=Math.floor(u*d+0.001);if(n>=2)u=n/d;document.documentElement.style.fontSize=u+'px'}
++var PANEL=location.hash==='#panel'||!!(window.Native&&Native.panelOn&&Native.panelOn());   /* Xenogears Dual, panel only: the game fills the screen, an arrow slides Link in */
++var RAIL=PANEL||location.hash==='#rail'||!!(window.Native&&Native.railOn&&Native.railOn());   /* Xenogears Dual: the single-screen layouts (see railDraw) */
++if(RAIL)document.documentElement.classList.add('rail');if(PANEL)document.documentElement.classList.add('panelonly');
++function fit(){var u=PANEL?Math.min(innerWidth,innerHeight)/320:RAIL?innerHeight/360:Math.min(innerWidth/320,innerHeight/240)*CFG.scale/100,d=window.devicePixelRatio||1,n=Math.floor(u*d+0.001);if(n>=2)u=n/d;var ds=document.documentElement.style;ds.fontSize=u+'px';if(RAIL){ds.setProperty('--rw',PANEL?'0px':Math.max(0,(innerWidth-innerHeight*4/3)/2)+'px');if(window.Native&&Native.railGeom)try{Native.railGeom(320*u/innerWidth,(PANEL?26:30)*u/innerWidth,44*u/innerHeight)}catch(e){}}}
+ addEventListener('resize',fit);fit();
+ /* ================= bitmap font from the game's menu atlas ================= */
+ var GL={},FONT={};
+@@ -339,7 +366,11 @@
+ /* is a live map on screen (MAP tab, in a room or on the world map, nothing hiding it)? */
+ function mapLive(){var s=u32(A.SIG);return booted&&tab==='map'&&(s===4||s===5)&&lastMd==='f'}
+ /* milliseconds to wait before the next poll: short on a live map and in battle, the normal gap otherwise */
+-function pollGap(){return !CFG.fast||setOpen()?CFG.poll:mapLive()?(moving()?50:200):inBattle()?150:CFG.poll}
++/* Xenogears Dual: polls read the emulator's RAM directly (no UDP round trip), so the 3D map follows the player
++   about 25 times a second while moving (40 ms) and about 7 times a second standing still, instead of 50 / 200 ms.
++   (0.8 used 16 / 50 ms and 0.10 used 33 / 100 ms; both cost frame rate on slower handhelds.) */
++var DIRECT=!!(window.Native&&Native.stateInfo);
++function pollGap(){return !CFG.fast||setOpen()?CFG.poll:mapLive()?(DIRECT?(moving()?20:80):(moving()?50:200)):inBattle()?150:CFG.poll}
+ /* after a poll: note the time and book the next one if a short gap is wanted */
+ function pollDone(){replies++;pollLog.push(Date.now());if(pollLog.length>20)pollLog.shift();clearTimeout(pollT);var g=pollGap();if(g<CFG.poll)pollT=setTimeout(poll,Math.max(0,g-(Date.now()-pollAt)))}
+ /* polls per second over the last few polls, for the dev readout */
+@@ -348,7 +379,8 @@
+    The app opens on the start screen (or, with that switched off, the title logo and a START button). Nothing is read from the
+    game until START is pressed, and the party screen stays covered until a few replies in a row have come back, so half-loaded
+    panels are never shown. */
+-var bootGo=false,booted=false,bootAt=0,goodPolls=0;
++/* Xenogears Dual: no start screen. The game runs in the same app, so Link starts linking as soon as it opens. */
++var bootGo=DIRECT,booted=false,bootAt=Date.now(),goodPolls=0;
+ /* START was tapped: begin linking */
+ function bootStart(){bootGo=true;bootAt=Date.now();goodPolls=0;poll();render()}
+ /* write the start-up layer (only when it changed) */
+@@ -358,12 +390,13 @@
+  if(bootGo&&goodPolls>=3&&rd(A.PARTY,3)&&u32(A.SIG)!=null&&(TEST||Date.now()-lastOk<2000)){booted=true;document.getElementById('boot').style.display='none';return}
+  if(!bootGo&&CFG.intro){startScreen();return}
+  var h;if(!bootGo)h=win(T('START','y'),'btn boot','onclick="bootStart()"');
++ else if(DIRECT)h='';
+  else if(Date.now()-bootAt<5000)h='<div class="row">'+T('CONNECTING...','c')+'</div>';
+  else h=linkHelp('NO REPLY FROM THE GAME',Date.now()-bootAt);
+  bootDraw('<span id="bootset" onclick="openSet()" style="display:flex">'+GEAR_ICON+'</span><img class="ttl" src="img/title.png"><div id="bootin">'+h+'</div>','')}
+ /* v2.0.0.14: what to check when the game does not answer, shown on the start-up layer after 5 s and over a dimmed screen when a
+    working link drops for more than 3 s. The app keeps asking the whole time; TRY NOW restarts the attempt at once. */
+-function linkHelp(title,ms){var t=Math.floor(ms/1000),h='<div class="lh">'+'<div class="row">'+T(title,'r')+'<span class="sp"></span>'+T((t>=60?Math.floor(t/60)+':'+p2(t%60):t+' S'),'g')+'</div>';
++function linkHelp(title,ms){if(DIRECT)return '<div class="lh"><div class="row">'+T('WAITING FOR THE GAME','c')+'</div><div class="row">'+T('Link comes up as soon as Xenogears is running.','g')+'</div></div>';var t=Math.floor(ms/1000),h='<div class="lh">'+'<div class="row">'+T(title,'r')+'<span class="sp"></span>'+T((t>=60?Math.floor(t/60)+':'+p2(t%60):t+' S'),'g')+'</div>';
+  h+='<div class="row">'+T('RETROARCH','c')+'</div>';
+  h+='<div class="row">'+T('1 ','y')+T('Game running, not the menu','g')+'</div>';
+  h+='<div class="row">'+T('2 ','y')+T('Network Commands ','g')+T('ON','n')+'</div>';
+@@ -943,7 +976,7 @@
+    The cells narrow to fit; when they get too narrow the sprites keep a width of 16 and overlap, earlier ones in front. */
+ var PB=[[31,47],[23,51],[25,54],[23,55],[23,49],[40,64],[23,39],[26,33],[22,41],[30,55],[25,54]];
+ /* the screen's size in game pixels (rem): [width, height] */
+-function remSize(){var u=parseFloat(document.documentElement.style.fontSize)||1;return[innerWidth/u,innerHeight/u]}
++function remSize(){var u=parseFloat(document.documentElement.style.fontSize)||1;return[RAIL?320:innerWidth/u,innerHeight/u]}
+ function timeline(rk,names,enames,tb){if(!rk)return '';var l=Object.keys(rk).map(Number).sort(function(a,b){return rk[a]-rk[b]}),n=l.length;
+  var W=remSize()[0]-20,lab=W-32>=n*26,cw=Math.max(12,Math.min(44,Math.floor((lab?W-32:W)/n))),h=lab?T('NEXT','c').replace('class="t ','class="t tl '):'';
+  l.forEach(function(s,i){var im='',js,num=s<3?'':String(enemyId[s]||''),sw=Math.max(16,cw-(num?8*num.length+1:0)-3);
+@@ -1043,6 +1076,7 @@
+    r+='<div class="row">'+bar('hp',c.hp,c.mhp,'f','c'+s)+stg+T('EP','c')+T(pad(c.ep,3))+T('/','g')+T(pad(c.mep,3))+'</div>'}
+   pr+=r+'</div>'}
+  var right=win(pr||empty('party','READING THE PARTY','Your fighters show here in a moment.'),'','id="bparty"')+win(ids[dbSel]==null?'':selGear>=0?gdbList(selGear,ids[dbSel]):dbList(ids[dbSel]),'','id="dbl"');
++ RAILB={foes:shownE.map(function(e){return{n:e.name,hp:e.hp,m:e.mhp,ko:e.ko,s:e.s,p:names[e.s-3].p,id:enemyId[e.s]}}),rk:rk,names:names,enm:enm,act:act};
+  return '<div class="bat"><div class="bl">'+left+'</div><div class="br">'+right+'</div></div>'+timeline(rk,names,enm,tb)}
+ /* deathblow list on the battle screen. Every character uses the same button strings, in the order the deathblows are stored:
+    T = triangle (weak, 1 AP), S = square (strong, 2 AP), X = cross (fierce, 3 AP); a string's AP cost is the sum.
+@@ -1246,7 +1280,7 @@
+    out of the old room to the new one nearest the exit spot, and the way out of the new room back to the old one nearest the arrival.
+    The room viewer's Import edits and tools/app/import_exit_log.js read the same lines. */
+ var RLOG=[],RLP=null;
+-function xlogOn(){return CFG.xlog}
++function xlogOn(){return CFG.xlog&&!(DIRECT&&devIsJumped())}   /* Xenogears Dual: a developer warp isn't a door */
+ function rlogWrite(o){RLOG.push(o);if(RLOG.length>200)RLOG.shift();
+  if(window.Native&&Native.exitLog){var r=Native.exitLog(JSON.stringify(o));if(String(r).slice(0,4)==='ERR:')return}
+  xlogN++;xlogLast=Date.now();if(setOpen())drawSet()}
+@@ -1563,7 +1597,7 @@
+ function jload(){if(JLOG==null){try{JLOG=JSON.parse(LS.get('jlog','{}'))||{}}catch(e){JLOG={}}}if(BEST==null){try{BEST=JSON.parse(LS.get('best','{}'))||{}}catch(e){BEST={}}}}
+ function jsub(k){JSUB=k;LS.set('jsub',k);last={};render()}
+ /* called every render in a room: a chapter not logged yet is logged with the play time and the party's average level */
+-function journalTick(){if(u32(A.SIG)!==4)return;var v=u16(A.STORY),c=window.CHAPTERS;if(v==null||!c||v>353)return;jload();var ci=-1;for(var i=0;i<c.length&&c[i][0]<=v;i++)ci=i;if(ci<0||JLOG[ci])return;
++function journalTick(){if(u32(A.SIG)!==4||DIRECT&&devIsJumped())return;var v=u16(A.STORY),c=window.CHAPTERS;if(v==null||!c||v>353)return;jload();var ci=-1;for(var i=0;i<c.length&&c[i][0]<=v;i++)ci=i;if(ci<0||JLOG[ci])return;
+  var pt=u32(A.PTIME),p=shownParty(rd(A.PARTY,3)||[]),lv=0,n=0;p.forEach(function(id){var ch=readChar(A.CHAR+id*REC);if(ch&&ch.lv){lv+=ch.lv;n++}});if(pt==null||!n)return;
+  JLOG[ci]=[Math.floor(pt/60),Math.round(lv/n)];LS.set('jlog',JSON.stringify(JLOG))}
+ /* called from the battle screen with the enemies shown: each name once per fight */
+@@ -1829,7 +1863,7 @@
+    so then a draw is offered instead. Five wins in a row (0x412) set 0x2DE to 30 and he gives the RPS Badge next time (0x2CE bit 15). */
+ function rpsView(){if(!CFG.rps||u32(A.SIG)!==4||(u16(A.FIELD)&0x7FF)!==7)return null;var B=A.SVAR,h=u16(B+0x408);if(h==null||h>2)return null;
+  var N=['ROCK','SCISSORS','PAPER'],c=[u16(B+0x40C)|0,u16(B+0x40E)|0,u16(B+0x410)|0],st=u16(B+0x412)|0,bd=u16(B+0x2CE),rd2=u16(B+0x2DE)|0,w=(h+2)%3,o='';
+- o+='<div class="row">'+T('RPS HELPER','y')+'<span class="sp"></span>'+T('DEV','g')+'</div><div class="sep"></div>';
++ o+='<div class="row">'+T('RPS HELPER','y')+'<span class="sp"></span>'+(DIRECT?'':T('DEV','g'))+'</div><div class="sep"></div>';
+  o+='<div class="row">'+T('HE THROWS','c')+'<span class="sp"></span>'+T(N[h],'w')+'</div>';
+  if(c[w]<3)o+='<div class="row">'+T('PICK','c')+'<span class="sp"></span>'+T(N[w],'n')+'</div>';
+  else if(c[h]<3)o+='<div class="row">'+T('PICK','c')+'<span class="sp"></span>'+T(N[h]+' (DRAW)','o')+'</div><div class="row">'+T(N[w]+' 4 times running loses','g')+'</div>';
+@@ -1870,16 +1904,16 @@
+    the part it talks about (the rest dimmed). The frame follows the part's place every quarter second, as the page redraws often.
+    WELCOME BACK: when the game is linked after 8 hours or more away, one card with the chapter, where you are, the play time, the
+    party and the next hint. LS 'seen' is the last time the game was linked, written every half minute. */
+-var TOUR=[[null,null,'TWO SCREENS','This screen follows your game live. Keep it beside the emulator and glance over as you play.'],
+- ['#loc',null,'CHAPTER','The chapter you are in. Tap it for the story hint: where the story goes on next, room by room.'],
++var TOUR=[[null,null,'TWO SCREENS','This screen follows the game as you play. Glance over at it whenever you like.'],   /* Xenogears Dual: one app, no emulator beside it */
++ ['#loc',null,'CHAPTER','The chapter you are in. Tap it for a hint on where to go next, room by room.'],
+  ['#clock',null,'PLAY TIME AND GOLD','Read straight from the game, always up to date.'],
+- ['#gearbtn',null,'SETTINGS','Size, every switch, the 3D map, and the developer tools.'],
+- ['#bot .btn:nth-child(1)','status','STATUS','Your party: HP, EP, Gears and fuel. Tap a card for its deathblows.'],
++ ['#gearbtn',null,'SETTINGS','Text size, all the on/off options, the 3D map and the developer tools.'],
++ ['#bot .btn:nth-child(1)','status','STATUS','Your party: HP, EP, Gears and fuel. Tap a character to see their deathblows.'],
+  ['#bot .btn:nth-child(2)','equip','EQUIP AND ITEMS','What everyone wears and what you carry. Tap anything to read about it.'],
+  ['#main','map','MAP','The room you are in: chests, gifts, doors, shops and the green guide line to the next hint. The side buttons list treasure and enemies.'],
+- ['#bot .btn:nth-child(5)','journal','JOURNAL','Your progress by chapter, and the bestiary of every enemy you have met.'],
+- ['#bot .btn:last-child',null,'FF','Fast-forward the emulator (RetroArch).'],
+- [null,null,'BY ITSELF','In a fight this screen shows the enemies, turn order and boss tips. In shops it compares gear. Cutscenes dim it. Enjoy the game.']];
++ ['#bot .btn:nth-child(5)','journal','JOURNAL','Your progress chapter by chapter, and a bestiary of every enemy you have fought.'],
++ ['#bot .btn:last-child',null,'FF','Fast-forward the game. Tap again for normal speed.'],   /* Xenogears Dual */
++ [null,null,'ON ITS OWN','In battle, this screen shows the enemies, turn order and boss tips. In shops, it compares gear. It dims during cutscenes. Enjoy the game.']];
+ var tourAt=-1,tourT=0,tourTab=null;
+ function tourGo(i){if(i<0)i=0;if(i>=TOUR.length){tourEnd();return}if(tourAt<0)tourTab=tab;tourAt=i;var st=TOUR[i];closePop();if(st[1]&&tab!==st[1])setTab(st[1]);
+  var h='<div class="row">'+T(st[2],'y')+'<span class="sp"></span>'+T((i+1)+'/'+TOUR.length,'g')+'</div><div class="sep"></div>';
+@@ -1900,7 +1934,7 @@
+ function recapTick(linked,sig,md){if(!booted||!linked||(sig!==4&&sig!==5))return;var now=Date.now();
+  if(!RECAP.done){if(md!=='f'||setOpen()||rawEvent()){RECAP.okSince=0;return}if(!RECAP.okSince)RECAP.okSince=now;if(now-RECAP.okSince<3000)return;
+   RECAP.done=true;var last=+LS.get('seen','0')||0;
+-  if(LS.get('tourDone','0')!=='1'){setTimeout(function(){if(tourAt<0&&lastMd==='f')tourGo(0);else if(tourAt<0)RECAP.done=false},800)}
++  if(LS.get('tourDone','0')!=='1'&&(!RAIL||railIsOpen)){setTimeout(function(){if(tourAt<0&&lastMd==='f')tourGo(0);else if(tourAt<0)RECAP.done=false},800)}
+   else if(last&&now-last>=8*3600*1000)setTimeout(function(){if(lastMd==='f')recapShow(now-last);else RECAP.done=false},800)}
+  if(now-RECAP.seenAt>30000){RECAP.seenAt=now;LS.set('seen',String(now))}}
+ function recapShow(away){if(setOpen()||tourAt>=0)return;var hrs=Math.floor(away/3600000),days=Math.floor(hrs/24),sig=u32(A.SIG);
+@@ -1922,7 +1956,7 @@
+ var STG='';function hwStage(s){STG=s;if(HAS_NATIVE&&window.Native.beat)try{window.Native.beat(s+' @'+(u32(A.SIG)||0)+'/'+((u16(A.FIELD)||0)&0x7FF))}catch(e){}}
+ var hangShown=false;function hangReport(){if(hangShown||!HAS_NATIVE||!window.Native.lastHang)return;hangShown=true;var h='';try{h=window.Native.lastHang()}catch(e){}if(!h)return;
+  var q=h.split('|'),at=+q[1],wh=at?new Date(at):null;setTimeout(function(){popup('<div class="row">'+T('THE APP FROZE LAST TIME','r')+'</div><div class="sep"></div>'+wrap('It stopped while: '+q[0]+(wh?' ('+wh.toLocaleString()+')':'')+'. Send a photo of this to Claude.',40).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join(''),260)},1500)}
+-function render(){renderInner();if(STG!=='idle')hwStage('idle')}
++function render(){renderInner();if(RAIL)railDraw();if(STG!=='idle')hwStage('idle')}
+ function renderInner(){if(!fontReady)return;hwStage('render');bootStep();if(booted)hangReport();var bt=inBattle(),sig=u32(A.SIG),linked=TEST||Date.now()-lastOk<2000,bl=linked&&!bt&&inBattling(),ed=linked&&!bt&&endingOpen(),mv=linked&&!ed&&inMovie(),sh=linked&&!bt&&!bl&&!mv&&!ed?shopOpen():null,pk=linked&&!bt&&!bl&&!mv&&!sh?partyPickOpen():null,de=linked&&!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&discEndOpen(),dl=!bt&&!bl&&!mv&&!ed&&!sh&&!pk&&!de&&inDialogue();
+  document.getElementById('app').className=(mv?'quiet movie':dl?'quiet':'')+(booted&&!linked?' stale':'');var md=ed?'z':mv?'m':bl?'a':sh?'s':pk?'p':de?'e':dl?'d':bt?'b':'f';if(md!==lastMd){if(lastMd)fadeMain();lastMd=md;closePop();hpSeen={};enemyId={};if(md==='b'){slotMem={};bankCache={};blog=[];blast={};bstart=Date.now();startOut={};bossDone=false;bossName=null;bestNow={}}}
+  var lo=document.getElementById('lost'),lsec=Date.now()-lastOk;if(booted&&!TEST&&lsec>3000&&!setOpen()){lo.style.display='flex';var lh=win(linkHelp('LINK LOST',lsec),'card');if(lo._h!==lh){lo._h=lh;lo.innerHTML=lh}}else if(lo.style.display!=='none'){lo.style.display='none';lo._h=''}
+@@ -1996,7 +2030,7 @@
+ var SETC=(function(){try{return JSON.parse(LS.get('setc','{}'))||{}}catch(e){return {}}})(),devTaps=0;
+ function setHd(t){var sh=!!SETC[t];return '</div><div class="sgrp'+(sh?' shut':'')+'"><div class="opt sethd" onclick="setTog(\''+t+'\')">'+T((sh?'+ ':'- ')+t,'y')+'</div>'}
+ function setTog(t){if(SETC[t])delete SETC[t];else SETC[t]=1;LS.set('setc',JSON.stringify(SETC));lastSet='';drawSet()}
+-function devTap(){if(CFG.dev)return;if(++devTaps>=5){devTaps=0;sv('dev','1')}else{lastSet='';drawSet()}}
++function devTap(){if(CFG.dev||DIRECT)return;   /* Xenogears Dual: the Konami code on the controller (with Dual's menu open) unlocks DEV instead */if(++devTaps>=5){devTaps=0;sv('dev','1')}else{lastSet='';drawSet()}}
+ /* RESET: every switch back to how the app ships; the link (host, port), your notes and the journal are kept */
+ var SET_KEYS=['mode','poll','fast','dot','intro','dev','scale','maprot','plan','hdot','tre','gift','enl','hint','exits','places','x3d','xeye','route','follow','advise','boss','smooth','sky','enc','turns','seq','dball','xlog','rps','speed','quiet','map3d','map3eye','setc'];
+ function setReset(){popup('<div class="row">'+T('RESET SETTINGS','y')+'</div><div class="sep"></div>'+wrap('Every switch goes back to how the app ships. The link (host and port), the journal, the bestiary and your notes are kept.',40).map(function(l){return '<div class="row">'+T(l,'g')+'</div>'}).join('')
+@@ -2006,9 +2040,15 @@
+   +'<div class="opt">'+T('Lit = on. Tap a switch to change it.','g')+'</div><div>';
+  /* v2.0.0.20: one chip per switch (lit = on), related switches on one row, instead of an ON / OFF pair per line */
+  function sw(label,key){return chip(label,!!CFG[key],"sv('"+key+"','"+(CFG[key]?0:1)+"')")}
++ /* Xenogears Dual: save states, straight from the emulator the app runs (4 slots, shared with its pause menu) */
++ if(window.Native&&Native.stateInfo){h+=setHd('SAVE STATES');var ss=[];try{ss=JSON.parse(Native.stateInfo())}catch(e){}
++  for(var si=1;si<=4;si++){var at=ss[si-1]||0,im=at&&Native.stateThumb?Native.stateThumb(si):'';
++   h+='<div class="opt">'+(Native.stateThumb?(im?'<img src="'+im+'" style="width:32rem;height:24rem;margin:2rem 0;object-fit:cover;border:1rem solid #8c7352">':'<span style="width:32rem;height:24rem;margin:2rem 0;border:1rem solid #524a31;display:inline-block"></span>'):'')+T('SLOT '+si,'c')+T(at?stTime(at):padr('EMPTY',11),at?'w':'g')
++   +chip('SAVE',false,'stAsk('+si+',\'save\','+(at?1:0)+')')+(at?chip('LOAD',false,'stAsk('+si+',\'load\',1)'):'')+'</div>'}
++  if(stMsg)h+='<div class="opt">'+T(stMsg,stMsg.indexOf('FAILED')>=0?'r':'n')+'</div>'}
+  h+=setHd('GENERAL');
+  h+='<div class="opt">'+T('SIZE','c')+[70,80,90,100,110,120].map(function(s){return chip(String(s),CFG.scale===s,"sv('scale',"+s+")")}).join('')+'</div>';
+- h+='<div class="opt">'+sw('START SCREEN','intro')+chip('APP TOUR',false,'closeSet();tourGo(0)')+chip('RESET ALL',false,'setReset()')+'</div>';
++ h+='<div class="opt">'+(DIRECT?'':sw('START SCREEN','intro'))+chip('APP TOUR',false,'closeSet();tourGo(0)')+chip('RESET ALL',false,'setReset()')+'</div>';
+  h+=setHd('BATTLE');
+  h+='<div class="opt">'+sw('COUNTDOWN','enc')+sw('BOSS CARDS','boss')+sw('TURN ORDER','turns')+'</div>';
+  h+='<div class="opt">'+sw('COMBO KEYS','seq')+sw('LOCKED DEATHBLOWS','dball')+sw('SHOP ADVISOR','advise')+'</div>';
+@@ -2017,6 +2057,8 @@
+  h+='<div class="opt">'+sw('TREASURE','tre')+sw('GIFTS','gift')+sw('PLACES','places')+sw('ENEMIES','enl')+sw('EXITS','exits')+'</div>';
+  h+=setHd('HINTS');
+  h+='<div class="opt">'+sw('STORY HINT','hint')+sw('GREEN SPOTS','hdot')+sw('GUIDE LINE','route')+sw('FOLLOW PATH','follow')+'</div>';
++ /* Xenogears Dual: the minigame helpers are out of DEV, so they can be found */
++ if(DIRECT){h+=setHd('MINIGAMES');h+='<div class="opt">'+sw('RPS HELPER','rps')+sw('SPEED HELPER','speed')+'</div>'}
+  h+=setHd('EXPERIMENTAL');
+  h+='<div class="opt">'+chip('3D MAP',CFG.x3d,CFG.x3d?"sv('x3d','0')":"expAsk('x3d')")+(CFG.x3d?chip('EYE MODE',CFG.xeye,CFG.xeye?"sv('xeye','0')":"expAsk('xeye')")+sw('SMOOTH 3D','smooth')+(CFG.xeye?sw('SKY IN EYE','sky'):''):'')+'</div>';
+  if(CFG.dev){h+=setHd('DEVELOPER');
+@@ -2024,8 +2066,9 @@
+  h+='<div class="opt">'+chip('DEV OPTIONS',CFG.dev,"sv('dev','0')")+T('tap to hide','g')+'</div>';
+  if(CFG.dev){
+  h+='<div class="opt">'+T('HOST','c')+'<input id="ih" ontouchstart="kb(1)" onmousedown="kb(1)" value="'+CFG.host+'" onchange="sv(\'host\',this.value)">'+T('PORT','c')+'<input id="ip" ontouchstart="kb(1)" onmousedown="kb(1)" style="width:50rem" value="'+CFG.port+'" onchange="sv(\'port\',this.value)"></div>';
++ h+=devJumpRows();
+  h+='<div class="opt">'+T('LINK','c')+['auto','m80','m00','ram'].map(function(m){return chip(m.toUpperCase(),CFG.mode===m,"sv('mode','"+m+"')")}).join('')+'</div>';
+- h+='<div class="opt">'+sw('STATUS DOT','dot')+sw('FAST MAP','fast')+sw('RPS HELPER','rps')+sw('SPEED HELPER','speed')+'</div>';
++ h+='<div class="opt">'+sw('STATUS DOT','dot')+sw('FAST MAP','fast')+(DIRECT?'':sw('RPS HELPER','rps')+sw('SPEED HELPER','speed'))+'</div>';
+  if(window.Native&&Native.snapSave){h+='<div class="opt">'+T('STORY SNAPSHOT','c')+chip('SAVE NOW',false,'snapTake()')+chip('FOLDER',false,'Native.snapOpen()')+'</div>';
+   h+='<div class="opt">'+T('NOTE','c')+'<input id="isn" style="width:200rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="snapNote=this.value" placeholder="what just happened" value="'+snapNote.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>';if(snapMsg)h+='<div class="opt">'+T(snapMsg.slice(0,44),'g')+'</div>'}
+  if(dumpOn()){h+='<div class="opt">'+T('RAM DUMP','c')+chip(DUMP?'READING...':'SAVE NOW',false,DUMP?'':'dumpStart()')+chip('FOLDER',false,'Native.ramOpen()')+'</div>';if(dumpMsg)h+='<div class="opt">'+T(dumpMsg.slice(0,44),dumpMsg.indexOf('NOT')===0?'r':'g')+'</div>'}
+@@ -2034,6 +2077,94 @@
+  h+='<pre>'+readout().join('\n')+'</pre>'}}
+  h+='</div><div class="opt setver" onclick="devTap()">'+T('XENOGEARS LINK '+VERSION,'g')+(!CFG.dev&&devTaps?T('  '+(5-devTaps)+' MORE FOR DEV','g'):'')+'</div>';
+  if(h!==lastSet){lastSet=h;document.getElementById('setin').innerHTML=h}}
++/* ---- Xenogears Dual: the single-screen layout ----
++   The game is a 4:3 picture in the middle of the screen, drawn by the app underneath this page. The page is see-through there. The bars either side are
++   80 Link pixels wide on any 16:9 screen, which is 8 letters in their frames: short, but in text as large as half a screen of Link would have.
++   Left: the party. Right: where you are, the map, the hint, treasure and the battle countdown; in a fight, the enemies and who's next.
++   The arrow slides the whole page in over the right half (RAIL's #app), the same page as on a second screen, 320 wide.
++   Panel only (PANEL), for a 4:3 screen: no bars. The panel is as wide as the screen's shorter side, 3/4 of a 4:3 screen, and keeps whichever tab you left it on. */
++var railIsOpen=false,RAILB=null,railMapAt=0;
++function railOpen(on){on=!!on;if(on===railIsOpen)return;railIsOpen=on;document.documentElement.classList.toggle('railopen',on);if(window.Native&&Native.railDrawer)try{Native.railDrawer(on)}catch(e){}
++ if(!on){closePop();if(setOpen())closeSet();if(!PANEL&&tab!=='map'){tab='map';fullKey=''}}last={};fullKey='';poll();render()}
++function railToggle(){railOpen(!railIsOpen)}
++if(RAIL){if(!PANEL)tab='map';setTimeout(fit,0)}
++function railRows(s,col,cls){var o='';railWrap(s).forEach(function(l){o+='<div class="row">'+T(l,col)+'</div>'});return o}
++/* words wrapped to 8 letters; a longer word is broken */
++function railWrap(s){var o=[],l='';String(s||'').split(/\s+/).forEach(function(w){while(w.length>8){if(l){o.push(l);l=''}o.push(w.slice(0,8));w=w.slice(8)}if(!w)return;if(l&&(l+' '+w).length>8){o.push(l);l=w}else l=l?l+' '+w:w});if(l)o.push(l);return o}
++/* one party member: portrait and level, HP and EP (or the Gear's HP and fuel) */
++function railMember(id,c,g,now){var hp=g?g.hp:c.hp,mh=g?g.mhp:c.mhp,top=g?gname(c.gear):cname(id),h='<div class="row">'+T(top.slice(0,8),g?'n':now?'w':'y')+'</div>';
++ h+='<div class="rtop">'+portrait(id,hp===0?'ko':'')+'<div class="col"><div class="row">'+T('LV','c')+'</div><div class="row">'+T(pad(c.lv,3))+'</div></div></div>';
++ h+='<div class="row">'+T(g?String(hp):hp+'/'+mh,hpCol(hp,mh))+'</div><div class="row">'+bar('hp',hp,mh,'f')+'</div>';
++ if(g)h+='<div class="row">'+T('FU','c')+T(pad(g.fuel,5))+'</div><div class="row">'+bar('ep',g.fuel,g.mfuel,'f')+'</div>';
++ else h+='<div class="row">'+T(c.ep+'/'+c.mep,'w')+'</div><div class="row">'+bar('ep',c.ep,c.mep,'f')+'</div>';
++ return '<div class="rw'+(now?' now':'')+'">'+h+'</div>'}
++function railFrame(inner,cls,attr){return '<div class="rw '+(cls||'')+'" '+(attr||'')+'>'+inner+'</div>'}
++/* the left bar: the party, then time and money */
++function railLeft(bt){var h='',s;
++ if(bt){var act=actingSlot();for(s=0;s<3;s++){var bid=u8(A.BPID+s);if(bid==null||bid>10)continue;var b=A.BSLOT+s*BREC,c=readChar(b);if(!c)continue;var ing=(u8(b+0x15A)&0x80)!==0,g=ing?readGear(b+REC):null;h+=railMember(bid,c,g,s===act)}}
++ else{var p=rd(A.PARTY,3);if(p)shownParty(p).forEach(function(id){var c=readChar(A.CHAR+id*REC);if(!c)return;var g=riding(id)&&c.gear<20?readGear(A.GEAR+c.gear*REC):null;h+=railMember(id,c,g&&g.mhp?g:null,false)})}
++ h+='<span class="sp"></span>';
++ if(bt&&battleTot)h+=railFrame('<div class="row">'+T('REWARDS','y')+'</div><div class="row">'+T('EXP','c')+T(pad(cm(battleTot[0]),5))+'</div><div class="row">'+T(pad(cm(battleTot[1]),6))+T(' G','y')+'</div>');
++ else{var pt=u32(A.PTIME),gd=u32(A.GOLD),ps=pt==null?null:Math.floor(pt/60);h+=railFrame('<div class="row">'+T(ps==null?'':p2(Math.floor(ps/3600))+':'+p2(Math.floor(ps/60)%60))+'</div><div class="row">'+T(gd==null?'':pad(cm(gd),6))+T(' G','y')+'</div>')}
++ return h}
++/* the right bar in a fight: enemies with HP, then who acts next */
++function railFight(){var R=RAILB,h='';if(!R)return railFrame(railRows('READING THE FIGHT','g'),'grow');var n=R.foes.length,o='';
++ R.foes.forEach(function(e){o+='<div class="'+(e.ko?'dim':'')+'" onclick="railOpen(true);showEnemy('+e.s+',\''+R.enm[e.s]+'\','+(e.m|0)+',0)"><div class="rfoe"><span class="es">'+(e.p?sprImg(e.p,18,18):'')+'</span>'+T(pad(e.hp,5),hpCol(e.hp,e.m))+'</div><div class="row">'+T(String(e.n).slice(0,8),'r')+'</div><div class="row">'+bar('en',e.hp,e.m,'f')+'</div></div>'});
++ h+=railFrame(o,'grow');
++ if(R.rk){var l=Object.keys(R.rk).map(Number).sort(function(a,b){return R.rk[a]-R.rk[b]}).slice(0,3),q='<div class="row">'+T('NEXT','c')+'</div>';
++  l.forEach(function(s,i){var nm=s<3?(u8(A.BPID+s)<=10?cname(u8(A.BPID+s)):''):R.enm[s]||'';q+='<div class="row">'+T(String(nm).slice(0,8),i===0?'y':s<3?'w':'r')+'</div>'});h+=railFrame(q)}
++ return h}
++/* the right bar elsewhere: place, map, hint, treasure, countdown */
++function railField(sig,f){var h='',ar=sig===4&&f!=null?areaOf(f):null,place=sig===5?'WORLD MAP':ar?ar.s:(chapter()||'');
++ h+=railFrame(railRows(place,'y'));
++ h+=railFrame('<canvas id="railmap"></canvas>');
++ var hn=CFG.hint&&hintNext();if(hn){var nt=(hn.note||'').replace(/^\?/,''),pts=hintParts(nt),pg=hintSavedPage(hn)||0,n=hintPages(hn),tx=pts.length?pts[Math.min(pg,pts.length-1)]:'';
++  h+=railFrame('<div class="row">'+T('HINT','c')+'<span class="sp"></span>'+(n>1?T((pg+1)+'/'+n,'y'):'')+'</div>'+railRows(tx,'w'),'grow','onclick="railOpen(true);showHint()"')}
++ else h+='<span class="sp"></span>';
++ var tl=sig===4&&f!=null?treList(f):null,e=CFG.enc?encInfo():null,o='';
++ if(tl){var got=tl.filter(function(t){return t.got}).length;o+='<div class="row">'+T('CHESTS','c')+'</div><div class="row">'+T(pad(got+'/'+tl.length,8),got===tl.length?'g':'y')+'</div>'}
++ if(e){var fr=e.next!=null?e.next/(e.w+1):1;o+='<div class="row">'+T('BATTLE','c')+'</div><div class="row"><span class="bar '+(e.next!=null&&e.next<=45?'en':e.next!=null&&e.next<=120?'hp low':'hp')+'"><i style="width:'+Math.round(Math.max(.02,fr)*100)+'%"></i></span></div>'}
++ if(o)h+=railFrame(o);
++ return h}
++function railMini(){var a=document.getElementById('mapcv'),b=document.getElementById('railmap');if(!a||!b||!a.width||!a.height)return;var now=Date.now();if(now-railMapAt<120)return;railMapAt=now;
++ var w=b.clientWidth,d=window.devicePixelRatio||1,W=Math.round(w*d);if(b.width!==W||b.height!==W){b.width=W;b.height=W;b.style.height=w+'px'}var g=b.getContext('2d'),k=Math.max(W/a.width,W/a.height);g.clearRect(0,0,W,W);g.drawImage(a,(W-a.width*k)/2,(W-a.height*k)/2,a.width*k,a.height*k)}
++function railDraw(){if(!fontReady)return;var linked=TEST||Date.now()-lastOk<2000,sig=u32(A.SIG),bt=linked&&inBattle(),f=u16(A.FIELD);f=f==null?null:f&0x7FF;
++ var btn='<svg viewBox="0 0 12 12"><path d="'+(railIsOpen?'M4 1L9 6L4 11Z':'M8 1L3 6L8 11Z')+'" fill="#ffd866"/></svg>';put('railBtn',btn);if(PANEL)return;
++ if(!linked){put('railL',railFrame(railRows('NO LINK','r')));put('railR','');return}
++ put('railL',railLeft(bt));put('railR',bt?railFight():railField(sig,f));if(!bt)railMini()}
++/* ---- Xenogears Dual: jump around the story for checking hints (DEV) ----
++   Setting the step changes the hint at once, as Link reads the saved copy; warping is separate, so a hint can be read and
++   its page's room gone to with or without the scene that starts there. Not real progress: other switches stay as they were,
++   and the app stops updating CONTINUE until a state is loaded (MainActivity.devJumped). */
++var devStepIn='',devRoomIn='',devDoorIn='0',devMsg='',devAsked=false;
++function devIsJumped(){try{return !!(window.Native&&Native.devJumped&&Native.devJumped())}catch(e){return false}}
++function devInput(id,v,w,k){return '<input id="'+id+'" type="number" style="width:'+w+'rem" ontouchstart="kb(1)" onmousedown="kb(1)" oninput="'+k+'=this.value" value="'+v+'">'}
++/* the step that shows the hint d places on from the current one: a hint shows from the step of the hint before it */
++function devHintGo(d){var s=u16(A.STORY);if(s==null)return;hintNext();var K=hintNext.k,i=0;while(i<K.length&&K[i]<=s)i++;i=Math.max(0,Math.min(K.length-1,i+d));devSetStory(i?K[i-1]:0)}
++function devSetStory(v){v=parseInt(v,10);if(!(v>=0&&v<=0xFFFF))return;Native.devStory(v);devMsg='STEP SET TO '+v;lastSet='';setTimeout(function(){poll();drawSet()},120)}
++function devWarpGo(room,door){room=parseInt(room,10);door=parseInt(door,10)||0;if(!(room>=0&&room<0x800)){devMsg='NO SUCH ROOM';lastSet='';drawSet();return}Native.devWarp(room,door);devAsked=true;devMsg='ROOM '+room+' DOOR '+door;lastSet='';drawSet()}
++function devHintRoom(){var hn=hintNext();if(!hn)return;var R=hintRooms(hn);if(!R.length)return;var r=R[Math.min(hintSavedPage(hn)||0,R.length-1)][0];if(r<0){devMsg='THAT PAGE IS ON THE WORLD MAP';devAsked=false;lastSet='';drawSet();return}devWarpGo(r,0)}
++function devJumpRows(){if(!DIRECT||!window.Native||!Native.devWarp)return '';var s=u16(A.STORY),hn=hintNext(),h='';
++ h+='<div class="opt">'+T('STORY STEP '+(s==null?'?':s),'c')+T(hn?'  HINT '+hn.step:'  NO HINT','g')+chip('SHOW',false,'closeSet();showHint(1)')+'</div>';
++ h+='<div class="opt">'+chip('< HINT',false,'devHintGo(-1)')+chip('HINT >',false,'devHintGo(1)')+devInput('idst',devStepIn,44,'devStepIn')+chip('SET STEP',false,'devSetStory(devStepIn)')+'</div>';
++ h+='<div class="opt">'+T('ROOM','c')+devInput('idrm',devRoomIn,36,'devRoomIn')+T('DOOR','c')+devInput('iddr',devDoorIn,28,'devDoorIn')+chip('WARP',false,'devWarpGo(devRoomIn,devDoorIn)')+chip('HINT ROOM',false,'devHintRoom()')+'</div>';
++ var w=devAsked?Native.devWarpState():0,st=w===1?'WAITING FOR CONTROL':w===2?'DONE':w===3?'COULD NOT: SCENE, MENU OR WORLD MAP?':'';
++ if(devMsg||st)h+='<div class="opt">'+T(devMsg+(st?': '+st:''),w===3?'r':'g')+'</div>';
++ wrap((devIsJumped()?'CONTINUE is not being updated (load a state to go back to real play). ':'')+'A room\'s own scene can move the step on, or never hand back control: keep a save state.',34).forEach(function(l){h+='<div class="opt">'+T(l,'g')+'</div>'});
++ return h}
++/* ---- Xenogears Dual save states ---- */
++var stMsg='';
++function stTime(t){var d=new Date(t);return p2(d.getMonth()+1)+'/'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes())}
++/* ask first when loading (unsaved progress is lost) or overwriting a slot */
++function stAsk(n,what,used){if(what==='save'&&!used){stGo(n,what);return}
++ var h='<div class="row">'+T((what==='load'?'LOAD':'OVERWRITE')+' SLOT '+n+'?','y')+'</div><div class="sep"></div>';
++ wrap(what==='load'?'The game jumps back to this save state. Anything since your last save is lost.':'This replaces the save state already in this slot.',34).forEach(function(l){h+='<div class="row">'+T(l)+'</div>'});
++ h+='<div class="row" style="height:16rem">'+chip('CANCEL',false,'event.stopPropagation();closePop()')+'<span class="sp"></span>'+chip(what==='load'?'LOAD':'SAVE',true,"event.stopPropagation();closePop();stGo("+n+",'"+what+"')")+'</div>';
++ popup(h,240);document.getElementById('pop').style.zIndex=6}
++function stGo(n,what){stMsg=(what==='load'?'LOADING':'SAVING')+' SLOT '+n+'...';lastSet='';drawSet();if(what==='load')Native.stateLoad(n);else Native.stateSave(n)}
++/* the app calls this when a save or load finishes */
++window.onStateDone=function(n,ok,what){stMsg=ok?(what==='load'?'LOADED':'SAVED TO')+' SLOT '+n:(what==='load'?'LOAD':'SAVE')+' FAILED (SLOT '+n+')';
++ lastSet='';if(setOpen())drawSet();if(ok&&what==='load'){fullKey='';last={};poll()}};
+ /* change one setting: clean the value, store it, apply it, redraw */
+ /* experimental switches: a warning first, ENABLE to switch on (shown above the settings panel) */
+ function expAsk(k){var nm=k==='x3d'?'3D MAP':'EYE MODE',h='<div class="row">'+T('EXPERIMENTAL: '+nm,'y')+'</div><div class="sep"></div>';

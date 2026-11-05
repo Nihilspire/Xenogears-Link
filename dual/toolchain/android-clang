@@ -1,0 +1,7 @@
+#!/bin/sh
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+exec clang-18 --target=aarch64-linux-android30 -fPIC -mno-outline-atomics -nostdinc \
+ -isystem /usr/lib/llvm-18/lib/clang/18/include -isystem $ROOT/third_party/bionic/libc/include -isystem $ROOT/third_party/bionic/libm/include \
+ -isystem $ROOT/third_party/bionic/libc/kernel/uapi/asm-arm64 -isystem $ROOT/third_party/bionic/libc/kernel/uapi -isystem $ROOT/third_party/bionic/libc/kernel/android/uapi \
+ -I$ROOT/toolchain/extra/include \
+ --sysroot=$ROOT/toolchain/sysroot -fuse-ld=lld -Wl,--build-id=fast -L$ROOT/toolchain/sysroot/usr/lib -L$ROOT/toolchain/sysroot/usr/lib "$@"

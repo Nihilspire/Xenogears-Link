@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xenogears Hint Sweep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: summary and the four filters first, then one row per hint; opening a row shows its pages and map pictures. Colours follow Link's own panel. */
+:root{--bg:#0b0d24;--panel:#14173a;--line:#3a3f6e;--ink:#e9e7dc;--dim:#a2a4c0;--gold:#d9b95b;--ok:#6fce84;--warn:#e7b94a;--bad:#f0746a;--none:#8589ad;--disp:'Barlow Condensed','Arial Narrow',sans-serif;--body:'Barlow',system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--body)}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 64px;display:flex;flex-direction:column;gap:20px}
+h1{font:600 34px/1.1 var(--disp);color:var(--gold);margin:0;letter-spacing:.02em}h2{font:600 24px/1.2 var(--disp);color:var(--gold);margin:12px 0 0;text-wrap:balance}
+p{margin:0;max-width:68ch}.dim{color:var(--dim)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);padding:10px 12px}.tile b{display:block;font:600 30px/1 var(--disp);font-variant-numeric:tabular-nums}.tile span{font-size:14px;color:var(--dim)}
+.bad{color:var(--bad)}.warn{color:var(--warn)}.ok{color:var(--ok)}.none{color:var(--none)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.f{font:500 15px var(--body);background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;cursor:pointer}button.f[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
+input{font:15px var(--body);background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 10px;width:150px}
+:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.row{background:var(--panel);border:1px solid var(--line);border-left-width:5px}.row.w2{border-left-color:var(--bad)}.row.w1{border-left-color:var(--warn)}.row.w0{border-left-color:var(--ok)}.row.w-1{border-left-color:var(--none)}
+.row>button{all:unset;display:grid;grid-template-columns:62px 1fr auto;gap:10px;padding:9px 12px;width:100%;box-sizing:border-box;cursor:pointer}.row>button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.num{font:600 20px/1.2 var(--disp);font-variant-numeric:tabular-nums}.tag{font-size:13px;white-space:nowrap}
+.body{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.page{border-top:1px solid var(--line);padding-top:10px;display:grid;grid-template-columns:1fr auto;gap:12px}
+.shots{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.shots figure{margin:0;width:150px;font-size:12px;color:var(--dim)}.shots img{width:150px;height:200px;object-fit:cover;display:block;background:#000;cursor:zoom-in}
+.chk{display:block;font-size:15px}
+table{border-collapse:collapse;width:100%;font-size:14px}.tw{overflow-x:auto}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{color:var(--dim);font-weight:500}
+#big{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:9;cursor:zoom-out}#big img{max-width:96%;max-height:96%}
+@media(max-width:560px){.page{grid-template-columns:1fr}.shots{justify-content:flex-start}.row>button{grid-template-columns:50px 1fr}.tag{grid-column:2}}
+</style></head><body><main>
+<header><h1>Xenogears Hint Sweep</h1></header>
+<p id="intro"></p>
+<div class="tiles" id="tiles"></div>
+<p class="dim" id="how"></p>
+<h2>Every hint</h2>
+<div class="bar" id="bar"></div>
+<div id="list" style="display:flex;flex-direction:column;gap:6px"></div>
+<h2>Real saves where the line is missing</h2>
+<p class="dim" id="svi"></p>
+<div class="tw"><table id="sv"></table></div>
+</main><div id="big" role="dialog" aria-label="Larger picture"><img alt=""></div>
+<script>
+/*DATA*/
+var WORDS={spot:['Line to the green spot','ok'],door:['Line to the door','ok'],worldexit:['Line to the world-map exit','ok'],arrived:['In the room, no spot, so no line','ok'],
+ noway:['No line: no doors lead there. Right if a scene or transport takes the party','warn'],walkout:['No line: the way out to the world map is through another room, and Link only looks in this one','bad'],nodoor:['No line: the door to the next room has no place on the map','bad'],offfloor:['No line: the party is off the floor in this test','warn'],noline:['No line: the target is known but the floor does not connect from where the party stands','bad'],stuck:['The room did not load','bad'],
+ short:['Line stops short of its target','warn'],nomap:['No map: Link has no floor for this room','warn'],noparty:['Not tested: a scene has the party, so there is no position','none'],world:['World-map page, spot not checked','none'],worldaway:['Not tested','none'],nopage:['Not tested','none']};
+function W(c){if(!c)return '';var w=WORDS[c.st]||[c.st,'none'],t=w[0];if(c.st==='short'&&c.gap!=null)t+=' by '+c.gap+' units';if(c.off)t+='. Green spot is off the walkable floor';return '<span class="'+(c.off&&w[1]==='ok'?'warn':w[1])+'">'+t+'</span>'}
+var e=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var cnt={2:0,1:0,0:0,'-1':0};ROWS.forEach(function(r){cnt[r.worst]++});
+document.getElementById('intro').textContent='Every memory dump was run through the copy of Link inside Xenogears Dual, with no playing. This shows which hint appears at each story step, and whether its page and guide line work. It does not check whether the words are right.';
+document.getElementById('tiles').innerHTML=[[ST.hints,'hints'],[cnt[2],'with a missing line','bad'],[cnt[1],'to look at','warn'],[cnt[0],'all working','ok'],[cnt['-1'],'not testable','none'],[ST.errs,'page errors',ST.errs?'bad':'ok']].map(function(t){return '<div class="tile"><b class="'+(t[2]||'')+'">'+t[0]+'</b><span>'+t[1]+'</span></div>'}).join('');
+document.getElementById('how').textContent='Two sources. Saved: '+ST.saved+' dumps of real play, which reach '+ST.savedHints+' of the '+ST.hints+' hints, at '+ST.savedsteps+' story steps from 111 to 350. Warped: the emulator set the story step for each hint and warped to each room it names ('+ST.walk+' visits to '+ST.rooms+' rooms). Warped results come from door 0 with the switches of an early save, so a missing line there may depend on where the party stands. '+(ST.res.scene||0)+' warped rooms stayed in a scene, and those use a first look at the room.';
+var flt='all',q='',open_={};
+var FL=[['all','All '+ST.hints],['2','Missing line '+cnt[2]],['1','To look at '+cnt[1]],['0','Working '+cnt[0]],['-1','Not testable '+cnt['-1']]];
+function bar(){document.getElementById('bar').innerHTML=FL.map(function(f){return '<button class="f" aria-pressed="'+(flt===f[0])+'" onclick="flt=\''+f[0]+'\';bar();list()">'+f[1]+'</button>'}).join('')+'<label class="dim" for="q">Find</label><input id="q" placeholder="hint, room or words" value="'+e(q)+'" oninput="q=this.value;list()">'}
+function tagOf(r){return r.worst===2?'<span class="bad">missing line</span>':r.worst===1?'<span class="warn">look at</span>':r.worst===0?'<span class="ok">working</span>':'<span class="none">not testable</span>'}
+function rowHtml(r,i){var o=open_[r.k];return '<div class="row w'+r.worst+'"><button aria-expanded="'+!!o+'" onclick="tog('+r.k+')"><span class="num">'+r.k+'</span><span>'+e(r.note||'(no note)')+(r.unv?' <span class="dim">(not checked in play)</span>':'')+'</span><span class="tag">'+tagOf(r)+' <span class="dim">'+r.pages.length+'p'+(r.saved?', '+r.saved+' saved':'')+'</span></span></button>'+(o?body(r):'')+'</div>'}
+function shot(c,cap){if(!c||!c.shot)return '';return '<figure><img data-s="'+e(c.shot)+'" alt="Link map: '+e(cap)+'" onclick="big(this)"><figcaption>'+e(cap)+'</figcaption></figure>'}
+function body(r){var h='<div class="body"><p class="dim">Shows from story step '+r.step+(r.shown.length?'. In this test Link showed hint '+r.shown.join(', ')+' instead, because a split marks this one done with these switches':'')+'.</p>';
+ r.pages.forEach(function(p){h+='<div class="page"><div><b>Page '+p.n+'</b> '+e(p.name)+' <span class="dim">'+(p.spots?p.spots+' spot'+(p.spots>1?'s':''):'no spot')+'</span>';
+  if(p.way)h+='<span class="chk">From '+e(p.from)+': '+W(p.way)+'</span>';
+  if(p.at)h+='<span class="chk">In the room'+(p.at.res==='scene'?' (first look, a scene had the party)':'')+': '+W(p.at)+'</span>';
+  if(!p.way&&!p.at)h+='<span class="chk none">'+(p.room<0?'World-map page, spot not checked':'Not tested')+'</span>';
+  h+='</div><div class="shots">'+shot(p.way,'on the way')+shot(p.at,'in the room')+'</div></div>'});
+ return h+'</div>'}
+function list(){var s=q.toLowerCase(),L=ROWS.filter(function(r){if(flt!=='all'&&String(r.worst)!==flt)return false;return !s||String(r.k)===s||r.note.toLowerCase().indexOf(s)>=0||r.pages.some(function(p){return p.name.toLowerCase().indexOf(s)>=0})});
+ document.getElementById('list').innerHTML=L.map(rowHtml).join('')||'<p class="dim">No hints match.</p>';pics()}
+function tog(k){open_[k]=!open_[k];list()}
+/* the pictures come in files of a few MB, fetched when a row that needs one is opened */
+var PIC={},LOADED={};function __S(o){for(var k in o)PIC[k]=o[k];pics()}
+function pics(){document.querySelectorAll('img[data-s]').forEach(function(i){var n=i.getAttribute('data-s');if(PIC[n]){i.src='data:image/jpeg;base64,'+PIC[n];i.removeAttribute('data-s');return}var c=WHERE[n];if(c!=null&&!LOADED[c]){LOADED[c]=1;var t=document.createElement('script');t.src='shots_'+c+'.js';document.head.appendChild(t)}})}
+function big(i){var b=document.getElementById('big');b.firstChild.src=i.src;b.style.display='flex'}document.getElementById('big').onclick=function(){this.style.display='none'};
+document.getElementById('svi').textContent='In the saved dumps, the party is often in a room off the hint\'s path. Each row is one hint, page and room, with how many dumps showed it. Across all '+ST.saved+' dumps: '+(ST.savedc.spot||0)+' pages had a line to a spot, '+(ST.savedc.door||0)+' to a door, '+(ST.savedc.noway||0)+' had no way known, '+(ST.savedc.noline||0)+' had a floor that does not connect, and '+(ST.savedc.noparty||0)+' had no party position.';
+var svOpen=false;function svDraw(){var S=svOpen?SV:SV.slice(0,25);document.getElementById('sv').innerHTML='<thead><tr><th>Hint</th><th>Page</th><th>Party in</th><th>Page wants</th><th>Result</th><th>Dumps</th><th>Map</th></tr></thead><tbody>'+S.map(function(s){return '<tr><td>'+s.k+'</td><td>'+s.pg+'</td><td>'+e(s.here)+'</td><td>'+e(s.to)+'</td><td>'+W(s)+'</td><td>'+s.n+'</td><td><button class="f" onclick="svShot(this,\''+e(s.shot)+'\')">Show</button></td></tr>'}).join('')+(SV.length>25&&!svOpen?'<tr><td colspan="7"><button class="f" onclick="svOpen=true;svDraw()">Show all '+SV.length+'</button></td></tr>':'')+'</tbody>'}
+function svShot(b,n){var i=document.createElement('img');i.setAttribute('data-s',n);i.alt='Link map';i.style.width='150px';i.onclick=function(){big(i)};b.parentNode.replaceChild(i,b);pics()}
+bar();list();svDraw();
+</script></body></html>
