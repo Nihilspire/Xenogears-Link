@@ -127,4 +127,16 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 - **Map messages wrap** onto more lines instead of running past the map's edge.
 - **One page for Link and Xenogears Dual.** Dual's parts (save states, its single-screen layouts and so on) are now in this page,
   off unless the page runs inside Dual, so fixes reach both. Nothing else changes in Link.
+- **Guide line: the way out through other rooms.** When the next place is across the world map and the room you're in has no way
+  out to it, the line now points to the door towards the nearest room that has one, instead of drawing nothing: Dazil's rental shop,
+  Nisan's inn, rental house and secret dock, Nortune's A Block, Ethos HQ, Fort Jasper's Omnigear Bay and the Yggdrasil. It only
+  does this when the next place connects to the world map, so a scene or a lift Link has no door for doesn't send you outside.
+  Found by Xenogears Dual's hint sweep.
+- **Doors**: 15 the game has but the map lacked, placed where the game puts the party coming back through them, with their floor
+  heights: the Fatima Castle lift (167), the Battle Arena hangar (223), the Yggdrasil gear hangar (293), the Thames screw lift
+  (317, three floors), the orphanage and Ethos transport exteriors to the Yggdrasil (326, 333), the Shevat emergency shaft (444),
+  Sargasso's treasure room (504), outside Etrenank and Solaris (529, 537), the Goliath Factory passage (262) and Babel Tower's tram
+  control room (410). Hint lines there now lead somewhere. Worth a look in the room viewer. Left out: the Shevat palace lift shaft
+  (472) back to the exterior. It made the palace rooms point back outside at step 178 instead of on to the throne room, because
+  the line aims for the hint's first room it can reach.
 - Not yet seen live.

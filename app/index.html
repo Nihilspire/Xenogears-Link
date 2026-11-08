@@ -1661,17 +1661,26 @@ function routeTo(f,p){hwStage('route');var E=window.EXITS&&EXITS[f]||[];
     door towards it (the world-map exit for a world-map page) */
  var pgS=hintSavedPage(hn);if(pgS!=null){var HR=hintRooms(hn);if(HR.length){var hr=HR[Math.min(pgS,HR.length-1)],to=hr[0];
    if(to===f){if(!hr[1].length)return null;var b0=null,d0=1e9;hr[1].forEach(function(q){var d=Math.hypot(q[0]-p.x,q[1]-p.z);if(d<d0){d0=d;b0=q}});return{x:b0[0],z:b0[1],y:null}}
-   var hk='p'+f+'/'+to,hop;if(RTM.key===hk)hop=RTM.v;else{hop=to<0?null:routeHop(f,to);if(hop==null&&E.some(function(e){return e[2]===-1&&e[0]!=null}))hop=-1;RTM.key=hk;RTM.v=hop}
+   var hk='p'+f+'/'+to,hop;if(RTM.key===hk)hop=RTM.v;else{hop=to<0?null:routeHop(f,to);if(hop==null)hop=routeOut(f,[to]);RTM.key=hk;RTM.v=hop}
    if(hop==null)return null;var b1=null,d1=1e9;E.forEach(function(e){if(e[2]!==hop||e[0]==null)return;var d=Math.hypot(e[0]-p.x,e[1]-p.z);if(d<d1){d1=d;b1=e}});
    return b1?{x:b1[0],z:b1[1],y:b1[3]==null?null:b1[3]}:null}}
  var sp=hintSpots(f);if(sp.length){var b=null,bd=1e9;sp.forEach(function(q){var d=Math.hypot(q[0]-p.x,q[1]-p.z);if(d<bd){bd=d;b=q}});return{x:b[0],z:b[1],y:null}}
  var L=hn.path?hn.path.map(function(q){return q[0]}):hn.rows.map(function(r){return r[0]}),i=L.indexOf(f),goal=(i>=0?L.slice(i+1):L).filter(function(r){return r>=0&&r!==f});if(!goal.length)return null;
- var key=f+'/'+goal.join(','),d;if(RTM.key===key)d=RTM.v;else{d=null;for(var g=0;g<goal.length&&d==null;g++)d=routeHop(f,goal[g]);if(d==null&&E.some(function(e){return e[2]===-1&&e[0]!=null}))d=-1;RTM.key=key;RTM.v=d}if(d==null)return null;   /* not reachable through rooms: the way out to the world map */
+ var key=f+'/'+goal.join(','),d;if(RTM.key===key)d=RTM.v;else{d=null;for(var g=0;g<goal.length&&d==null;g++)d=routeHop(f,goal[g]);if(d==null)d=routeOut(f,goal);RTM.key=key;RTM.v=d}if(d==null)return null;   /* not reachable through rooms: the way out to the world map */
  var best=null,bd2=1e9;E.forEach(function(e){if(e[2]!==d||e[0]==null)return;var dd=Math.hypot(e[0]-p.x,e[1]-p.z);if(dd<bd2){bd2=dd;best=e}});
  return best?{x:best[0],z:best[1],y:best[3]==null?null:best[3]}:null}
 /* the first room to go to from f on the shortest way (by doors) to room g, or null */
 function routeHop(f,g){var first={},q=[f],seen={};seen[f]=1;
  while(q.length){var r=q.shift();if(r===g)return first[r];(EXITS[r]||[]).forEach(function(e){var d=e[2];if(d<0||seen[d])return;if(r===f&&e[0]==null)return;seen[d]=1;first[d]=r===f?d:first[r];q.push(d)})}
+ return null}
+/* no way through rooms to the goals: the way out to the world map. This room's own (-1) when it has one with a place. Since 2.0.0.23 (the
+   hint sweep: Dazil's rental shop, Ethos HQ, Fort Jasper) also the first room towards the nearest room that has one, but only when a goal
+   is the world map or can be walked into from it, so a scene or a lift Link has no door for doesn't send the party outside */
+function worldOut(f){return (window.EXITS&&EXITS[f]||[]).some(function(e){return e[2]===-1&&e[0]!=null})}
+function reachesWorld(g){var q=[g],seen={};seen[g]=1;while(q.length){var r=q.shift();if(r!==g&&worldOut(r))return true;(EXITS[r]||[]).forEach(function(e){var d=e[2];if(d<0||seen[d]||e[0]==null)return;seen[d]=1;q.push(d)})}return false}
+function routeOut(f,goals){if(worldOut(f))return -1;if(!window.EXITS||!goals.some(function(g){return g<0||worldOut(g)||reachesWorld(g)}))return null;
+ var first={},q=[f],seen={};seen[f]=1;
+ while(q.length){var r=q.shift();if(r!==f&&worldOut(r))return first[r];(EXITS[r]||[]).forEach(function(e){var d=e[2];if(d<0||seen[d])return;if(r===f&&e[0]==null)return;seen[d]=1;first[d]=r===f?d:first[r];q.push(d)})}
  return null}
 /* the room's battle line-ups: 16 records of 0x20 bytes at 0x800658DC (room file block 7), then 16 weights at 0x80065ADC; a weight of
    0 means the line-up is only used by scripted fights. Record: +0 monster bank (disc file 2618 + 2 x bank), +8 eight enemies
