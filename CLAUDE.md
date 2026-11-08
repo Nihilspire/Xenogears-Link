@@ -9,6 +9,20 @@ Both read the game's RAM live, either from RetroArch's network commands (UDP 127
 or from XenogearsRecomp. Setup on a new machine: `docs/SETUP.md`. RAM addresses and how they were found: `docs/RAM_map.md`.
 What changed in each build: `docs/Release notes 2.0.md`.
 
+## The page is shared with Xenogears Dual
+Xenogears Dual (`Desktop\Claude\Xenogears\xenogears-dual`: the game and this page in one Android app) runs these same files. Its
+`app/assets/link` is a plain copy of `app/index.html` and `app/www/*`, made by its `app/link_sync.sh` from this repo's last commit.
+- Dual's parts are in the page behind feature detection of Dual's bridge, so Link's apps never see them:
+  - `DIRECT` (`Native.stateInfo`, save states): no start screen, SAVE STATES and MINIGAMES in SETTINGS, faster map polls, DEV from
+    the Konami code, the story jump in DEV, its own tour wording;
+  - `RAIL` and `PANEL` (Dual's single-screen layouts: `html.rail`, `html.panelonly`, `railDraw`; `#rail` / `#panel` on the URL
+    shows them in a browser);
+  - in `map3d.js`, `HOST.room3d` and `HOST.room3dReady` (Dual's first-boot copy of the 3D rooms).
+- Don't give Link's Android or Windows bridge a `stateInfo`, `railOn`, `panelOn`, `room3d` or `room3dReady` method.
+- Change the page here, never in Dual's copy; anything only Dual should do goes behind those flags. Dual's sync stops if its copy was edited.
+- After a page change, check both: this repo's sweep and screenshots, and Dual's page tests (`tests/scripts/link_*_test.py`,
+  `maps3d_test.py`; see Dual's CLAUDE.md).
+
 ## Builds
 - Android: `cd android && XG_KS_PASS=<password> ./build.sh 2.0.0.N`
   - Gives `android/Xenogears Link 2.0.0.N.apk`.
@@ -59,6 +73,8 @@ What changed in each build: `docs/Release notes 2.0.md`.
   - still waiting on a photo of the "THE APP FROZE LAST TIME" card or a save state.
 - Hint 114's sewer part was reordered to the walkthrough order after 2.0.0.22. It's committed and in the room viewer, but not in an APK yet.
 - App tour wording tidied (2 Nov: CHAPTER, SETTINGS, STATUS, JOURNAL, and BY ITSELF renamed ON ITS OWN). Committed, not in an APK yet.
+- The page shared with Xenogears Dual (8 Nov), which brings two fixes from Dual 0.26: the 3D map's error loop (a disc it can't read
+  froze the page) and wrapped map messages. Committed, not in an APK yet (see the release notes' "Next build").
 - The start screen says "USE RETROARCH NIGHTLY". Stable works too, but its Network Commands setting doesn't stick on restart for
   Jack, so Nightly stays the advice.
 - 34 hint page breaks with no way through doors. Run the gap check in `docs/SETUP.md` to list them.

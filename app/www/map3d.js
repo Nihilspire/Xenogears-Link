@@ -20,7 +20,7 @@ var CEIL=120,COVER2=150;   /* about the height of Fei's sprite: the view shows t
 function u16(b,p){return b[p]|b[p+1]<<8}function s16(b,p){var v=b[p]|b[p+1]<<8;return v&0x8000?v-65536:v}function u32(b,p){return (b[p]|b[p+1]<<8|b[p+2]<<16|b[p+3]<<24)>>>0}
 /* one canvas for the life of the page (the map's HTML is rebuilt often; a WebGL context is not), moved into the map box */
 var keep=null;M3.canvas=function(box){if(!keep){keep=document.createElement('canvas');keep.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;display:block'}if(keep.parentNode!==box)box.appendChild(keep);return keep};
-M3.can=function(){return !!(G.THREE&&G.HOST&&HOST.discSize&&+HOST.discSize()>0)};
+M3.can=function(){return !!(G.THREE&&G.HOST&&(HOST.room3dReady&&HOST.room3dReady()||HOST.discSize&&+HOST.discSize()>0))};
 function init(canvas){if(R&&cv===canvas)return true;T=G.THREE;if(!T)return false;cv=canvas;
  try{R=new T.WebGLRenderer({canvas:canvas,antialias:false,alpha:true,preserveDrawingBuffer:false,logarithmicDepthBuffer:!MOBILE,powerPreference:'low-power'})}catch(e){M3.err='No WebGL here';return false}
  canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();M3.ready=false;M3.err='3D stopped (the graphics chip gave up). Turn 3D off and on.';M3.room=null},false);
@@ -30,6 +30,8 @@ function init(canvas){if(R&&cv===canvas)return true;T=G.THREE;if(!T)return false
 async function openDisc(){var key=String(HOST.discName&&HOST.discName()||'')+'/'+HOST.discSize();if(disc&&discKey===key)return disc;
  var size=+HOST.discSize(),nr=0,reader=async function(o,n){if(++nr%4===0)await breathe();var r=HOST.discRead(o,n);if(typeof r!=='string')return r;if(r.slice(0,4)==='ERR:')throw new Error(r.slice(4));return G.b64u8(r)};
  disc=await XB.open(reader,size);discKey=key;return disc}
+/* a room file: Xenogears Dual's launcher copies them all off Disc 1 on first boot (RoomFiles), so the disc is only read for any it hasn't got to */
+async function roomFile(i){var r=HOST.room3d?HOST.room3d(i):'';if(r)return G.b64u8(r);return (await openDisc()).file(i)}
 /* texture page + palette -> 256 x 256 RGBA (4-bit, 8-bit or 15-bit texels; colour 0 is see-through) */
 function pageTex(VR,tp,cl,cache){var key=tp+'_'+cl;if(cache[key])return cache[key];
  var bx=(tp&15)*64,by=((tp>>4)&1)*256,mode=(tp>>7)&3,qx=(cl&0x3F)*16,qy=(cl>>6)&0x1FF,px=new Uint8Array(256*256*4),P32=new Uint32Array(px.buffer);
@@ -132,9 +134,10 @@ function placePeople(camA){if(!peopleG){peopleG=new T.Group();scene.add(peopleG)
   o.position.set(a.x,-a.y,-a.z);o.visible=true;seen[a.i]=1});
  Object.keys(P.objs).forEach(function(k){if(!seen[k])P.objs[k].visible=false})}
 /* load room f in the background; the map draws flat until it is ready */
-M3.load=function(f,canvas){if(M3.room===f&&(M3.ready||M3.busy))return;if(!init(canvas))return;M3.room=f;M3.ready=false;M3.busy=true;M3.err='';
- (async function(){try{var d=await openDisc(),h=await d.file(606+2*f),t=await d.file(607+2*f);if(M3.room!==f)return;if(!h)throw new Error('No room data');await build(h,t);if(M3.room!==f)return;M3.ready=true}
-  catch(e){M3.err=String(e&&e.message||e)}M3.busy=false;if(G.last)G.last={};if(G.drawMap)G.drawMap()})()};
+M3.load=function(f,canvas){if(M3.room===f&&(M3.ready||M3.busy||M3.err))return;   /* an error stays until the room changes or M3.reset: starting again from drawMap at once is a loop that freezes the page */
+ M3.room=f;M3.ready=false;M3.err='';if(!init(canvas))return;M3.busy=true;
+ (async function(){try{var h=await roomFile(606+2*f),t=await roomFile(607+2*f);if(M3.room!==f)return;if(!h)throw new Error('No room data');await build(h,t);if(M3.room!==f)return;M3.ready=true}
+  catch(e){if(M3.room!==f)return;M3.err=String(e&&e.message||e)}M3.busy=false;if(G.last)G.last={};if(G.drawMap)G.drawMap()})()};
 /* floor heights under (x, z), lowest y first (y down: the highest floor first) */
 M3.floors=function(x,z){var F=walk,out=[];if(!F)return out;
  for(var i=0;i<F.T.length;i++){var t=F.T[i],ax=F.VX[t[0]],az=F.VZ[t[0]],bx=F.VX[t[1]],bz=F.VZ[t[1]],cx=F.VX[t[2]],cz=F.VZ[t[2]];
@@ -204,7 +207,7 @@ M3.yLayer=function(x,z,l,ref){var W=layers&&layers.L[l];if(!W)return M3.yAt(x,z,
  return best==null?M3.yAt(x,z,ref):best};
 /* frame the whole-room view on these (x, z) points (the map's walkable vertices) */
 M3.fit=function(xs,zs){fitBox=new T.Box3();for(var i=0;i<xs.length;i++){var fl=M3.floors(xs[i],zs[i]),y=fl.length?fl[fl.length-1]:0;fitBox.expandByPoint(new T.Vector3(xs[i],-y,-zs[i]))}};
-M3.reset=function(){M3.room=null;M3.ready=false};
+M3.reset=function(){M3.room=null;M3.ready=false;M3.err=''};
 /* ---------- the way to go (SETTINGS > EXPERIMENTAL > ROUTE, v1.99.0.5; made light for the handheld in v1.99.0.6) ----------
    A green line on the floor from the party to a target the page gives (the next hint's spot in this room, or the door towards the
    hint's room, or a door the player tapped). The way is found with A* over the walkable triangles of the walk mesh (blocked

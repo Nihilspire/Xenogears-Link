@@ -118,3 +118,13 @@ A second screen for Xenogears (PS1): it reads the game from RetroArch (Android, 
 ## 2.0.0.22
 - **Rooms in separate parts**: in a room made of parts that do not join (340 Refugee Rooms, 341 Clergy Rooms, the Ethos stairwells, Latina's Bar, the Battle Arena reception and about 20 more), the map fits the part the party is in instead of the whole room. A part only counts when it stands clear of the others and is more than a small ledge, so ordinary rooms with a roof or ledge piece are unchanged. The 3D map fits the same way.
 - **Doors**: Jack's edits for the Goliath Factory (260, 261, 264, 268), the Yggdrasil Gun Hall (282) and Samson's Pod (522).
+
+## Next build (not built yet)
+- **3D map: a disc it can't read no longer freezes the app.** With 3D on, a Disc 1 image the 3D map can't read (a .cue or .m3u
+  instead of the .bin or .chd behind it, Disc 2, a .pbp) made the map start reading again straight after every error, so the page
+  froze with no message. The error now stays on the map until you change room, or turn 3D off and on to try again. Found in Xenogears
+  Dual 0.26.
+- **Map messages wrap** onto more lines instead of running past the map's edge.
+- **One page for Link and Xenogears Dual.** Dual's parts (save states, its single-screen layouts and so on) are now in this page,
+  off unless the page runs inside Dual, so fixes reach both. Nothing else changes in Link.
+- Not yet seen live.
